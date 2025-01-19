@@ -46,8 +46,8 @@ const UserManagement = () => {
         email: user.email,
         department: user.department,
         role: user.role,
-        id: user.id,  // Ensure the id is included here
-        status: user.status,  // Ensure the status is included here
+        id: user.id, 
+        status: user.status,  
     }));
     
 
