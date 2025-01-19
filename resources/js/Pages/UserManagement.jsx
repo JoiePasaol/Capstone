@@ -10,13 +10,134 @@ import TextInput from "@/Components/TextInput";
 import InputError from "@/Components/InputError";
 import SelectOption from "@/Components/SelectOption";
 import SecondaryButton from "@/Components/SecondaryButton";
+import ConfirmationDialog from "@/Components/ConfirmationDialog";
+import SuccessDialog from "@/Components/SuccessDialog";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
 const UserManagement = () => {
-    const [users, setUsers] = useState([]); // Track users as an array
+    const [users, setUsers] = useState([]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+    const [dialogTitle, setDialogTitle] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+
+    const toggleDrawer = (state) => {
+        setIsDrawerOpen(state);
+    };
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await axios.get("/api/users?status=approved");
+                setUsers(response.data);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
+    const handleEditClick = (user) => {
+        const { id, firstname, lastname, email, department, role } = user;
+
+        if (!id) {
+            console.error("Invalid user object:", user);
+            return;
+        }
+
+        setSelectedUser({
+            id,
+            firstname,
+            lastname,
+            email,
+            department,
+            role,
+        });
+
+        setIsDrawerOpen(true);
+    };
+
+    const handleDeleteClick = (user) => {
+        setSelectedUser(user);
+        setIsDialogOpen(true);
+        setDialogTitle(`Are you sure you want to delete this user?`);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedUser || !selectedUser.id) {
+            console.error("No user selected for deletion:", selectedUser);
+            return;
+        }
+
+        try {
+            const response = await axios.delete(
+                `/api/users/${selectedUser.id}`
+            );
+            if (response.status === 200) {
+
+                setUsers(users.filter((user) => user.id !== selectedUser.id));
+                setSuccessMessage("User successfully deleted!");
+                setIsSuccessDialogOpen(true);
+
+            }
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            setIsDialogOpen(false);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setSelectedUser(null);
+        setIsDialogOpen(false);
+    };
+
+    const handleSaveClick = async () => {
+        if (!selectedUser || !selectedUser.id) {
+            console.error("Invalid selectedUser object:", selectedUser);
+            return;
+        }
+
+        console.log("Saving user with ID:", selectedUser.id);
+
+        try {
+            const response = await axios.put(`/api/users/${selectedUser.id}`, {
+                firstname: selectedUser.firstname,
+                lastname: selectedUser.lastname,
+                email: selectedUser.email,
+                department: selectedUser.department,
+                role: selectedUser.role,
+            });
+
+            setUsers((prevUsers) =>
+                prevUsers.map((user) =>
+                    user.id === selectedUser.id
+                        ? { ...user, ...selectedUser }
+                        : user
+                )
+            );
+
+            setSuccessMessage("User successfully updated!");
+            setIsSuccessDialogOpen(true);
+            setIsDrawerOpen(false);
+
+        } catch (error) {
+            console.error("Error saving user:", error);
+        }
+    };
+
+    const actions = (user) => (
+        <div className="flex justify-center" key={`actions-${user.id}`}>
+            <TrueButton onClick={() => handleEditClick(user)}>Edit</TrueButton>
+            <FalseButton onClick={() => handleDeleteClick(user.id)}>
+                Delete
+            </FalseButton>
+        </div>
+    );
 
     const departmentOptions = [
         { value: "HR", label: "HR" },
@@ -39,6 +160,7 @@ const UserManagement = () => {
     ];
 
     const rows = users.map((user, index) => ({
+        id: user.id,
         checkbox: <Checkbox key={`checkbox-${user.id}`} />,
         index: index + 1,
         firstname: user.firstname,
@@ -46,87 +168,7 @@ const UserManagement = () => {
         email: user.email,
         department: user.department,
         role: user.role,
-        id: user.id,  // Ensure the id is included here
-        status: user.status,  // Ensure the status is included here
     }));
-    
-
-    const toggleDrawer = (state) => {
-        setIsDrawerOpen(state);
-    };
-
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await axios.get("/api/users?status=approved");
-                setUsers(response.data);
-            } catch (error) {
-                console.error("Error fetching users:", error);
-            }
-        };
-
-        fetchUsers();
-    }, []);
-
-    const handleEditClick = (user) => {
-        // Destructure only the necessary properties
-        const { id, firstname, lastname, email, department, role, status } = user;
-    
-        // Check that these properties exist
-        if (!id || !status) {
-            console.error("Invalid user object:", user);
-            return;
-        }
-    
-        setSelectedUser({
-            id, 
-            firstname, 
-            lastname, 
-            email, 
-            department, 
-            role, 
-            status
-        });
-        setIsDrawerOpen(true);
-    };
-    
-    
-
-    const handleSaveClick = async () => {
-        if (!selectedUser || !selectedUser.id) {
-            console.error("Invalid selectedUser object:", selectedUser);
-            return;
-        }
-    
-        console.log("Saving user with ID:", selectedUser.id);
-    
-        try {
-            const response = await axios.put(`/api/users/${selectedUser.id}`, {
-                status: selectedUser.status,
-                role: selectedUser.role,
-                firstname: selectedUser.firstname,
-                lastname: selectedUser.lastname,
-                email: selectedUser.email,
-                department: selectedUser.department,
-            });
-    
-            setUsers((prevUsers) =>
-                prevUsers.map((user) =>
-                    user.id === selectedUser.id ? { ...user, ...selectedUser } : user
-                )
-            );
-            setIsDrawerOpen(false);
-        } catch (error) {
-            console.error("Error saving user:", error);
-        }
-    };
-    
-    const actions = (user) => (
-        <div className="flex justify-center" key={`actions-${user.id}`}>
-            <TrueButton onClick={() => handleEditClick(user)}>Edit</TrueButton>
-            <FalseButton>Delete</FalseButton>
-        </div>
-    );
 
     return (
         <AuthenticatedLayout
@@ -151,13 +193,11 @@ const UserManagement = () => {
                 </div>
             </div>
 
-            {/* Drawer component to show selected user details */}
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
                 title="Edit"
             >
-                {/* Form fields populated with the selected user's data */}
                 {selectedUser && (
                     <>
                         <div>
@@ -254,6 +294,19 @@ const UserManagement = () => {
                     </>
                 )}
             </Drawer>
+
+            <ConfirmationDialog
+                isOpen={isDialogOpen}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                title={dialogTitle}
+            />
+
+            <SuccessDialog
+                isOpen={isSuccessDialogOpen}
+                onClose={() => setIsSuccessDialogOpen(false)}
+                message={successMessage}
+            />
         </AuthenticatedLayout>
     );
 };

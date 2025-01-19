@@ -25,17 +25,23 @@ const Table = ({ headers, rows, actions }) => {
                             key={rowIndex}
                             className="odd:bg-white even:bg-gray-100 dark:odd:bg-gray-800 dark:even:bg-gray-700"
                         >
-                            {Object.values(row).map((value, index) => (
-                                <td
-                                    key={index}
-                                    className="border border-gray-300 dark:border-gray-700 px-4 py-2 whitespace-nowrap"
-                                >
-                                    {value}
-                                </td>
-                            ))}
+                            {Object.keys(row).map((key, index) => {
+                        
+                                if (key === "id") return null;
+
+                                return (
+                                    <td
+                                        key={index}
+                                        className="border border-gray-300 dark:border-gray-700 px-4 py-2 whitespace-nowrap"
+                                    >
+                                        {row[key]}
+                                    </td>
+                                );
+                            })}
                             {actions && (
                                 <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 whitespace-nowrap">
-                                    {actions(row)}
+                                    {actions(row)}{" "}
+                              
                                 </td>
                             )}
                         </tr>

@@ -31,8 +31,8 @@ class UserController extends Controller
     
             // Validate that role and status are provided
             $request->validate([
-                'status' => 'required|string|in:approved,declined', // Ensure correct status
-                'role' => 'required|string|in:Admin,Basic', // Ensure role is valid
+                'status' => 'required|string|in:approved,declined', 
+                'role' => 'required|string|in:Admin,Basic', 
             ]);
     
             $status = $request->input('status');
@@ -45,7 +45,7 @@ class UserController extends Controller
     
             return response()->json(['message' => 'Status and role updated successfully'], 200);
         } catch (ValidationException $e) {
-            return response()->json(['error' => $e->errors()], 400); // Return validation errors
+            return response()->json(['error' => $e->errors()], 400); 
         } catch (\Exception $e) {
             \Log::error("Error updating user status: {$e->getMessage()}");
             return response()->json(['error' => 'Server error'], 500);
@@ -55,8 +55,8 @@ class UserController extends Controller
     public function destroy($id)
     {
         try {
-            $user = User::findOrFail($id); // Ensure the user exists
-            $user->delete(); // Delete the user from the database
+            $user = User::findOrFail($id);
+            $user->delete();
     
             return response()->json(['message' => 'User deleted successfully'], 200);
         } catch (\Exception $e) {
@@ -66,39 +66,36 @@ class UserController extends Controller
     }
 
     public function update(Request $request, $id)
-{
-    \Log::info("Updating user with ID: {$id}"); // Log the user ID
-
-    try {
-        $user = User::findOrFail($id);
-
-        // Validate the incoming request
-        $request->validate([
-            'status' => 'string|in:approved,declined',
-            'role' => 'string|in:Admin,Basic',
-            'firstname' => 'string|max:255',
-            'lastname' => 'string|max:255',
-            'email' => 'email|max:255',
-            'department' => 'string|max:255',
-        ]);
-
-        // Update user data
-        $user->firstname = $request->input('firstname');
-        $user->lastname = $request->input('lastname');
-        $user->email = $request->input('email');
-        $user->department = $request->input('department');
-        $user->role = $request->input('role');
-        $user->status = $request->input('status');
-
-        $user->save(); // Save the changes
-
-        return response()->json(['message' => 'User updated successfully'], 200);
-    } catch (\Exception $e) {
-        \Log::error("Error updating user: {$e->getMessage()}");
-        return response()->json(['error' => 'Server error'], 500);
-    }
-}
-
-
+    {
+        \Log::info("Updating user with ID: {$id}");
+        
+        try {
+            $user = User::findOrFail($id);
     
+            $request->validate([
+                'firstname' => 'string|max:255',
+                'lastname' => 'string|max:255',
+                'email' => 'email|max:255',
+                'department' => 'string|max:255',
+                'role' => 'string|in:Admin,Basic',
+             
+
+            ]);
+    
+            $user->firstname = $request->input('firstname');
+            $user->lastname = $request->input('lastname');
+            $user->email = $request->input('email');
+            $user->department = $request->input('department');
+            $user->role = $request->input('role');
+    
+            $user->save();
+    
+        
+        } catch (\Exception $e) {
+            \Log::error("Error updating user: {$e->getMessage()}");
+            return response()->json(['error' => 'Server error'], 500);
+        }
+    }
+    
+
 }
