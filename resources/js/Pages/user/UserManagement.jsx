@@ -12,20 +12,12 @@ import SelectOption from "@/Components/SelectOption";
 import SecondaryButton from "@/Components/SecondaryButton";
 import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
-import SearchBar from "@/Components/SearchBar";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import Pagination from "@/Components/Pagination";
 import { useState, useEffect } from "react";
 import axios from "axios";
-
-// Department and Role Options
-const departmentOptions = [
-    { value: "HR", label: "HR" },
-    { value: "IT", label: "IT" },
-];
-
-const roleOptions = [
-    { value: "Admin", label: "Admin" },
-    { value: "Basic", label: "Basic" },
-];
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -36,9 +28,42 @@ const UserManagement = () => {
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
     const [dialogTitle, setDialogTitle] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const [sortOrder, setSortOrder] = useState("asc");
+    const [sortConfig, setSortConfig] = useState({
+        key: "firstname",
+        direction: "asc",
+    });
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // Number of items per page
 
-    // Fetch Users on mount
+    // Calculate total pages based on the filtered users
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+    const handleSortClick = (key) => {
+        let direction = "asc";
+        if (sortConfig.key === key && sortConfig.direction === "asc") {
+            direction = "desc";
+        }
+        setSortConfig({ key, direction });
+
+        const sortedUsers = [...(searchTerm ? filteredUsers : users)].sort(
+            (a, b) => {
+                const aValue = a[key]?.toString().toLowerCase();
+                const bValue = b[key]?.toString().toLowerCase();
+
+                if (aValue < bValue) return direction === "asc" ? -1 : 1;
+                if (aValue > bValue) return direction === "asc" ? 1 : -1;
+                return 0;
+            }
+        );
+
+        setFilteredUsers(sortedUsers);
+    };
+
+    const toggleDrawer = (state) => {
+        setIsDrawerOpen(state);
+    };
+
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -49,54 +74,59 @@ const UserManagement = () => {
                 console.error("Error fetching users:", error);
             }
         };
+
         fetchUsers();
     }, []);
 
-    // Handle Search
-    const handleSearch = (searchTerm) => {
-        const filtered = users.filter((user) =>
-            Object.values(user)
-                .join(" ")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase())
-        );
-        setFilteredUsers(filtered);
+    const onSearch = (searchTerm) => {
+        setSearchTerm(searchTerm);
+        if (searchTerm === "") {
+            setFilteredUsers(users);
+        } else {
+            const filtered = users.filter((user) => {
+                const fullName =
+                    `${user.firstname} ${user.lastname}`.toLowerCase();
+                const searchTermLower = searchTerm.toLowerCase();
+
+                return (
+                    fullName.includes(searchTermLower) ||
+                    user.email.toLowerCase().includes(searchTermLower) ||
+                    user.department.toLowerCase().includes(searchTermLower) ||
+                    user.role.toLowerCase().includes(searchTermLower)
+                );
+            });
+            setFilteredUsers(filtered);
+        }
     };
 
-    // Handle Sort
-    const handleSort = (order) => {
-        setSortOrder(order);
-        const sortedUsers = [...filteredUsers].sort((a, b) =>
-            order === "asc"
-                ? a.firstname.localeCompare(b.firstname)
-                : b.firstname.localeCompare(a.firstname)
-        );
-        setFilteredUsers(sortedUsers);
-    };
-
-    // Toggle Drawer
-    const toggleDrawer = (state) => {
-        setIsDrawerOpen(state);
-    };
-
-    // Handle Edit
     const handleEditClick = (user) => {
-        const { id, firstname, lastname, email, department, role } = user;
-        setSelectedUser({ id, firstname, lastname, email, department, role });
+        const userToEdit = users.find((u) => u.id === user.id);
+
+        if (!userToEdit) {
+            console.error("User not found:", user);
+            return;
+        }
+
+        setSelectedUser(userToEdit);
         setIsDrawerOpen(true);
     };
 
-    // Handle Delete
     const handleDeleteClick = (user) => {
         setSelectedUser(user);
-        setDialogTitle("Are you sure you want to delete this user?");
         setIsDialogOpen(true);
+        setDialogTitle(`Are you sure you want to delete this user?`);
     };
 
     const handleConfirmDelete = async () => {
-        if (!selectedUser || !selectedUser.id) return;
+        if (!selectedUser || !selectedUser.id) {
+            console.error("No user selected for deletion:", selectedUser);
+            return;
+        }
+
         try {
-            const response = await axios.delete(`/api/users/${selectedUser.id}`);
+            const response = await axios.delete(
+                `/api/users/${selectedUser.id}`
+            );
             if (response.status === 200) {
                 setUsers(users.filter((user) => user.id !== selectedUser.id));
                 setSuccessMessage("User successfully deleted!");
@@ -113,10 +143,13 @@ const UserManagement = () => {
         setSelectedUser(null);
         setIsDialogOpen(false);
     };
-
-    // Handle Save
+    // Handle save functionality
     const handleSaveClick = async () => {
-        if (!selectedUser || !selectedUser.id) return;
+        if (!selectedUser || !selectedUser.id) {
+            console.error("Invalid selectedUser object:", selectedUser);
+            return;
+        }
+
         try {
             const response = await axios.put(`/api/users/${selectedUser.id}`, {
                 firstname: selectedUser.firstname,
@@ -128,9 +161,12 @@ const UserManagement = () => {
 
             setUsers((prevUsers) =>
                 prevUsers.map((user) =>
-                    user.id === selectedUser.id ? { ...user, ...selectedUser } : user
+                    user.id === selectedUser.id
+                        ? { ...user, ...selectedUser }
+                        : user
                 )
             );
+
             setSuccessMessage("User successfully updated!");
             setIsSuccessDialogOpen(true);
             setIsDrawerOpen(false);
@@ -139,17 +175,25 @@ const UserManagement = () => {
         }
     };
 
-    // Actions for table rows
     const actions = (user) => (
         <div className="flex justify-center" key={`actions-${user.id}`}>
             <TrueButton onClick={() => handleEditClick(user)}>Edit</TrueButton>
-            <FalseButton onClick={() => handleDeleteClick(user)}>
+            <FalseButton onClick={() => handleDeleteClick(user.id)}>
                 Delete
             </FalseButton>
         </div>
     );
 
-    // Table Headers and Rows
+    const departmentOptions = [
+        { value: "HR", label: "HR" },
+        { value: "IT", label: "IT" },
+    ];
+
+    const roleOptions = [
+        { value: "Admin", label: "Admin" },
+        { value: "Basic", label: "Basic" },
+    ];
+
     const headers = [
         <Checkbox key="select-all" />,
         "#",
@@ -160,43 +204,87 @@ const UserManagement = () => {
         "Role",
     ];
 
-    const rows = filteredUsers.map((user, index) => ({
+    const paginatedRows = [...(searchTerm ? filteredUsers : users)]
+    .sort((a, b) => {
+        const aValue = a[sortConfig.key]?.toString().toLowerCase();
+        const bValue = b[sortConfig.key]?.toString().toLowerCase();
+
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+    })
+    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    .map((user, index) => ({
         id: user.id,
-        index: index + 1,
+        checkbox: <Checkbox key={`checkbox-${user.id}`} />,
+        index: (currentPage - 1) * itemsPerPage + index + 1, 
         firstname: user.firstname,
         lastname: user.lastname,
         email: user.email,
         department: user.department,
         role: user.role,
- 
     }));
+
+    const handlePageChange = (newPage) => {
+        if (newPage < 1 || newPage > totalPages) return;
+        setCurrentPage(newPage);
+    };
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    User Management wow
+                    User Management Wow
                 </h2>
             }
         >
             <Head title="User Management" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
-                        <div className="px-6 py-3 text-gray-900 dark:text-gray-100">
+                    <div className="px-6 py-4 overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
+                        <div className="w-full flex justify-between gap-4 ">
+                            <div className="flex-1">
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className="text-white border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none focus:border-white"
+                                    onChange={(e) => onSearch(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex gap-2 items-center">
+                                <DeleteIcon className="cursor-pointer text-white" />
+                                <div
+                                    onClick={() =>
+                                        handleSortClick(sortConfig.key)
+                                    }
+                                    className="cursor-pointer text-gray-600 dark:text-gray-300"
+                                >
+                                    {sortConfig.direction === "asc" ? (
+                                        <ArrowUpwardIcon />
+                                    ) : (
+                                        <ArrowDownwardIcon />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-gray-900 dark:text-gray-100">
                             <Table
                                 headers={headers}
-                                rows={rows}
+                                rows={paginatedRows} // Pass the paginated rows to the table
                                 actions={actions}
-                                onSort={handleSort}
-                                onSearch={handleSearch}
                             />
                         </div>
+
+                        <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                    />
                     </div>
+                 
                 </div>
             </div>
 
-            {/* Drawer for Editing User */}
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
@@ -205,7 +293,10 @@ const UserManagement = () => {
                 {selectedUser && (
                     <>
                         <div>
-                            <InputLabel htmlFor="firstname" value="First Name" />
+                            <InputLabel
+                                htmlFor="firstname"
+                                value="First Name"
+                            />
                             <TextInput
                                 id="firstname"
                                 className="mt-2 block w-full h-10 rounded-sm"
@@ -250,7 +341,10 @@ const UserManagement = () => {
                             <InputError className="mt-2" />
                         </div>
                         <div className="mt-4">
-                            <InputLabel htmlFor="department" value="Department" />
+                            <InputLabel
+                                htmlFor="department"
+                                value="Department"
+                            />
                             <SelectOption
                                 id="department"
                                 options={departmentOptions}
@@ -293,7 +387,6 @@ const UserManagement = () => {
                 )}
             </Drawer>
 
-            {/* Confirmation Dialog */}
             <ConfirmationDialog
                 isOpen={isDialogOpen}
                 onConfirm={handleConfirmDelete}
@@ -301,7 +394,6 @@ const UserManagement = () => {
                 title={dialogTitle}
             />
 
-            {/* Success Dialog */}
             <SuccessDialog
                 isOpen={isSuccessDialogOpen}
                 onClose={() => setIsSuccessDialogOpen(false)}

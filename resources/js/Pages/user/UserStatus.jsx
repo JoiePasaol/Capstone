@@ -77,13 +77,15 @@ export default function UserStatus() {
         department: user.department || "N/A",
         role: (
             <select
-                value={user.role}
-                onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                className="w-full p-1 dark:bg-gray-800 border-none focus:outline-none focus:ring-0"
-            >
-                <option value="Admin">Admin</option>
-                <option value="Basic">Basic</option>
-            </select>
+            value={user.role}
+            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+            className="w-full flex dark:bg-gray-800 border-none focus:outline-none focus:ring-0"
+          >
+             <option value="Basic">Basic</option>
+            <option value="Admin">Admin</option>
+          
+          </select>
+          
         ),
         actions: (
             <div className="flex justify-center" key={`actions-${user.id}`}>
