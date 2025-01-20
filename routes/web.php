@@ -25,12 +25,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // User Status
     Route::get('/user-status', function () {
-        return Inertia::render('UserStatus');
+        return Inertia::render('user/UserStatus');
     })->name('user-status');
 
     // User Management
     Route::get('/user-management', function () {
-        return Inertia::render('UserManagement');
+        return Inertia::render('user/UserManagement');
     })->name('user-management');
 
     // User API Endpoints
