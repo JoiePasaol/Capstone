@@ -1,7 +1,9 @@
-const Table = ({ headers, rows, actions }) => {
+const Table = ({ headers, rows, actions, }) => {
+
     return (
         <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-700">
+           
+            <table className="mt-4 min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-700">
                 <thead>
                     <tr className="bg-gray-200 dark:bg-gray-700">
                         {headers.map((header, index) => (
@@ -26,9 +28,7 @@ const Table = ({ headers, rows, actions }) => {
                             className="odd:bg-white even:bg-gray-100 dark:odd:bg-gray-800 dark:even:bg-gray-700"
                         >
                             {Object.keys(row).map((key, index) => {
-                        
                                 if (key === "id") return null;
-
                                 return (
                                     <td
                                         key={index}
@@ -40,8 +40,7 @@ const Table = ({ headers, rows, actions }) => {
                             })}
                             {actions && (
                                 <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 whitespace-nowrap">
-                                    {actions(row)}{" "}
-                              
+                                    {actions(row)}
                                 </td>
                             )}
                         </tr>
