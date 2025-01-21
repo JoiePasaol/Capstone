@@ -57,13 +57,17 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
             $user->delete();
-    
+            
             return response()->json(['message' => 'User deleted successfully'], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::error("User not found for deletion: ID {$id}");
+            return response()->json(['error' => 'User not found'], 404);
         } catch (\Exception $e) {
             \Log::error("Error deleting user: {$e->getMessage()}");
             return response()->json(['error' => 'Server error'], 500);
         }
     }
+    
 
     public function update(Request $request, $id)
     {

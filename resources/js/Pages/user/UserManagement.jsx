@@ -178,7 +178,7 @@ const UserManagement = () => {
     const actions = (user) => (
         <div className="flex justify-center" key={`actions-${user.id}`}>
             <TrueButton onClick={() => handleEditClick(user)}>Edit</TrueButton>
-            <FalseButton onClick={() => handleDeleteClick(user.id)}>
+            <FalseButton onClick={() => handleDeleteClick(user)}>
                 Delete
             </FalseButton>
         </div>
@@ -205,25 +205,25 @@ const UserManagement = () => {
     ];
 
     const paginatedRows = [...(searchTerm ? filteredUsers : users)]
-    .sort((a, b) => {
-        const aValue = a[sortConfig.key]?.toString().toLowerCase();
-        const bValue = b[sortConfig.key]?.toString().toLowerCase();
+        .sort((a, b) => {
+            const aValue = a[sortConfig.key]?.toString().toLowerCase();
+            const bValue = b[sortConfig.key]?.toString().toLowerCase();
 
-        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-    })
-    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-    .map((user, index) => ({
-        id: user.id,
-        checkbox: <Checkbox key={`checkbox-${user.id}`} />,
-        index: (currentPage - 1) * itemsPerPage + index + 1, 
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-        department: user.department,
-        role: user.role,
-    }));
+            if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+            return 0;
+        })
+        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+        .map((user, index) => ({
+            id: user.id,
+            checkbox: <Checkbox key={`checkbox-${user.id}`} />,
+            index: (currentPage - 1) * itemsPerPage + index + 1,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            department: user.department,
+            role: user.role,
+        }));
 
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages) return;
@@ -276,12 +276,11 @@ const UserManagement = () => {
                         </div>
 
                         <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
                     </div>
-                 
                 </div>
             </div>
 
