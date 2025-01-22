@@ -60,7 +60,7 @@ export default function NavLink({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
             >
-                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 py-1">
+                <div className="absolute left-0 mt-2 w-48 rounded-md ring-1 ring-black/30 dark:ring-white/30 bg-white dark:bg-gray-700 py-1">
                     {dropdownItems.map((item, index) => (
                         <Link
                             key={index}
@@ -69,7 +69,7 @@ export default function NavLink({
                                 e.stopPropagation(); // Prevent dropdown from closing immediately
                                 closeDropdown(); // Close dropdown explicitly
                             }}
-                            className="block px-4 py-2 text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
+                            className="block px-4 py-2 text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-200 focus:bg-gray-300 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
                         >
                             {item.label}
                         </Link>

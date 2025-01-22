@@ -20,18 +20,26 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         }
 
         if (currentPage <= 3) {
-            return [1, 2, 3, 4, 5, '...', totalPages];
+            return [1, 2, 3, 4, 5, "...", totalPages];
         } else if (currentPage >= totalPages - 2) {
-            return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+            return [
+                1,
+                "...",
+                totalPages - 4,
+                totalPages - 3,
+                totalPages - 2,
+                totalPages - 1,
+                totalPages,
+            ];
         } else {
             return [
                 1,
-                '...',
+                "...",
                 currentPage - 1,
                 currentPage,
                 currentPage + 1,
-                '...',
-                totalPages
+                "...",
+                totalPages,
             ];
         }
     };
@@ -42,7 +50,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                 <button
                     onClick={() => handlePageClick(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-white rounded-l-md"
+                    className="px-4 py-2 bg-blue-500 dark:bg-gray-700 text-white rounded-l-md"
                 >
                     &lt;
                 </button>
@@ -53,12 +61,16 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                 <button
                     key={index}
                     onClick={() => {
-                        if (page !== '...') {
+                        if (page !== "...") {
                             handlePageClick(page);
                         }
                     }}
-                    className={`px-4 py-2 text-white ${page === currentPage ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-700'} rounded-md`}
-                    disabled={page === '...'}
+                    className={`px-4 py-2 ${
+                        page === currentPage
+                            ? "text-white bg-blue-500"
+                            : "text-black/50 bg-gray-300 dark:text-white dark:bg-gray-700"
+                    } rounded-md`}
+                    disabled={page === "..."}
                 >
                     {page}
                 </button>
@@ -68,7 +80,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                 <button
                     onClick={() => handlePageClick(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-white rounded-r-md"
+                    className="px-4 py-2 bg-blue-500 dark:bg-gray-700 text-white rounded-r-md"
                 >
                     &gt;
                 </button>

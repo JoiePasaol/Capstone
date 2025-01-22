@@ -312,14 +312,14 @@ const UserManagement = () => {
             <Head title="User Management" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="px-6 py-4 overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
+                    <div className="px-6 py-4 overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
                         {users.length > 0 && (
                             <div className="w-full flex justify-between gap-4 ">
                                 <div className="flex-1">
                                     <input
                                         type="text"
                                         placeholder="Search..."
-                                        className="text-white border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none focus:border-white"
+                                        className="dark:text-white border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
                                         onChange={(e) =>
                                             onSearch(e.target.value)
                                         }
@@ -327,7 +327,7 @@ const UserManagement = () => {
                                 </div>
                                 <div className="flex gap-2 items-center">
                                     <DeleteIcon
-                                        className={`cursor-pointer text-white ${
+                                        className={` text-gray-600 dark:text-gray-300 ${
                                             selectedUsers.length <= 1
                                                 ? "opacity-50 cursor-not-allowed"
                                                 : ""
@@ -383,6 +383,7 @@ const UserManagement = () => {
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
                 title="Edit"
+            
             >
                 {selectedUser && (
                     <>

@@ -1,22 +1,12 @@
 import { Head, Link } from "@inertiajs/react";
 import "../../css/custom.css";
+import DarkModeToggle from "@/Components/DarkModeToggle";
 
-export default function Welcome({ auth, laravelVersion, phpVersion }) {
-    const handleImageError = () => {
-        document
-            .getElementById("screenshot-container")
-            ?.classList.add("!hidden");
-        document.getElementById("docs-card")?.classList.add("!row-span-1");
-        document
-            .getElementById("docs-card-content")
-            ?.classList.add("!flex-row");
-        document.getElementById("background")?.classList.add("!hidden");
-    };
-
+export default function Welcome({ auth }) {
     return (
         <>
             <Head title="Welcome" />
-            <div className="bg-[#111827]  dark:text-white/50">
+            <div className="bg-white dark:bg-[#111827] dark:text-white/50">
                 <div className="relative flex min-h-screen flex-col items-center justify-center selection:bg-[#FF2D20] selection:text-white">
                     <div className="relative w-full max-w-2xl px-6 lg:max-w-7xl">
                         <header className="grid grid-cols-2 items-center gap-2 py-10 lg:grid-cols-2">
@@ -56,16 +46,16 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                             <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
                                 <div
                                     id="docs-card"
-                                    className="rounded-lg p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-2 transition duration-300 hover:text-black/70 md:row-span-3 lg:p-10 lg:pb-10 bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
+                                    className="shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-black rounded-lg p-6 dark:shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)]transition duration-300  md:row-span-3 lg:p-10 lg:pb-10 dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
                                 >
                                     <div
                                         id="docs-card-content"
                                         className="flex items-start gap-6 lg:flex-col flex-col"
                                     >
                                         <img
-                                            className="border border-white/30 h-[400px] lg:h-[400px] sm:h-[300px] w-full lg:w-auto"
-                                            src="/img/dashboard.png"
-                                            alt=""
+                                            className="border border-black/30 dark:border-black/30 h-[400px] lg:h-[400px] sm:h-[300px] w-full lg:w-auto"
+                                            src={"/img/light-dashboard.png"}
+                                            alt="Dashboard"
                                         />
 
                                         <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#0011ff]/10 sm:size-16">
@@ -104,7 +94,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
 
                                 <a
                                     href=""
-                                    className="flex items-center gap-4 rounded-lg  p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-2 transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
+                                    className="flex items-center gap-4 rounded-lg  p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-black transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
                                 >
                                     <img
                                         src="/img/Joie.png"
@@ -144,7 +134,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
 
                                 <a
                                     href=""
-                                    className="flex items-center gap-4 rounded-lg  p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-2 transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
+                                    className="flex items-center gap-4 rounded-lg  p-6  shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-black transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
                                 >
                                     <img
                                         src="/img/Jasper.png"
@@ -183,7 +173,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
 
                                 <a
                                     href=""
-                                    className="flex items-center gap-4 rounded-lg  p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-2 transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
+                                    className="flex items-center gap-4 rounded-lg  p-6  shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-black transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
                                 >
                                     <img
                                         src="/img/Denzel.png"
@@ -226,6 +216,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                     </div>
                 </div>
             </div>
+            <DarkModeToggle />
         </>
     );
 }
