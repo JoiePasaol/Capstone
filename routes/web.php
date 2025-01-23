@@ -33,8 +33,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('User/UserManagement');
     })->name('user-management');
 
+       // Categories
+       Route::get('/categories', function () {
+        return Inertia::render('Categories');
+    })->name('categories');
+
     // User API Endpoints
-    
     Route::prefix('api')->group(function () {
         Route::get('/users', [UserController::class, 'fetchUsers'])->name('users.fetch');
         Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('users.update-status');

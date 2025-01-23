@@ -60,19 +60,22 @@ export default function UserStatus() {
     };
 
     const headers = [
-        <Checkbox key="select-all" />,
-        "#",
-        "Name",
-        "Email",
-        "Department",
-        "Role",
-        "Actions",
+        { label: <Checkbox />, key: "select-all" },
+        { label: "#", key: "index" },
+        { label: "First Name", key: "firstname" },
+        { label: "Last Name", key: "lastname" },
+        { label: "Email", key: "email" },
+        { label: "Department", key: "department" },
+        { label: "Role", key: "role" },
+        { label: "Action", key: "actions" }
     ];
+    
 
     const rows = users.map((user, index) => ({
         checkbox: <Checkbox key={`checkbox-${user.id}`} />,
         index: index + 1,
-        name: `${user.firstname} ${user.lastname}`,
+        firstname: user.firstname,
+        lastname: user.lastname,
         email: user.email,
         department: user.department || "N/A",
         role: (

@@ -1,19 +1,22 @@
-const Table = ({ headers, rows, actions, }) => {
-
+const Table = ({ headers, rows, actions }) => {
     return (
         <div className="overflow-x-auto">
-           
             <table className="mt-4 min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-700">
                 <thead>
                     <tr className="bg-gray-200 dark:bg-gray-700">
                         {headers.map((header, index) => (
                             <th
                                 key={index}
-                                className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left"
+                                onClick={() =>
+                                    header.key !== "select-all"
+                                }
+                                
+                                className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left cursor-pointer"
                             >
-                                {header}
+                                {header.label}
                             </th>
                         ))}
+
                         {actions && (
                             <th className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">
                                 Action
@@ -39,7 +42,7 @@ const Table = ({ headers, rows, actions, }) => {
                                 );
                             })}
                             {actions && (
-                                <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 whitespace-nowrap">
+                                <td className="border border-gray-300 dark:border-gray-700 py-2  whitespace-nowrap">
                                     {actions(row)}
                                 </td>
                             )}

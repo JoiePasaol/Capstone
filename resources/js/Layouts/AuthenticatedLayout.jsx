@@ -25,7 +25,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </Link>
                         </div>
 
-                        <div className="hidden h-100 space-x-2 sm:-my-px  sm:flex ">
+                        <div className="hidden h-100 space-x-3 sm:-my-px  sm:flex ">
                             <NavLink
                                 href={route("dashboard")}
                                 active={route().current("dashboard")}
@@ -61,6 +61,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                         clipRule="evenodd"
                                     />
                                 </svg>
+                            </NavLink>
+
+                            <NavLink
+                                href={route("categories")}
+                                active={route().current("categories")}
+                            >
+                                Categories
                             </NavLink>
                         </div>
 
@@ -166,8 +173,8 @@ export default function AuthenticatedLayout({ header, children }) {
                             Dashboard
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
-                            // href={route("user")}
-                            // active={route().current("user")}
+                        // href={route("user")}
+                        // active={route().current("user")}
                         >
                             User
                         </ResponsiveNavLink>

@@ -13,8 +13,8 @@ import SecondaryButton from "@/Components/SecondaryButton";
 import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import Pagination from "@/Components/Pagination";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -30,13 +30,10 @@ const UserManagement = () => {
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
     const [dialogTitle, setDialogTitle] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const [sortConfig, setSortConfig] = useState({
-        key: "firstname",
-        direction: "asc",
-    });
+
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Number of items per page
+    const itemsPerPage = 10; 
 
     // Calculate total pages based on filtered users
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -56,39 +53,15 @@ const UserManagement = () => {
         fetchUsers();
     }, []);
 
-    // Sorting Function - Handles sorting users based on the selected key
-    const handleSortClick = (key) => {
-        let direction = "asc";
-        if (sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc";
-        }
-        setSortConfig({ key, direction });
-
-        const sortedUsers = [...(searchTerm ? filteredUsers : users)].sort(
-            (a, b) => {
-                const aValue = a[key]?.toString().toLowerCase();
-                const bValue = b[key]?.toString().toLowerCase();
-
-                if (aValue < bValue) return direction === "asc" ? -1 : 1;
-                if (aValue > bValue) return direction === "asc" ? 1 : -1;
-                return 0;
-            }
-        );
-
-        setFilteredUsers(sortedUsers);
-    };
-
     // Search Function - Filters users based on the search term
     const onSearch = (searchTerm) => {
         setSearchTerm(searchTerm);
         if (searchTerm === "") {
-            setFilteredUsers(users);
+            setFilteredUsers(users); // Reset to original users if searchTerm is empty
         } else {
             const filtered = users.filter((user) => {
-                const fullName =
-                    `${user.firstname} ${user.lastname}`.toLowerCase();
+                const fullName = `${user.firstname} ${user.lastname}`.toLowerCase();
                 const searchTermLower = searchTerm.toLowerCase();
-
                 return (
                     fullName.includes(searchTermLower) ||
                     user.email.toLowerCase().includes(searchTermLower) ||
@@ -151,6 +124,7 @@ const UserManagement = () => {
     };
 
     // Confirm delete action
+
     const handleConfirmDelete = async () => {
         if (selectedUsers.length === 0) {
             console.error("No users selected for deletion");
@@ -160,23 +134,27 @@ const UserManagement = () => {
         const userCount = selectedUsers.length;
 
         try {
+            // Perform the delete operation for each selected user
             await Promise.all(
                 selectedUsers.map((user) =>
                     axios.delete(`/api/users/${user.id}`)
                 )
             );
 
-            setUsers(
-                users.filter(
+            // Update the users and filteredUsers lists by removing the deleted users
+            setUsers((prevUsers) => {
+                return prevUsers.filter(
                     (user) => !selectedUsers.some((u) => u.id === user.id)
-                )
-            );
-            setFilteredUsers(
-                filteredUsers.filter(
-                    (user) => !selectedUsers.some((u) => u.id === user.id)
-                )
-            );
+                );
+            });
 
+            setFilteredUsers((prevFilteredUsers) => {
+                return prevFilteredUsers.filter(
+                    (user) => !selectedUsers.some((u) => u.id === user.id)
+                );
+            });
+
+            // Success message
             setSuccessMessage(
                 `${userCount} user${
                     userCount > 1 ? "s" : ""
@@ -190,6 +168,7 @@ const UserManagement = () => {
             setSelectedUsers([]);
         }
     };
+
     // Cancel delete operation
     const handleCancelDelete = () => {
         setSelectedUser(null);
@@ -212,13 +191,22 @@ const UserManagement = () => {
                 role: selectedUser.role,
             });
 
-            setUsers((prevUsers) =>
-                prevUsers.map((user) =>
+            // Update users and filteredUsers immediately with the updated data
+            setUsers((prevUsers) => {
+                return prevUsers.map((user) =>
                     user.id === selectedUser.id
                         ? { ...user, ...selectedUser }
                         : user
-                )
-            );
+                );
+            });
+
+            setFilteredUsers((prevFilteredUsers) => {
+                return prevFilteredUsers.map((user) =>
+                    user.id === selectedUser.id
+                        ? { ...user, ...selectedUser }
+                        : user
+                );
+            });
 
             setSuccessMessage("User successfully updated!");
             setIsSuccessDialogOpen(true);
@@ -251,33 +239,29 @@ const UserManagement = () => {
 
     // Table headers
     const headers = [
-        <Checkbox
-            key="select-all"
-            checked={
-                selectedUsers.length === filteredUsers.length &&
-                filteredUsers.length > 0
-            }
-            onChange={handleSelectAll}
-        />,
-        "#",
-        "First Name",
-        "Last Name",
-        "Email",
-        "Department",
-        "Role",
+        {
+            label: (
+                <Checkbox
+                    key="select-all"
+                    checked={
+                        selectedUsers.length === filteredUsers.length &&
+                        filteredUsers.length > 0
+                    }
+                    onChange={handleSelectAll}
+                />
+            ),
+            key: "select-all",
+        },
+        { label: "#", key: "index" },
+        { label: "First Name", key: "firstname" },
+        { label: "Last Name", key: "lastname" },
+        { label: "Email", key: "email" },
+        { label: "Department", key: "department" },
+        { label: "Role", key: "role" },
     ];
 
-    // Paginate and sort users for display
-    const paginatedRows = [...(searchTerm ? filteredUsers : users)]
-        .sort((a, b) => {
-            const aValue = a[sortConfig.key]?.toString().toLowerCase();
-            const bValue = b[sortConfig.key]?.toString().toLowerCase();
-
-            if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-            if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-            return 0;
-        })
-        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    // Paginate and sort users for display (keeping original order)
+    const paginatedRows = [...filteredUsers]
         .map((user, index) => ({
             id: user.id,
             checkbox: (
@@ -293,7 +277,8 @@ const UserManagement = () => {
             email: user.email,
             department: user.department,
             role: user.role,
-        }));
+        }))
+        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     // Handle page change for pagination
     const handlePageChange = (newPage) => {
@@ -319,6 +304,7 @@ const UserManagement = () => {
                                     <input
                                         type="text"
                                         placeholder="Search..."
+                                        value={searchTerm}
                                         className="dark:text-white border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
                                         onChange={(e) =>
                                             onSearch(e.target.value)
@@ -327,7 +313,7 @@ const UserManagement = () => {
                                 </div>
                                 <div className="flex gap-2 items-center">
                                     <DeleteIcon
-                                        className={` text-gray-600 dark:text-gray-300 ${
+                                        className={` text-gray-600 dark:text-gray-300 cursor-pointer ${
                                             selectedUsers.length <= 1
                                                 ? "opacity-50 cursor-not-allowed"
                                                 : ""
@@ -337,29 +323,18 @@ const UserManagement = () => {
                                             handleDeleteClick()
                                         }
                                     />
-
-                                    <div
-                                        onClick={() =>
-                                            handleSortClick(sortConfig.key)
-                                        }
-                                        className="cursor-pointer text-gray-600 dark:text-gray-300"
-                                    >
-                                        {sortConfig.direction === "asc" ? (
-                                            <ArrowUpwardIcon />
-                                        ) : (
-                                            <ArrowDownwardIcon />
-                                        )}
-                                    </div>
                                 </div>
                             </div>
                         )}
 
                         <div className="text-gray-900 dark:text-gray-100">
+                            {/* Rendering users in a table */}
                             {users.length > 0 ? (
                                 <Table
                                     headers={headers}
                                     rows={paginatedRows}
                                     actions={actions}
+                                 
                                 />
                             ) : (
                                 <div className="flex items-center justify-center h-48">
@@ -383,7 +358,6 @@ const UserManagement = () => {
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
                 title="Edit"
-            
             >
                 {selectedUser && (
                     <>

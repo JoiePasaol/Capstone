@@ -53,6 +53,7 @@ export default function Welcome({ auth }) {
                                         className="flex items-start gap-6 lg:flex-col flex-col"
                                     >
                                         <img
+                                          id="dashboard-image"
                                             className="border border-black/30 dark:border-black/30 h-[400px] lg:h-[400px] sm:h-[300px] w-full lg:w-auto"
                                             src={"/img/light-dashboard.png"}
                                             alt="Dashboard"
@@ -94,7 +95,7 @@ export default function Welcome({ auth }) {
 
                                 <a
                                     href=""
-                                    className="flex items-center gap-4 rounded-lg  p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-black transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
+                                    className="flex items-center gap-4 rounded-lg  p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30  text-gray-500 hover:text-gray-900 transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
                                 >
                                     <img
                                         src="/img/Joie.png"
@@ -102,8 +103,8 @@ export default function Welcome({ auth }) {
                                         className="w-40 h-40 rounded-full object-cover"
                                     />
                                     <div>
-                                        <h2 className="text-xl font-semibold text-black dark:text-white ">
-                                            Joie Pasaol - Developer
+                                        <h2 className="text-lg font-semibold text-black dark:text-white ">
+                                            Joie Pasaol - Full Stack Developer
                                         </h2>
                                         <div className="relative w-20 h-[4px] bg-[#0011ff] mb-3 mt-3">
                                             <div className="absolute  top-[-4px] w-3 h-3 bg-[#0011ff] transform rotate-45 origin-center"></div>
@@ -134,7 +135,7 @@ export default function Welcome({ auth }) {
 
                                 <a
                                     href=""
-                                    className="flex items-center gap-4 rounded-lg  p-6  shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-black transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
+                                    className="flex items-center gap-4 rounded-lg  p-6  shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30  text-gray-500 hover:text-gray-900 transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
                                 >
                                     <img
                                         src="/img/Jasper.png"
@@ -142,8 +143,8 @@ export default function Welcome({ auth }) {
                                         className="w-40 h-40 rounded-full object-cover"
                                     />
                                     <div>
-                                        <h2 className="text-xl font-semibold text-black dark:text-white ">
-                                            Jasper Cabodbod - Developer
+                                        <h2 className="text-lg font-semibold text-black dark:text-white ">
+                                            Jasper Cabodbod - Backend Developer
                                         </h2>
                                         <div className="relative w-20 h-[4px] bg-[#0011ff] mb-3 mt-3">
                                             <div className="absolute  top-[-4px] w-3 h-3 bg-[#0011ff] transform rotate-45 origin-center"></div>
@@ -173,7 +174,7 @@ export default function Welcome({ auth }) {
 
                                 <a
                                     href=""
-                                    className="flex items-center gap-4 rounded-lg  p-6  shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-black transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
+                                    className="flex items-center gap-4 rounded-lg  p-6  shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] border border-none  ring-2  ring-black/15 hover:ring-black/30 text-gray-500 hover:text-gray-900 transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10  dark:bg-[#1f2937] dark:ring-white/15 dark:hover:text-white/80 dark:hover:ring-white/30 "
                                 >
                                     <img
                                         src="/img/Denzel.png"
@@ -181,13 +182,13 @@ export default function Welcome({ auth }) {
                                         className="w-40 h-40 rounded-full object-cover"
                                     />
                                     <div>
-                                        <h2 className="text-xl font-semibold text-black dark:text-white ">
-                                            Denzel Ivan Roi Dupa - Developer
+                                        <h2 className="text-lg font-semibold text-black dark:text-white ">
+                                            Denzel Ivan Roi Dupa - Project Manager
                                         </h2>
                                         <div className="relative w-20 h-[4px] bg-[#0011ff] mb-3 mt-3">
                                             <div className="absolute  top-[-4px] w-3 h-3 bg-[#0011ff] transform rotate-45 origin-center"></div>
                                         </div>
-                                        <p className="text-sm leading-relaxed">
+                                        <p className="text-sm leading-relaxed ">
                                             Lorem Ipsum is simply dummy text of
                                             the printing and typesetting
                                             industry. Lorem Ipsum has been the

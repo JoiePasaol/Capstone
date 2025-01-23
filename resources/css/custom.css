@@ -6,6 +6,9 @@
       -webkit-text-stroke: 2px #0011ff;
     }
 
+    #dashboard-image{
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.95), rgba(0,0,0,0.0));
+    }
     
   }
   
