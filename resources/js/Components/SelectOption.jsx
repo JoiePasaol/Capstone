@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useRef, useImperativeHandle, useEffect } from 'react';
 
 export default forwardRef(function SelectOption(
     { options = [], className = '', isFocused = false, placeholder = '', ...props },
@@ -28,9 +28,9 @@ export default forwardRef(function SelectOption(
             <option value="" disabled hidden>
                 {placeholder}
             </option>
-            {options.map((option, index) => (
-                <option key={index} value={option.value}>
-                    {option.label}
+            {options.map((category) => (
+                <option key={category.id} value={category.id}>
+                    {category.name}
                 </option>
             ))}
         </select>

@@ -13,7 +13,7 @@ const Dropdown = ({ children }) => {
 
     return (
         <DropDownContext.Provider value={{ open, setOpen, toggleOpen }}>
-            <div className="relative">{children}</div>
+            <div className="relative overflow-visible">{children}</div>
         </DropDownContext.Provider>
     );
 };
@@ -69,7 +69,7 @@ const Content = ({
                 leaveTo="opacity-0 scale-95"
             >
                 <div
-                    className={`absolute z-50 mt-2  ${alignmentClasses} ${widthClasses}`}
+                    className={`fixed z-50 mt-2 mr-5 ${alignmentClasses} ${widthClasses}`}
                     onClick={() => setOpen(false)}
                 >
                     <div
