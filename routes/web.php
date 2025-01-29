@@ -7,7 +7,7 @@ use App\Http\Controllers\ItemController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Models\Category; // <-- Make sure this is imported
+
 
 // Public Routes
 Route::get('/', function () {
@@ -43,12 +43,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Items
     Route::get('/item-list', function () {
-        $categories = Category::all();  // Fetch all categories
-        return Inertia::render('Items/ItemList', [
-            'categories' => $categories,
-        ]);
+        return Inertia::render('Items/ItemList');
     })->name('item-list');
 
+    
     Route::get('/item-report', function () {
         return Inertia::render('Items/ItemReport');
     })->name('item-report');
@@ -59,6 +57,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('users.update-status');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     });
+    
+
+    Route::post('/items', [ItemController::class, 'store'])->name('items.store');
+    Route::get('/items', [ItemController::class, 'index'])->name('items.index');
 
     // Update User
     Route::put('/api/users/{id}', [UserController::class, 'update'])->name('users.update');
@@ -69,7 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     Route::post('/categories/bulkDestroy', [CategoryController::class, 'bulkDestroy'])->name('categories.bulkDestroy');
-
+    
     // Profile Routes
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');

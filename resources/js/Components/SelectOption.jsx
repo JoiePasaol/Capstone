@@ -1,7 +1,13 @@
-import { forwardRef, useRef, useImperativeHandle, useEffect } from 'react';
+import { forwardRef, useRef, useImperativeHandle, useEffect } from "react";
 
 export default forwardRef(function SelectOption(
-    { options = [], className = '', isFocused = false, placeholder = '', ...props },
+    {
+        options = [],
+        className = "",
+        isFocused = false,
+        placeholder = "",
+        ...props
+    },
     ref
 ) {
     const localRef = useRef(null);
@@ -20,7 +26,7 @@ export default forwardRef(function SelectOption(
         <select
             {...props}
             className={
-                'rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-indigo-600 dark:focus:ring-indigo-600 ' +
+                "rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-indigo-600 dark:focus:ring-indigo-600 " +
                 className
             }
             ref={localRef}
@@ -28,9 +34,9 @@ export default forwardRef(function SelectOption(
             <option value="" disabled hidden>
                 {placeholder}
             </option>
-            {options.map((category) => (
-                <option key={category.id} value={category.id}>
-                    {category.name}
+            {options.map((option, index) => (
+                <option key={option.key || index} value={option.key}>
+                    {option.label}
                 </option>
             ))}
         </select>

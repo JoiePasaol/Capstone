@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
+import { Head, useForm } from "@inertiajs/react";
 import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -15,13 +15,54 @@ import TextInput from "@/Components/TextInput";
 import SelectOption from "@/Components/SelectOption";
 import SecondaryButton from "@/Components/SecondaryButton";
 import Dropdown from "@/Components/Dropdown";
+import axios from "axios"; 
 
-export default function ItemList({ categories }) {
+
+
+export default function ItemList() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const { data, setData, post, processing, errors, reset } = useForm({
+        image: null,
+        categories: "",
+        brand: "",
+        items: "",
+        quantity: "",
+        price: "",
+    });
+
+    const [items, setItems] = useState([]);
+    
 
     const toggleDrawer = (open) => {
         setIsDrawerOpen(open);
     };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post(route("items.store"), {
+            onSuccess: () => {
+                toggleDrawer(false);
+                reset();
+                fetchItems(); // Refresh items after adding a new one
+            },
+        });
+    };
+
+    const fetchItems = async () => {
+        try {
+            const response = await axios.get(route("items.index"));
+            console.log(response.data); // Debugging: Check the response structure
+            setItems(response.data.items); 
+        } catch (error) {
+            console.error("Error fetching items:", error);
+        }
+    };
+
+    // Fetch items when component mounts
+    useEffect(() => {
+        fetchItems();
+    }, []); 
+
 
     const headers = [
         {
@@ -29,6 +70,8 @@ export default function ItemList({ categories }) {
             key: "select-all",
         },
         { label: "#", key: "index" },
+        { label: "Name", key: "name" },
+        { label: "Department", key: "deparment" },
         { label: "Images", key: "image" },
         { label: "Categories", key: "categories" },
         { label: "Brand", key: "brand" },
@@ -36,34 +79,34 @@ export default function ItemList({ categories }) {
         { label: "Quantity", key: "quantity" },
         { label: "Price", key: "price" },
         { label: "Timestamp", key: "Created At" },
-        { label: "Timestamp", key: "Updated At" },
     ];
 
-    const rows = [
-        {
-            select: <Checkbox />,
-            index: 1,
-            image: "sample.png",
-            categories: "Electronics",
-            brand: "Sony",
-            items: "Headphones",
-            quantity: 10,
-            price: "$199.99",
-            created_at: "2023-10-01T12:34:56Z",
-            updated_at: "2023-10-01T12:34:56Z",
-        },
-        {
-            "select-all": <Checkbox />,
-            index: 2,
-            image: "sample.jpg",
-            categories: "Clothing",
-            brand: "Nike",
-            items: "Running Shoes",
-            quantity: 5,
-            price: "$120.00",
-            created_at: "2023-10-01T12:34:56Z",
-            updated_at: "2023-10-01T12:34:56Z",
-        },
+  
+    const rows = items.map((item, index) => ({
+        select: <Checkbox />,
+        index: index + 1,
+        name: item.user?.firstname ?? "N/A",  // Ensure user data exists
+        department: item.user?.department ?? "N/A",
+        image: item.image ? (
+            <div className="h-12 w-12 rounded-full overflow-hidden">
+                <img 
+                    src={item.image.startsWith('http') ? item.image : `/storage/${item.image}`} 
+                    alt="Item" 
+                    className="h-full w-full object-cover" 
+                />
+            </div>
+        ) : "No Image",
+        categories: item.categories ?? "N/A",
+        brand: item.brand ?? "N/A",
+        items: item.items ?? "N/A",
+        quantity: item.quantity ?? 0,
+        price: item.price ? `$${item.price}` : "N/A",
+        created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "N/A",
+    }));
+
+    const selectOption = [
+        { label: "HR", key: "hr" },
+        { label: "IT", key: "it" },
     ];
 
     const actions = (row) => (
@@ -130,71 +173,100 @@ export default function ItemList({ categories }) {
                 toggleDrawer={toggleDrawer}
                 title="Add Item"
             >
-                <div className="mt-2">
-                    <InputLabel htmlFor="image" value="Image" />
-                    <div className="relative mt-2">
-                        <TextInput
-                            id="image"
-                            type="file"
-                            className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                        />
-                        <div className="block w-full h-10 rounded-sm ring-1 ring-gray-300 dark:ring-gray-600  dark:bg-gray-900  flex items-center text-gray-700 dark:text-gray-300">
-                            <span className="text-sm pl-2">Select a file</span>
+                <form onSubmit={handleSubmit}>
+                    <div className="mt-2">
+                        <InputLabel htmlFor="image" value="Image" />
+                        <div className="relative mt-2">
+                            <TextInput
+                                id="image"
+                                type="file"
+                                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                onChange={(e) =>
+                                    setData("image", e.target.files[0])
+                                }
+                            />
+                            <div className="block w-full h-10 rounded-sm ring-1 ring-gray-300 dark:ring-gray-600  dark:bg-gray-900  flex items-center text-gray-700 dark:text-gray-300">
+                                <span className="text-sm pl-2">
+                                    Select a file
+                                </span>
+                            </div>
                         </div>
+                        <InputError message={errors.image} className="mt-2" />
                     </div>
-                    <InputError className="mt-2" />
-                </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="categories" value="Categories" />
-                    <SelectOption
-                        id="category"
-                        className="mt-2 block w-full h-10 rounded-sm"
-                        placeholder="Select a category"
-                        options={categories}
-                   />
-                       
-                
-                    <InputError className="mt-2" />
-                </div>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="categories" value="Categories" />
+                        <SelectOption
+                            id="categories"
+                            className="mt-2 block w-full h-10 rounded-sm"
+                            placeholder="Select a category"
+                            options={selectOption}
+                            value={data.categories} // Ensure value is set
+                            onChange={(e) =>
+                                setData("categories", e.target.value)
+                            }
+                        />
+                        <InputError
+                            message={errors.categories}
+                            className="mt-2"
+                        />
+                    </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="brand" value="Brand" />
-                    <TextInput
-                        id="brand"
-                        className="mt-2 block w-full h-10 rounded-sm"
-                    />
-                    <InputError className="mt-2" />
-                </div>
-                <div className="mt-4">
-                    <InputLabel htmlFor="items" value="Items" />
-                    <TextInput
-                        id="items"
-                        className="mt-2 block w-full h-10 rounded-sm"
-                    />
-                    <InputError className="mt-2" />
-                </div>
-                <div className="mt-4">
-                    <InputLabel htmlFor="quantity" value="Quantity" />
-                    <TextInput
-                        id="quantity"
-                        className="mt-2 block w-full h-10 rounded-sm"
-                    />
-                    <InputError className="mt-2" />
-                </div>
-                <div className="mt-4">
-                    <InputLabel htmlFor="price" value="Price" />
-                    <TextInput
-                        id="price"
-                        className="mt-2 block w-full h-10 rounded-sm"
-                    />
-                    <InputError className="mt-2" />
-                </div>
-                <div className="mt-5">
-                    <SecondaryButton className="w-full h-10 rounded-sm">
-                        Save
-                    </SecondaryButton>
-                </div>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="brand" value="Brand" />
+                        <TextInput
+                            id="brand"
+                            className="mt-2 block w-full h-10 rounded-sm"
+                            value={data.brand}
+                            onChange={(e) => setData("brand", e.target.value)}
+                        />
+                        <InputError message={errors.brand} className="mt-2" />
+                    </div>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="items" value="Items" />
+                        <TextInput
+                            id="items"
+                            className="mt-2 block w-full h-10 rounded-sm"
+                            value={data.items}
+                            onChange={(e) => setData("items", e.target.value)}
+                        />
+                        <InputError message={errors.items} className="mt-2" />
+                    </div>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="quantity" value="Quantity" />
+                        <TextInput
+                            id="quantity"
+                            className="mt-2 block w-full h-10 rounded-sm"
+                            value={data.quantity}
+                            onChange={(e) =>
+                                setData("quantity", e.target.value)
+                            }
+                        />
+                        <InputError
+                            message={errors.quantity}
+                            className="mt-2"
+                        />
+                    </div>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="price" value="Price" />
+                        <TextInput
+                            id="price"
+                            className="mt-2 block w-full h-10 rounded-sm"
+                            value={data.price}
+                            onChange={(e) => setData("price", e.target.value)}
+                        />
+                        <InputError message={errors.price} className="mt-2" />
+                    </div>
+                    <div className="mt-5">
+                        <SecondaryButton
+                            type="submit"
+                            className="w-full h-10 rounded-sm"
+                            disabled={processing}
+                        >
+                            Save
+                        </SecondaryButton>
+                    </div>
+                </form>
             </Drawer>
         </AuthenticatedLayout>
     );

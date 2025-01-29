@@ -52,6 +52,10 @@ export default function Categories({ categories }) {
     }, []);
 
     const updateSelectAllState = useCallback(() => {
+        if (rows.length === 0) {
+            setIsSelectAllChecked(false);
+            return;
+        }
         const allChecked = rows.every((row) => row.checkbox);
         setIsSelectAllChecked(allChecked);
     }, [rows]);
@@ -94,7 +98,7 @@ export default function Categories({ categories }) {
             setSuccessMessage("Category successfully added!");
             setIsSuccessDialogOpen(true);
 
-            // Reload the page to reflect the new category in the ItemList component
+           
             reload();
         } catch (error) {
             console.error("Failed to add category:", error);
