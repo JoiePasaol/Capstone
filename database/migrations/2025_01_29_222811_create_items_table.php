@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Ensure a user relation
-            $table->string('firstname')->nullable();  
-        $table->string('department')->nullable(); 
+            $table->string('name');
+            $table->string('department')->nullable(); 
             $table->string('image')->nullable();
             $table->string('categories');
             $table->string('brand');
@@ -27,5 +27,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('items');
+
     }
 };

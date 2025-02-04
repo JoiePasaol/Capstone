@@ -10,12 +10,17 @@ class CategoryController extends Controller
     /**
      * Display a listing of categories.
      */
-    public function index()
+    public function index(Request $request)
     {
         // Fetch categories from the database
         $categories = Category::all(['id', 'name']);
-        
-        // Return the categories to the Inertia page
+    
+        // Check if the request expects JSON (API call)
+        if ($request->wantsJson()) {
+            return response()->json(['categories' => $categories]);
+        }
+    
+        // Otherwise, return to the Inertia page
         return inertia('Categories', ['categories' => $categories]);
     }
 

@@ -1,9 +1,4 @@
-import {
-    Dialog,
-    DialogPanel,
-    Transition,
-    TransitionChild,
-} from '@headlessui/react';
+import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
 
 export default function Modal({
     children,
@@ -32,8 +27,9 @@ export default function Modal({
                 as="div"
                 id="modal"
                 className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
-                onClose={close}
+                onClose={close} // Close the modal when clicking outside (triggered by background overlay)
             >
+                {/* Background overlay that closes the modal when clicked */}
                 <TransitionChild
                     enter="ease-out duration-300"
                     enterFrom="opacity-0"
@@ -42,9 +38,13 @@ export default function Modal({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="absolute inset-0 bg-gray-500/75 dark:bg-gray-900/75" />
+                    <div
+                        className="absolute inset-0 bg-gray-500/75 dark:bg-gray-900/75"
+                        onClick={close}  // Close modal when clicking outside the modal content
+                    />
                 </TransitionChild>
 
+                {/* Modal Content */}
                 <TransitionChild
                     enter="ease-out duration-300"
                     enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -56,7 +56,7 @@ export default function Modal({
                     <DialogPanel
                         className={`mb-6 transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full dark:bg-gray-800 ${maxWidthClass}`}
                     >
-                        {children}
+                        {children}  {/* Dynamic content inside the modal */}
                     </DialogPanel>
                 </TransitionChild>
             </Dialog>

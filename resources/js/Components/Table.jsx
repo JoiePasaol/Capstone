@@ -36,7 +36,7 @@ const Table = ({ headers, rows, actions }) => {
                                 return (
                                     <td
                                         key={index}
-                                        className="border border-gray-300 dark:border-gray-600 px-4 py-2 whitespace-nowrap"
+                                        className="border border-gray-400 dark:border-gray-600 px-4 py-2 whitespace-nowrap"
                                     >
                                         {key === "created_at" || key === "updated_at"
                                             ? new Date(row[key]).toLocaleString() 
@@ -45,7 +45,7 @@ const Table = ({ headers, rows, actions }) => {
                                 );
                             })}
                             {actions && (
-                                <td className="border border-gray-300 dark:border-gray-700 px-2 py-2 whitespace-nowrap">
+                                <td className="border border-gray-400 dark:border-gray-600 px-2 py-2 whitespace-nowrap">
                                     <div className="flex items-center gap-2 justify-center">
                                         {actions(row)}
                                     </div>

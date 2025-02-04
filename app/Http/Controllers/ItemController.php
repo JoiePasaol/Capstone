@@ -26,10 +26,13 @@ class ItemController extends Controller
             'price' => 'required|numeric',
         ]);
     
+        $user = Auth::user();
+        $fullName = trim($user->firstname . ' ' . $user->lastname); // Combine firstname and lastname
+    
         $item = Item::create([
-            'user_id' => auth()->id(),
-            'firstname' => auth()->user()->firstname ?? 'N/A',
-            'department' => auth()->user()->department ?? 'N/A',
+            'user_id' => $user->id,
+            'name' => $fullName, 
+            'department' => $user->department ?? 'N/A',
             'image' => $request->file('image') ? $request->file('image')->store('images', 'public') : null,
             'categories' => $request->categories,
             'brand' => $request->brand,
@@ -40,4 +43,143 @@ class ItemController extends Controller
     
         return redirect()->route('item-list')->with('success', 'Item added successfully.');
     }
+    
+    public function destroy($id)
+    {
+        $item = Item::findOrFail($id);
+    
+        // Check if the item has an image and delete it from storage
+        if ($item->image && \Storage::disk('public')->exists($item->image)) {
+            \Storage::disk('public')->delete($item->image);
+        }
+    
+        // Delete the item from the database
+        $item->delete();
+    
+        return response()->json(['message' => 'Item deleted successfully.']);
+    }
+
+   public function edit($id)
+    {
+        // Get the item by ID
+        $item = Item::findOrFail($id);
+
+        return response()->json(['item' => $item]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        // Validate incoming request
+        $validatedData = $request->validate([
+            'image' => 'nullable|image|max:2048',
+            'categories' => 'nullable|string',
+            'brand' => 'nullable|string',
+            'items' => 'nullable|string',
+            'quantity' => 'nullable|integer',
+            'price' => 'nullable|numeric',
+        ]);
+
+        // Find the item to update
+        $item = Item::findOrFail($id);
+
+        // Update item fields
+        $item->categories = $validatedData['categories'];
+        $item->brand = $validatedData['brand'];
+        $item->items = $validatedData['items'];
+        $item->quantity = $validatedData['quantity'];
+        $item->price = $validatedData['price'];
+
+        // Handle image upload if present
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('items', 'public');
+            $item->image = $imagePath;
+        }
+
+        $item->save();
+
+        return redirect()->route('item-list')->with('success', 'Item successfully updated!');
+    }
+
+
+    public function import(Request $request)
+    {
+        try {
+            \Log::debug('Import request received:', $request->all());
+    
+            $user = Auth::user();
+            $data = $request->input('data');
+    
+            // Define required columns
+            $requiredHeaders = ['name', 'department', 'categories', 'brand', 'items', 'quantity', 'price'];
+    
+            if (!$data || !is_array($data)) {
+                return response()->json(['message' => 'Invalid CSV data format.'], 400);
+            }
+    
+            // Get headers from the first row
+            $headers = array_keys($data[0] ?? []);
+    
+            // Check if all required columns are present
+            foreach ($requiredHeaders as $requiredColumn) {
+                if (!in_array($requiredColumn, $headers)) {
+                    return response()->json([
+                        'message' => 'Import failed. Please check the CSV format and try again.'
+                    ], 400);
+                }
+            }
+    
+            $inserted = 0;
+            foreach ($data as $row) {
+                \Log::debug('Processing row:', $row);
+    
+                // Ensure only necessary fields are processed
+                $cleanedRow = array_filter($row, function ($key) {
+                    return !in_array($key, ['id', 'user_id', 'updated_at']);
+                }, ARRAY_FILTER_USE_KEY);
+    
+                // Validate required fields
+                if (!isset($cleanedRow['categories'], $cleanedRow['brand'], $cleanedRow['items'], $cleanedRow['name'])) {
+                    \Log::warning('Skipping row due to missing required fields:', $row);
+                    continue;
+                }
+    
+                // Check if item already exists
+                $exists = Item::where([
+                    ['categories', $cleanedRow['categories']],
+                    ['brand', $cleanedRow['brand']],
+                    ['items', $cleanedRow['items']],
+                    ['department', $cleanedRow['department']],
+                    ['name', $cleanedRow['name']]
+                ])->exists();
+    
+                if (!$exists) {
+                    Item::create([
+                        'user_id' => $user->id,
+                        'name' => $cleanedRow['name'] ?? 'Unknown',
+                        'department' => $cleanedRow['department'] ?? 'N/A',
+                        'categories' => $cleanedRow['categories'] ?? '',
+                        'brand' => $cleanedRow['brand'] ?? '',
+                        'items' => $cleanedRow['items'] ?? '',
+                        'quantity' => intval($cleanedRow['quantity'] ?? 0),
+                        'price' => floatval($cleanedRow['price'] ?? 0),
+                        'created_at' => $cleanedRow['created_at'] ?? now(),
+                    ]);
+                    $inserted++;
+                } else {
+                    \Log::info('Duplicate item skipped:', $cleanedRow);
+                }
+            }
+    
+            return response()->json([
+                'message' => "$inserted new items imported successfully.",
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Import failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Import failed. Please try again later.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
 }

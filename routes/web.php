@@ -61,6 +61,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/items', [ItemController::class, 'store'])->name('items.store');
     Route::get('/items', [ItemController::class, 'index'])->name('items.index');
+    Route::delete('/items/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
+    Route::get('items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
+    Route::put('items/{id}', [ItemController::class, 'update'])->name('items.update');
+    Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
+
+
+
+
+
+    
+    
 
     // Update User
     Route::put('/api/users/{id}', [UserController::class, 'update'])->name('users.update');
