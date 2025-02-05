@@ -69,10 +69,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 
-
-    
-    
-
     // Update User
     Route::put('/api/users/{id}', [UserController::class, 'update'])->name('users.update');
 

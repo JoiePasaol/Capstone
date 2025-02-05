@@ -10,12 +10,23 @@ class ItemController extends Controller
 {
     public function index()
     {
-        $items = Item::with('user')->get();
+        $items = Item::with('user')
+                     ->orderBy('created_at', 'desc') 
+                     ->get();
+    
+    
+        $items->each(function($item) {
+            if ($item->image) {
+             
+                $item->image = url('/storage/' . $item->image);
+            }
+        });
+    
         return response()->json([
             'items' => $items,
         ]);
     }
-
+    
     public function store(Request $request)
     {
         $request->validate([
@@ -24,16 +35,24 @@ class ItemController extends Controller
             'items' => 'required|string',
             'quantity' => 'required|integer',
             'price' => 'required|numeric',
+            'image' => 'nullable|image|max:2048',
         ]);
     
         $user = Auth::user();
-        $fullName = trim($user->firstname . ' ' . $user->lastname); // Combine firstname and lastname
+        $fullName = trim($user->firstname . ' ' . $user->lastname);
+    
+        // Check if the image exists in the request and store it with its original name
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');  
+        }
     
         $item = Item::create([
             'user_id' => $user->id,
-            'name' => $fullName, 
+            'name' => $fullName,
             'department' => $user->department ?? 'N/A',
-            'image' => $request->file('image') ? $request->file('image')->store('images', 'public') : null,
+            'image' => $imagePath,
             'categories' => $request->categories,
             'brand' => $request->brand,
             'items' => $request->items,
@@ -43,6 +62,7 @@ class ItemController extends Controller
     
         return redirect()->route('item-list')->with('success', 'Item added successfully.');
     }
+    
     
     public function destroy($id)
     {
@@ -69,7 +89,7 @@ class ItemController extends Controller
 
     public function update(Request $request, $id)
     {
-        // Validate incoming request
+        // Validate the request
         $validatedData = $request->validate([
             'image' => 'nullable|image|max:2048',
             'categories' => 'nullable|string',
@@ -78,28 +98,41 @@ class ItemController extends Controller
             'quantity' => 'nullable|integer',
             'price' => 'nullable|numeric',
         ]);
-
-        // Find the item to update
+    
+        // Find the item by ID
         $item = Item::findOrFail($id);
-
-        // Update item fields
-        $item->categories = $validatedData['categories'];
-        $item->brand = $validatedData['brand'];
-        $item->items = $validatedData['items'];
-        $item->quantity = $validatedData['quantity'];
-        $item->price = $validatedData['price'];
-
-        // Handle image upload if present
+    
+        // Handle the image upload if a new image is provided
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('items', 'public');
-            $item->image = $imagePath;
+            // Delete the old image from storage if it exists
+            if ($item->image && \Storage::disk('public')->exists($item->image)) {
+                \Storage::disk('public')->delete($item->image);
+            }
+    
+            // Store the new image with its original name
+            $image = $request->file('image');
+            $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
+            $item->image = $imagePath; // Save the new image path
         }
-
+    
+        // Update the other fields (keep existing values if not provided)
+        $item->categories = $validatedData['categories'] ?? $item->categories;
+        $item->brand = $validatedData['brand'] ?? $item->brand;
+        $item->items = $validatedData['items'] ?? $item->items;
+        $item->quantity = $validatedData['quantity'] ?? $item->quantity;
+        $item->price = $validatedData['price'] ?? $item->price;
+    
+        // Save the updated item
         $item->save();
-
-        return redirect()->route('item-list')->with('success', 'Item successfully updated!');
+    
+        // Return response with success message and the updated item
+        return response()->json([
+            'message' => 'Item successfully updated!',
+            'item' => $item, // Return the updated item, including the new image path
+        ]);
     }
-
+    
+    
 
     public function import(Request $request)
     {

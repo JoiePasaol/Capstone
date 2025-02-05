@@ -5,17 +5,18 @@ import TextInput from "@/Components/TextInput";
 import SecondaryButton from "@/Components/SecondaryButton";
 import Checkbox from "@/Components/Checkbox";
 import Table from "@/Components/Table";
-import TrueButton from "@/Components/TrueButton";
-import FalseButton from "@/Components/FalseButton";
+import SettingsIcon from "@mui/icons-material/Settings";
+import Dropdown from "@/Components/Dropdown";
 import Drawer from "@/Components/Drawer";
 import SuccessDialog from "@/Components/SuccessDialog";
 import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
-import { usePage } from '@inertiajs/react'; 
-
+import { usePage } from "@inertiajs/react";
 
 export default function Categories({ categories }) {
+    // State Management
+
     const { reload } = usePage();
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -34,6 +35,9 @@ export default function Categories({ categories }) {
     const [dialogTitle, setDialogTitle] = useState("");
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [isSelectAllChecked, setIsSelectAllChecked] = useState(false);
+    const [processing, setProcessing] = useState(false);
+
+    // Function Definitions
 
     const handleSelectAllChange = useCallback(() => {
         const newSelectAllState = !isSelectAllChecked;
@@ -79,6 +83,8 @@ export default function Categories({ categories }) {
         { label: "Categories", key: "categories" },
     ];
 
+    // Add Category Logic
+
     const handleAddCategory = async () => {
         if (category.trim() === "") return;
 
@@ -98,17 +104,21 @@ export default function Categories({ categories }) {
             setSuccessMessage("Category successfully added!");
             setIsSuccessDialogOpen(true);
 
-           
             reload();
         } catch (error) {
             console.error("Failed to add category:", error);
         }
     };
 
+    // Edit Category Logic
+
     const handleEditClick = (category) => {
-        const categoryToEdit = categories.find((cat) => cat.id === category.id);
+        const categoryToEdit = rows.find((row) => row.id === category.id);
         if (categoryToEdit) {
-            setEditingCategory(categoryToEdit);
+            setEditingCategory({
+                id: categoryToEdit.id,
+                name: categoryToEdit.categories,
+            });
             setIsDrawerOpen(true);
         }
     };
@@ -116,31 +126,51 @@ export default function Categories({ categories }) {
     const handleSaveCategory = async () => {
         if (!editingCategory || editingCategory.name.trim() === "") return;
 
+        setProcessing(true);
+
         try {
-            await axios.put(route("categories.update", editingCategory.id), {
-                name: editingCategory.name,
-            });
-            setRows((prevRows) =>
-                prevRows.map((row) =>
-                    row.id === editingCategory.id
-                        ? { ...row, categories: editingCategory.name }
-                        : row
-                )
+            const response = await axios.put(
+                route("categories.update", editingCategory.id),
+                {
+                    name: editingCategory.name,
+                }
             );
-            setEditingCategory(null);
-            setIsDrawerOpen(false);
-            setSuccessMessage("Category successfully updated!");
-            setIsSuccessDialogOpen(true);
+
+            if (response.status === 200) {
+                setRows((prevRows) =>
+                    prevRows.map((row) =>
+                        row.id === editingCategory.id
+                            ? { ...row, categories: editingCategory.name }
+                            : row
+                    )
+                );
+
+                categories = categories.map((cat) =>
+                    cat.id === editingCategory.id
+                        ? { ...cat, name: editingCategory.name }
+                        : cat
+                );
+
+                setEditingCategory(null);
+                setIsDrawerOpen(false);
+                setSuccessMessage("Category successfully updated!");
+                setIsSuccessDialogOpen(true);
+            }
         } catch (error) {
             console.error("Failed to update category:", error);
+        } finally {
+            setProcessing(false);
         }
     };
 
+    // Delete Category Logic
+
     const handleDeleteClick = (category) => {
-        setSelectedCategory([category]); 
+        setSelectedCategory([category]);
         setDialogTitle("Are you sure you want to delete this category?");
         setIsDialogOpen(true);
     };
+
     const handleConfirmDelete = async () => {
         if (!selectedCategory || selectedCategory.length === 0) return;
 
@@ -155,7 +185,7 @@ export default function Categories({ categories }) {
                     );
                     return updatedRows.map((row, index) => ({
                         ...row,
-                        index: index + 1, 
+                        index: index + 1,
                     }));
                 });
                 setSuccessMessage("Category successfully deleted!");
@@ -168,6 +198,7 @@ export default function Categories({ categories }) {
             setSelectedCategory(null);
         }
     };
+
     const handleBulkDeleteClick = () => {
         const selectedCategories = rows.filter((row) => row.checkbox);
         if (selectedCategories.length < 2) return;
@@ -175,9 +206,10 @@ export default function Categories({ categories }) {
         setDialogTitle(
             `Are you sure you want to delete these (${selectedCategories.length}) categories?`
         );
-        setSelectedCategory(selectedCategories); 
+        setSelectedCategory(selectedCategories);
         setIsDialogOpen(true);
     };
+
     const handleBulkDeleteConfirm = async () => {
         if (!selectedCategory || selectedCategory.length === 0) return;
 
@@ -193,11 +225,11 @@ export default function Categories({ categories }) {
                     );
                     return updatedRows.map((row, index) => ({
                         ...row,
-                        index: index + 1, 
+                        index: index + 1,
                     }));
                 });
                 setSuccessMessage(
-                    `${selectedCategory.length} categories successfully deleted!`
+                    `(${selectedCategory.length}) categories successfully deleted!`
                 );
                 setIsSuccessDialogOpen(true);
             }
@@ -214,15 +246,33 @@ export default function Categories({ categories }) {
         setIsDialogOpen(false);
     };
 
+    // Action Buttons for Categories
     const actions = useCallback(
         (category) => (
             <div className="flex justify-center" key={`actions-${category.id}`}>
-                <TrueButton onClick={() => handleEditClick(category)}>
-                    Edit
-                </TrueButton>
-                <FalseButton onClick={() => handleDeleteClick(category)}>
-                    Delete
-                </FalseButton>
+                <Dropdown>
+                    <Dropdown.Trigger>
+                        <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
+                    </Dropdown.Trigger>
+                    <Dropdown.Content>
+                    <Dropdown.Link
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleEditClick(category);
+                            }}
+                        >
+                            Edit
+                        </Dropdown.Link>
+                        <Dropdown.Link
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteClick(category);
+                            }}
+                        >
+                            Delete
+                        </Dropdown.Link>
+                    </Dropdown.Content>
+                </Dropdown>
             </div>
         ),
         [handleEditClick, handleDeleteClick]
@@ -241,7 +291,7 @@ export default function Categories({ categories }) {
             <Head title="Categories" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2  lg:grid-cols-custom overflow-hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-custom overflow-hidden">
                         <div className="py-4 px-3">
                             <div className="h-60 bg-white ring-1 ring-gray-400 dark:ring-gray-400 sm:rounded-lg dark:bg-gray-800">
                                 <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl font-medium text-gray-500 dark:text-gray-300">
@@ -329,10 +379,12 @@ export default function Categories({ categories }) {
                         />
                         <div className="mt-5">
                             <SecondaryButton
+                                type="submit"
                                 className="w-full h-10 rounded-sm"
                                 onClick={handleSaveCategory}
+                                disabled={processing}
                             >
-                                Save Category
+                                {processing ? "Saving..." : "Save"}
                             </SecondaryButton>
                         </div>
                     </>

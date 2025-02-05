@@ -2,8 +2,8 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head } from "@inertiajs/react";
 import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
-import TrueButton from "@/Components/TrueButton";
-import FalseButton from "@/Components/FalseButton";
+import SettingsIcon from "@mui/icons-material/Settings";
+import Dropdown from "@/Components/Dropdown";
 import Drawer from "@/Components/Drawer";
 import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
@@ -14,10 +14,13 @@ import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Pagination from "@/Components/Pagination";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 
 const UserManagement = () => {
+
+    //State Management
+
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -31,35 +34,17 @@ const UserManagement = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // Toggles the drawer state for user editing
+    //Drawer & Edit Handling
+
     const toggleDrawer = (state) => setIsDrawerOpen(state);
 
-    // Debounce function to delay the search operation and optimize performance
+    //Search Handling
+
     const debounceSearch = (term) => {
         const timer = setTimeout(() => onSearch(term), 300);
         return () => clearTimeout(timer);
     };
 
-    // Fetch users data from the API when the component mounts
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await axios.get("/api/users?status=approved");
-                setUsers(response.data);
-                setFilteredUsers(response.data);
-            } catch (error) {
-                console.error("Error fetching users:", error);
-            }
-        };
-        fetchUsers();
-    }, []);
-
-    // Calls debounce function whenever the search term changes
-    useEffect(() => {
-        debounceSearch(searchTerm);
-    }, [searchTerm]);
-
-    // Filters users based on the provided search term
     const onSearch = (term) => {
         if (term === "") {
             setFilteredUsers(users);
@@ -78,14 +63,33 @@ const UserManagement = () => {
         }
     };
 
-    // Handles edit action when a user is selected
+    //Fetching Data
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await axios.get("/api/users?status=approved");
+                setUsers(response.data);
+                setFilteredUsers(response.data);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    useEffect(() => {
+        debounceSearch(searchTerm);
+    }, [searchTerm]);
+
+    //User Actions
+
     const handleEditClick = (user) => {
         const userToEdit = users.find((u) => u.id === user.id);
         setSelectedUser(userToEdit || {});
         setIsDrawerOpen(true);
     };
 
-    // Handles individual checkbox selection for users
     const handleCheckboxChange = (user) => {
         setSelectedUsers((prev) => {
             const isSelected = prev.some((u) => u.id === user.id);
@@ -95,19 +99,15 @@ const UserManagement = () => {
         });
     };
 
-    // Handles "select all" checkbox functionality
     const handleSelectAll = (e) => {
         setSelectedUsers(e.target.checked ? filteredUsers : []);
     };
 
-    // Prepares for user deletion by setting dialog title and selected users
     const handleDeleteClick = (user = null) => {
-        // If a single user is passed, set the dialog message for that user
         if (user) {
-            setSelectedUsers([user]); // Single user selection
+            setSelectedUsers([user]); 
             setDialogTitle("Are you sure you want to delete this user?");
         } else {
-            // If no user is passed, it's a multi-delete
             const userCount = selectedUsers.length;
             setDialogTitle(
                 `Are you sure you want to delete these ${userCount} user${
@@ -118,7 +118,8 @@ const UserManagement = () => {
         setIsDialogOpen(true);
     };
 
-    // Handles the confirmed deletion of selected users
+    //Deleting Users
+
     const handleConfirmDelete = async () => {
         try {
             await Promise.all(
@@ -136,10 +137,13 @@ const UserManagement = () => {
                     (user) => !selectedUsers.some((u) => u.id === user.id)
                 )
             );
+    
+      
+            const userCount = selectedUsers.length;
             setSuccessMessage(
-                `${selectedUsers.length} user${
-                    selectedUsers.length > 1 ? "s" : ""
-                } deleted successfully.`
+                userCount === 1
+                    ? "User successfully deleted!"
+                    : `(${userCount}) Users successfully deleted!`
             );
             setIsSuccessDialogOpen(true);
         } catch (error) {
@@ -149,11 +153,11 @@ const UserManagement = () => {
             setSelectedUsers([]);
         }
     };
-
-    // Cancels the delete confirmation dialog
+    
     const handleCancelDelete = () => setIsDialogOpen(false);
 
-    // Handles saving updated user data to the server
+    // 7. Saving Edited User
+
     const handleSaveClick = async () => {
         try {
             const response = await axios.put(
@@ -182,19 +186,20 @@ const UserManagement = () => {
         }
     };
 
-    // Options for department dropdown
+    //Dropdown Options
+
     const departmentOptions = [
         { value: "HR", label: "HR" },
         { value: "IT", label: "IT" },
     ];
 
-    // Options for role dropdown
     const roleOptions = [
         { value: "Admin", label: "Admin" },
         { value: "Basic", label: "Basic" },
     ];
 
-    // Defines table headers, including a select-all checkbox
+    //Table Headers & Rows
+
     const headers = [
         {
             label: (
@@ -217,10 +222,8 @@ const UserManagement = () => {
         { label: "Role", key: "role" },
     ];
 
-    // Calculates total number of pages for pagination
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
-    // Paginates the filtered users for display
     const paginatedRows = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         return filteredUsers
@@ -243,11 +246,44 @@ const UserManagement = () => {
             }));
     }, [filteredUsers, selectedUsers, currentPage]);
 
-    // Handles changing the current page for pagination
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages) return;
         setCurrentPage(newPage);
     };
+
+    const actions = useCallback(
+        (user) => (
+            <div className="flex justify-center" key={`actions-${user.id}`}>
+                <Dropdown>
+                    <Dropdown.Trigger>
+                        <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
+                    </Dropdown.Trigger>
+                    <Dropdown.Content>
+                        <Dropdown.Link
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleEditClick(user);
+                            }}
+                        >
+                            Edit
+                        </Dropdown.Link>
+                        <Dropdown.Link
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteClick(user);
+                            }}
+                        >
+                            Delete
+                        </Dropdown.Link>
+                    </Dropdown.Content>
+                </Dropdown>
+            </div>
+        ),
+        [handleEditClick, handleDeleteClick]
+    );
+    
+
+    //Returning the JSX Layout
 
     return (
         <AuthenticatedLayout
@@ -295,27 +331,7 @@ const UserManagement = () => {
                                 <Table
                                     headers={headers}
                                     rows={paginatedRows}
-                                    actions={(user) => (
-                                        <div
-                                            className="flex justify-center shrink-0"
-                                            key={`actions-${user.id}`}
-                                        >
-                                            <TrueButton
-                                                onClick={() =>
-                                                    handleEditClick(user)
-                                                }
-                                            >
-                                                Edit
-                                            </TrueButton>
-                                            <FalseButton
-                                                onClick={() =>
-                                                    handleDeleteClick(user)
-                                                }
-                                            >
-                                                Delete
-                                            </FalseButton>
-                                        </div>
-                                    )}
+                                    actions={actions}
                                 />
                             ) : (
                                 <div className="flex items-center justify-center h-48">
@@ -335,6 +351,7 @@ const UserManagement = () => {
                 </div>
             </div>
 
+            {/* Drawer for User */}
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
@@ -442,6 +459,7 @@ const UserManagement = () => {
                 )}
             </Drawer>
 
+            {/* Confirmation Dialog */}
             <ConfirmationDialog
                 isOpen={isDialogOpen}
                 onConfirm={handleConfirmDelete}

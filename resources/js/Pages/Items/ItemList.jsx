@@ -25,14 +25,16 @@ import axios from "axios";
 
 export default function ItemList() {
 
+    //State Management
+
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false); 
+    const [isEditMode, setIsEditMode] = useState(false);
     const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
     const [confirmMessage, setConfirmMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [deleteTarget, setDeleteTarget] = useState(null);
-    const { data, setData, post, put, reset, processing, errors } = useForm({
+    const { data, setData, post, reset, errors } = useForm({
         image: null,
         categories: "",
         brand: "",
@@ -40,7 +42,7 @@ export default function ItemList() {
         quantity: "",
         price: "",
     });
-
+    const [processing, setProcessing] = useState(false);
     const [categories, setCategories] = useState([]);
     const [items, setItems] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,33 +54,33 @@ export default function ItemList() {
     const [selectedItems, setSelectedItems] = useState([]);
     const itemsPerPage = 10;
 
-    
+    //Import/Export Logic
+
     const handleImport = async (data) => {
         console.log("Data being sent to backend:", data);
-    
+
         try {
             const response = await axios.post(route("items.import"), { data });
-    
-            setSuccessMessage(response.data.message || "Item imported successfully!");
-            fetchItems(); // Refresh items after import
+            setSuccessMessage(
+                response.data.message || "Item imported successfully!"
+            );
+            fetchItems(); 
         } catch (error) {
             console.error("Error importing data:", error);
-    
-            // Show an error dialog if the format is incorrect
             setSuccessMessage(
-                error.response?.data?.message || "Import failed. Please check the CSV format and try again."
+                error.response?.data?.message ||
+                    "Import failed. Please check the CSV format and try again."
             );
         } finally {
-            setIsSuccessDialogOpen(true); // Ensure dialog always opens
+            setIsSuccessDialogOpen(true);
         }
     };
-    
-    
-    
 
     const triggerFileInput = () => {
-        document.getElementById("importFile").click(); 
+        document.getElementById("importFile").click();
     };
+
+    //Drawer and Form Submission Logic
 
     const toggleDrawer = (open, isEdit = false, item = null) => {
         setIsDrawerOpen(open);
@@ -93,8 +95,13 @@ export default function ItemList() {
                     items: item.items || "",
                     quantity: item.quantity || "",
                     price: item.price || "",
+                    image: null,
                 });
-                setSelectedFileName(item.image ? item.image : "Select a file");
+
+       
+                setSelectedFileName(
+                    item.image ? item.image.split("/").pop() : "Select a file"
+                );
             } else {
                 reset();
                 setSelectedFileName("Select a file");
@@ -102,41 +109,65 @@ export default function ItemList() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
+        setProcessing(true);
+
+        const formData = new FormData();
+        formData.append("categories", data.categories || "");
+        formData.append("brand", data.brand || "");
+        formData.append("items", data.items || "");
+        formData.append("quantity", data.quantity || 0);
+        formData.append("price", data.price || 0);
+
+        if (data.image instanceof File) {
+            formData.append("image", data.image);
+        }
+
         if (!data.id) {
-            // If no ID is present, create a new item (use POST request)
             post(route("items.store"), {
+                data: formData,
+                headers: { "Content-Type": "multipart/form-data" },
                 onSuccess: () => {
                     toggleDrawer(false);
                     reset();
-                    setSelectedFileName("Select a file");
                     fetchItems();
-
-                    // Show success dialog after adding a new item
-                    setTimeout(() => {
-                        setSuccessMessage("Item successfully added!");
-                        setIsSuccessDialogOpen(true);
-                    }, 100);
+                    setSuccessMessage("Item successfully added!");
+                    setIsSuccessDialogOpen(true);
+                    setProcessing(false); 
+                },
+                onError: () => {
+                    setProcessing(false); 
                 },
             });
         } else {
-            // If an ID is present, update the item (use PUT request)
-            put(route("items.update", { id: data.id }), {
-                onSuccess: () => {
+            formData.append("_method", "PUT");
+
+            axios
+                .post(route("items.update", { id: data.id }), formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                })
+                .then((response) => {
                     toggleDrawer(false);
                     reset();
                     setSelectedFileName("Select a file");
-                    fetchItems();
 
-                    // Show success dialog after update
-                    setTimeout(() => {
-                        setSuccessMessage("Item successfully updated!");
-                        setIsSuccessDialogOpen(true);
-                    }, 100);
-                },
-            });
+              
+                    setItems((prevItems) =>
+                        prevItems.map((item) =>
+                            item.id === data.id ? response.data.item : item
+                        )
+                    );
+
+                    setSuccessMessage("Item successfully updated!");
+                    setIsSuccessDialogOpen(true);
+                    setProcessing(false); 
+                })
+                .catch((error) => {
+                    console.error("Error updating item:", error);
+                    setProcessing(false); 
+                });
         }
     };
 
@@ -149,6 +180,8 @@ export default function ItemList() {
             setSelectedFileName("Select a file");
         }
     };
+
+    //Fetching Data
 
     const fetchItems = async () => {
         try {
@@ -187,6 +220,9 @@ export default function ItemList() {
         fetchItems();
     }, []);
 
+
+    //Filtering Items
+
     useEffect(() => {
         const filtered = items.filter((item) =>
             [
@@ -210,6 +246,8 @@ export default function ItemList() {
         return filteredItems.slice(startIndex, startIndex + itemsPerPage);
     }, [filteredItems, currentPage]);
 
+    //Pagination Logic
+
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages) return;
         setCurrentPage(newPage);
@@ -219,18 +257,21 @@ export default function ItemList() {
         setSelectedItems((prev) =>
             prev.includes(item.id)
                 ? prev.filter((id) => id !== item.id)
-                : [...prev, item.id]
+                : [...prev, item.id] 
         );
     };
 
-    // Select All Checkbox Handler
+    //Select All Checkbox Handler
+
     const handleSelectAll = () => {
-        setSelectedItems(
-            selectedItems.length === paginatedItems.length
-                ? []
-                : paginatedItems.map((item) => item.id)
-        );
+        if (selectedItems.length === filteredItems.length) {
+            setSelectedItems([]);
+        } else {
+            setSelectedItems(filteredItems.map((item) => item.id));
+        }
     };
+
+    //Deleting Items Logic
 
     const confirmDelete = (id = null) => {
         const count = id ? 1 : selectedItems.length;
@@ -256,7 +297,7 @@ export default function ItemList() {
             );
 
             fetchItems();
-            setSelectedItems([]);
+            setSelectedItems([]); 
             setDeleteTarget(null);
 
             setIsConfirmDialogOpen(false);
@@ -274,16 +315,17 @@ export default function ItemList() {
         }
     };
 
+    //Table Headers and Rows Mapping
+
+    const isSelectAllChecked = selectedItems.length === filteredItems.length;
+
     const headers = [
         {
             label: (
-                <Checkbox
-                    checked={
-                        selectedItems.length === paginatedItems.length &&
-                        paginatedItems.length > 0
-                    }
-                    onChange={handleSelectAll}
-                />
+               <Checkbox
+                checked={isSelectAllChecked}
+                onChange={handleSelectAll}
+            />
             ),
             key: "select-all",
         },
@@ -291,15 +333,17 @@ export default function ItemList() {
         { label: "Name", key: "name" },
         { label: "Department", key: "department" },
         { label: "Image", key: "image" },
-        { label: "Categories", key: "categories" },
+        { label: "Category", key: "categories" },
         { label: "Brand", key: "brand" },
-        { label: "Items", key: "items" },
+        { label: "Item", key: "items" },
         { label: "Quantity", key: "quantity" },
-        { label: "Price", key: "price" },
+        { label: "Amount", key: "price" },
         { label: "Timestamp", key: "created_at" },
     ];
 
-    const rows = paginatedItems.map((item, index) => ({
+    const sortedPaginatedItems = [...paginatedItems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const rows = sortedPaginatedItems.map((item, index) => ({
         id: item.id,
         select: (
             <Checkbox
@@ -307,38 +351,26 @@ export default function ItemList() {
                 onChange={() => handleCheckboxChange(item)}
             />
         ),
-        index: index + 1 + (currentPage - 1) * itemsPerPage,
+        index: index + 1 + (currentPage - 1) * itemsPerPage, 
         name: item.name,
         department: item.user?.department ?? "N/A",
-        image: item.image ? (
-            <div className="h-12 w-15 overflow-hidden">
-                <img
-                    src={
-                        item.image.startsWith("http")
-                            ? item.image
-                            : `/storage/${item.image}`
-                    }
-                    alt="Item"
-                    className="h-full w-full object-cover object-center"
-                />
-            </div>
-        ) : (
-            "No Image"
-        ),
+        image: item.image ? item.image.split("/").pop() : "No Image",
         categories: item.categories ?? "N/A",
         brand: item.brand ?? "N/A",
         items: item.items ?? "N/A",
         quantity: item.quantity ?? 0,
-        price: item.price ? `$${item.price}` : "N/A",
-        created_at: item.created_at
-            ? new Date(item.created_at).toLocaleString()
-            : "N/A",
+        price: item.price ? `₱ ${item.price}` : "N/A",
+        created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "N/A",
     }));
+    
+    //Select Option for Categories
 
     const selectOption = categories.map((category) => ({
         label: category.name,
         value: category.name,
     }));
+
+    //Action Buttons for Items
 
     const actions = (row) => (
         <Dropdown>
@@ -349,8 +381,24 @@ export default function ItemList() {
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();
+                        let imageSrc =
+                            row.image !== "No Image"
+                                ? `/storage/images/${row.image}`
+                                : null;
 
-                        setModalContent();
+                        console.log("🚀 Image Debug - Full Image URL:", imageSrc);
+
+                        setModalContent(
+                            <div className="flex justify-center items-center p-4">
+                                {imageSrc ? (
+                                    <img src={imageSrc} />
+                                ) : (
+                                    <span className="text-white text-xl">
+                                        No Image Available!
+                                    </span>
+                                )}
+                            </div>
+                        );
                         setIsModalOpen(true);
                     }}
                 >
@@ -384,8 +432,9 @@ export default function ItemList() {
                 </h2>
             }
         >
-            <Head title="Dashboards" />
+            <Head title="Item List" />
 
+            {/* Main Content */}
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className=" px-6 py-4  overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
@@ -424,7 +473,7 @@ export default function ItemList() {
                                         className="hidden"
                                         onChange={(e) =>
                                             importCSV(e, handleImport)
-                                        } // Handle file upload
+                                        }
                                     />
                                 </div>
                                 <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
@@ -463,6 +512,7 @@ export default function ItemList() {
                 </div>
             </div>
 
+            {/* Drawer for Item */}
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
@@ -486,8 +536,8 @@ export default function ItemList() {
                         </div>
                         <InputError message={errors.image} className="mt-2" />
                     </div>
-                    ;
-                    <div>
+
+                    <div className="mt-4">
                         <InputLabel htmlFor="categories" value="Categories" />
                         <SelectOption
                             id="categories"
@@ -540,7 +590,7 @@ export default function ItemList() {
                         />
                     </div>
                     <div className="mt-4">
-                        <InputLabel htmlFor="price" value="Price" />
+                        <InputLabel htmlFor="price" value="Amount" />
                         <TextInput
                             id="price"
                             className="mt-2 block w-full h-10 rounded-sm"
@@ -555,109 +605,13 @@ export default function ItemList() {
                             className="w-full h-10 rounded-sm"
                             disabled={processing}
                         >
-                            Save
+                            {processing ? "Saving..." : "Save"}
                         </SecondaryButton>
                     </div>
                 </form>
             </Drawer>
 
-            <Drawer
-                isDrawerOpen={isDrawerOpen}
-                toggleDrawer={toggleDrawer}
-                title={isEditMode ? "Edit Item" : "Add Item"}
-            >
-                <form onSubmit={handleSubmit}>
-                    <div className="mt-2">
-                        <InputLabel htmlFor="image" value="Image" />
-                        <div className="relative mt-2">
-                            <TextInput
-                                id="image"
-                                type="file"
-                                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                                onChange={handleImageChange}
-                            />
-                            <div className="block w-full h-10 rounded-sm ring-1 ring-gray-300 dark:ring-gray-600 dark:bg-gray-900 flex items-center text-gray-700 dark:text-gray-300 px-2">
-                                <span className="text-sm truncate">
-                                    {selectedFileName}
-                                </span>
-                            </div>
-                        </div>
-                        <InputError message={errors.image} className="mt-2" />
-                    </div>
-                    ;
-                    <div>
-                        <InputLabel htmlFor="categories" value="Categories" />
-                        <SelectOption
-                            id="categories"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            placeholder="Select a category"
-                            options={selectOption}
-                            value={data.categories} // Ensure value is set
-                            onChange={(e) =>
-                                setData("categories", e.target.value)
-                            }
-                        />
-                        <InputError
-                            message={errors.categories}
-                            className="mt-2"
-                        />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="brand" value="Brand" />
-                        <TextInput
-                            id="brand"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.brand}
-                            onChange={(e) => setData("brand", e.target.value)}
-                        />
-                        <InputError message={errors.brand} className="mt-2" />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="items" value="Items" />
-                        <TextInput
-                            id="items"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.items}
-                            onChange={(e) => setData("items", e.target.value)}
-                        />
-                        <InputError message={errors.items} className="mt-2" />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="quantity" value="Quantity" />
-                        <TextInput
-                            id="quantity"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.quantity}
-                            onChange={(e) =>
-                                setData("quantity", e.target.value)
-                            }
-                        />
-                        <InputError
-                            message={errors.quantity}
-                            className="mt-2"
-                        />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="price" value="Price" />
-                        <TextInput
-                            id="price"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.price}
-                            onChange={(e) => setData("price", e.target.value)}
-                        />
-                        <InputError message={errors.price} className="mt-2" />
-                    </div>
-                    <div className="mt-5">
-                        <SecondaryButton
-                            type="submit"
-                            className="w-full h-10 rounded-sm"
-                            disabled={processing}
-                        >
-                            Save
-                        </SecondaryButton>
-                    </div>
-                </form>
-            </Drawer>
+            {/* Modal for Image */}
             <Modal
                 show={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -665,6 +619,8 @@ export default function ItemList() {
             >
                 {modalContent}
             </Modal>
+
+            {/* Confirmation Dialog */}
             <ConfirmationDialog
                 isOpen={isConfirmDialogOpen}
                 onConfirm={handleConfirmDelete}
@@ -672,6 +628,7 @@ export default function ItemList() {
                 title={confirmMessage}
             />
 
+            {/* Success Dialog */}
             <SuccessDialog
                 isOpen={isSuccessDialogOpen}
                 onClose={() => setIsSuccessDialogOpen(false)}
