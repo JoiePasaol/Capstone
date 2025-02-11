@@ -18,21 +18,20 @@ class ItemSeeder extends Seeder
     {
         $faker = Faker::create();
         
-        // Get valid user IDs from the users table
+
         $userIds = \App\Models\User::pluck('id')->toArray();
-        
-        // Insert 100 fake items
-        for ($i = 0; $i < 50; $i++) {
+      
+        for ($i = 0; $i < 60; $i++) {
             DB::table('items')->insert([
-                'user_id' => $faker->randomElement($userIds), // Ensure valid user_id
+                'user_id' => $faker->randomElement($userIds), 
                 'name' => $faker->name,
                 'department' => $faker->word,
                 'categories' => $faker->word,
-                'brand' => $faker->word,
+                'description' => $faker->word,
                 'items' => $faker->word,
                 'quantity' => $faker->numberBetween(1, 100),
                 'price' => $faker->randomFloat(2, 1, 1000),
-                'image' => $faker->boolean(50) ? $faker->imageUrl() : null, // Randomly decide whether to set image or not
+                'image' => $faker->boolean(50) ? $faker->imageUrl() : null, 
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

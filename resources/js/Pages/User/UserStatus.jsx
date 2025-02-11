@@ -1,10 +1,10 @@
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { useState, useEffect } from "react";
 import { Head } from "@inertiajs/react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
 import TrueButton from "@/Components/TrueButton";
 import FalseButton from "@/Components/FalseButton";
-import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function UserStatus() {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { usePage, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
 import TextInput from "@/Components/TextInput";
 import SecondaryButton from "@/Components/SecondaryButton";
 import Checkbox from "@/Components/Checkbox";
@@ -12,7 +12,7 @@ import SuccessDialog from "@/Components/SuccessDialog";
 import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
-import { usePage } from "@inertiajs/react";
+
 
 export default function Categories({ categories }) {
     // State Management
@@ -84,14 +84,16 @@ export default function Categories({ categories }) {
     ];
 
     // Add Category Logic
-
     const handleAddCategory = async () => {
         if (category.trim() === "") return;
-
+    
+        setProcessing(true);
+    
         try {
             const response = await axios.post(route("categories.store"), {
                 name: category,
             });
+    
             const newCategory = response.data;
             const newRow = {
                 checkbox: false,
@@ -99,16 +101,23 @@ export default function Categories({ categories }) {
                 index: rows.length + 1,
                 categories: newCategory.name,
             };
+    
             setRows((prevRows) => [...prevRows, newRow]);
             setCategory("");
             setSuccessMessage("Category successfully added!");
             setIsSuccessDialogOpen(true);
-
-            reload();
+    
+            // Ensure this function exists and is needed
+            if (typeof reload === "function") {
+                reload();
+            }
         } catch (error) {
             console.error("Failed to add category:", error);
+        } finally {
+            setProcessing(false);
         }
     };
+    
 
     // Edit Category Logic
 
@@ -254,7 +263,7 @@ export default function Categories({ categories }) {
                     <Dropdown.Trigger>
                         <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
                     </Dropdown.Trigger>
-                    <Dropdown.Content>
+                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px] bg-gray-700">
                     <Dropdown.Link
                             onClick={(e) => {
                                 e.preventDefault();
@@ -305,12 +314,14 @@ export default function Categories({ categories }) {
                                         onChange={(e) =>
                                             setCategory(e.target.value)
                                         }
+                                      
                                     />
                                     <SecondaryButton
-                                        className="h-10 mt-4 w-full capitalize rounded-sm"
+                                        className="h-10 mt-4 w-full  rounded-sm"
                                         onClick={handleAddCategory}
+                                        disabled={processing}
                                     >
-                                        Add Category
+                                    {processing ? "Saving..." : "Save"}
                                     </SecondaryButton>
                                 </div>
                             </div>

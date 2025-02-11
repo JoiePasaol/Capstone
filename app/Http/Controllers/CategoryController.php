@@ -7,26 +7,22 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of categories.
-     */
+ 
     public function index(Request $request)
     {
-        // Fetch categories from the database
+   
         $categories = Category::all(['id', 'name']);
     
-        // Check if the request expects JSON (API call)
+      
         if ($request->wantsJson()) {
             return response()->json(['categories' => $categories]);
         }
     
-        // Otherwise, return to the Inertia page
+   
         return inertia('Categories', ['categories' => $categories]);
     }
 
-    /**
-     * Store a newly created category.
-     */
+  
     public function store(Request $request)
     {
         $request->validate([
@@ -35,14 +31,12 @@ class CategoryController extends Controller
     
         $category = Category::create(['name' => $request->name]);
     
-        // Return the newly created category as JSON response
+       
         return response()->json($category);
     }
     
 
-    /**
-     * Update the specified category.
-     */
+   
     public function update(Request $request, $id)
     {
         \Log::info("Updating category with ID: {$id}");
@@ -65,9 +59,7 @@ class CategoryController extends Controller
         }
     }
 
-    /**
-     * Delete the specified category.
-     */
+    
     public function destroy($id)
     {
         try {
@@ -81,18 +73,16 @@ class CategoryController extends Controller
         }
     }
     
-    /**
-     * Bulk delete categories.
-     */
+   
     public function bulkDestroy(Request $request)
     {
         $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'exists:categories,id', // Ensure each ID exists in the database
+            'ids.*' => 'exists:categories,id', 
         ]);
     
         try {
-            // Delete all categories with the given IDs
+         
             Category::whereIn('id', $request->ids)->delete();
     
             return response()->json(['message' => 'Categories deleted successfully'], 200);

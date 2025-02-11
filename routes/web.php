@@ -6,6 +6,9 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ItemController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use App\Models\Item;
 use Inertia\Inertia;
 
 
@@ -62,11 +65,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/items', [ItemController::class, 'store'])->name('items.store');
     Route::get('/items', [ItemController::class, 'index'])->name('items.index');
     Route::delete('/items/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
+    Route::post('/items/bulk-delete', [ItemController::class, 'bulkDestroy'])->name('items.bulkDestroy');
     Route::get('items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
     Route::put('items/{id}', [ItemController::class, 'update'])->name('items.update');
     Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
 
-
+    Route::get('/items-report', function (Request $request) {
+        // Check if start_date and end_date exist
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+    
+        if ($startDate && $endDate) {
+            // Convert to Carbon date objects
+            $startDate = Carbon::parse($startDate)->startOfDay();
+            $endDate = Carbon::parse($endDate)->endOfDay();
+    
+            // Fetch items within date range
+            $items = Item::whereBetween('created_at', [$startDate, $endDate])
+                ->select('name as item', 'description', 'quantity', 'price as amount', 'created_at')
+                ->get();
+        } else {
+            // If no date range, return all items
+            $items = Item::select('name as item', 'description', 'quantity', 'price as amount', 'created_at')->get();
+        }
+    
+        return response()->json($items);
+    });
 
 
     // Update User

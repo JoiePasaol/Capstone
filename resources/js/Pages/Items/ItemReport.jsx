@@ -1,22 +1,206 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head } from "@inertiajs/react";
+import { useState, useMemo } from "react";
+import { format } from "date-fns";
+import "quill/dist/quill.snow.css";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import axios from "axios";
+import Table from "@/Components/Table";
+import Pagination from "@/Components/Pagination";
+import TrueButton from "@/Components/TrueButton";
+import PrintIcon from "@mui/icons-material/Print";
 
 export default function ItemReport() {
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+    const [showPicker, setShowPicker] = useState(false);
+    const [filteredItems, setFilteredItems] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const fetchData = async (start, end) => {
+        if (!start) return;
+
+        try {
+            const startDateFormatted = start.toISOString().split("T")[0];
+            const endDateFormatted = end
+                ? end.toISOString().split("T")[0]
+                : startDateFormatted;
+
+            const response = await axios.get("/items-report", {
+                params: {
+                    start_date: startDateFormatted,
+                    end_date: endDateFormatted,
+                },
+            });
+
+            setFilteredItems(response.data);
+            setCurrentPage(1);
+        } catch (error) {
+            console.error(
+                "Error fetching data:",
+                error.response?.data || error.message
+            );
+        }
+    };
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+    const paginatedItems = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredItems.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredItems, currentPage]);
+
+    const headers = [
+        { label: "Item", key: "item" },
+        { label: "Description", key: "description" },
+        { label: "Quantity", key: "quantity" },
+        { label: "Amount", key: "amount" },
+        { label: "Total Amount", key: "totalAmount" }, // New Column
+    ];
+
+    const rows = paginatedItems.map((item, index) => {
+        const quantity = Number(item.quantity) || 0;
+        const amount = Number(item.amount) || 0;
+        const totalAmount = quantity * amount;
+
+        return {
+            id: index,
+            item: item.item,
+            description: (
+                <div
+                    className="ql-editor ql-snow"
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                />
+            ),
+            quantity: quantity,
+            amount: amount ? `₱ ${amount.toFixed(2)}` : "N/A",
+            totalAmount: totalAmount ? `₱ ${totalAmount.toFixed(2)}` : "N/A",
+        };
+    });
+
+    const totalSum = filteredItems.reduce((sum, item) => {
+        const quantity = Number(item.quantity) || 0;
+        const amount = Number(item.amount) || 0;
+        return sum + quantity * amount;
+    }, 0);
+
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Dashboard
+                    Item Report
                 </h2>
             }
         >
-            <Head title="Dashboards" />
+            <Head title="Item Report" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
+                    <div className="relative bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
-                            You're logged in!
+                            {/* Date Range Picker */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative z-50">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            placeholder="Select date range"
+                                            value={
+                                                startDate && endDate
+                                                    ? `${format(
+                                                          startDate,
+                                                          "MM/dd/yyyy"
+                                                      )} - ${format(
+                                                          endDate,
+                                                          "MM/dd/yyyy"
+                                                      )}`
+                                                    : ""
+                                            }
+                                            onClick={() =>
+                                                setShowPicker(!showPicker)
+                                            }
+                                            className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
+                                        />
+                                        {showPicker && (
+                                            <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+                                                <DatePicker
+                                                    selectsRange
+                                                    startDate={startDate}
+                                                    endDate={endDate}
+                                                    onChange={(dates) => {
+                                                        const [start, end] =
+                                                            dates;
+                                                        setStartDate(start);
+                                                        setEndDate(end);
+                                                        if (start && !end) {
+                                                            fetchData(
+                                                                start,
+                                                                start
+                                                            );
+                                                        } else if (
+                                                            start &&
+                                                            end
+                                                        ) {
+                                                            fetchData(
+                                                                start,
+                                                                end
+                                                            );
+                                                        }
+                                                    }}
+                                                    onCalendarClose={() => {
+                                                        if (
+                                                            startDate &&
+                                                            !endDate
+                                                        ) {
+                                                            setEndDate(
+                                                                startDate
+                                                            );
+                                                            fetchData(
+                                                                startDate,
+                                                                startDate
+                                                            );
+                                                        }
+                                                    }}
+                                                    inline
+                                                    calendarClassName="dark:bg-gray-800 pb-7"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        setStartDate(null);
+                                                        setEndDate(null);
+                                                        setFilteredItems([]); // Clear table data
+                                                    }}
+                                                    className="absolute bottom-4 right-2 px-3 py-1 text-sm bg-[#216ba5] text-white rounded-md shadow-md transition duration-300 hover:bg-blue-500"
+                                                >
+                                                    Reset Filter
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <TrueButton className="bg-green-500 hover:bg-green-600 rounded-md py-[5px]">
+                                        <PrintIcon className="mr-1" />
+                                        Print
+                                    </TrueButton>
+                                </div>
+                                <div className="flex bg-gray-900 w-[200px] p-2 rounded-md">
+                                <p className="text-lg text-black dark:text-white">₱ {totalSum.toFixed(2)}</p>
+                                </div>
+                            </div>
+
+                            {/* Table Component */}
+                            <Table headers={headers} rows={rows} />
+
+                            {/* Pagination Component (Only show if data exists) */}
+                            {filteredItems.length > 0 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>

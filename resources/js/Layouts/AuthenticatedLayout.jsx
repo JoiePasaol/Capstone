@@ -4,7 +4,7 @@ import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 import DarkModeToggle from "@/Components/DarkModeToggle";
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
-import "../../css/custom.css";
+
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
@@ -246,7 +246,7 @@ export default function AuthenticatedLayout({ header, children }) {
             )}
 
             <main>{children}</main>
-            <DarkModeToggle />
+            <DarkModeToggle/>
         </div>
     );
 }

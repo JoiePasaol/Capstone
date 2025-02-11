@@ -14,7 +14,7 @@ export default function NavLink({
 
     const toggleDropdown = (e) => {
         if (dropdownItems.length > 0) {
-            e.preventDefault(); // Prevent default only if there's a dropdown
+            e.preventDefault(); 
             setIsDropdownOpen((prev) => !prev);
         }
     };
@@ -66,8 +66,8 @@ export default function NavLink({
                             key={index}
                             href={item.href || '#'}
                             onClick={(e) => {
-                                e.stopPropagation(); // Prevent dropdown from closing immediately
-                                closeDropdown(); // Close dropdown explicitly
+                                e.stopPropagation(); 
+                                closeDropdown(); 
                             }}
                             className="block px-4 py-2 text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-200 focus:bg-gray-300 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
                         >

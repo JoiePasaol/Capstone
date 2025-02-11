@@ -1,5 +1,6 @@
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Head } from "@inertiajs/react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -14,7 +15,6 @@ import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Pagination from "@/Components/Pagination";
-import { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 
 const UserManagement = () => {
@@ -258,7 +258,7 @@ const UserManagement = () => {
                     <Dropdown.Trigger>
                         <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
                     </Dropdown.Trigger>
-                    <Dropdown.Content>
+                    <Dropdown.Content contentClasses=" py-1 right-7 top-[-90px] bg-gray-700 ">
                         <Dropdown.Link
                             onClick={(e) => {
                                 e.preventDefault();

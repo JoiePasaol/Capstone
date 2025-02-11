@@ -1,14 +1,119 @@
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
 
 @layer utilities {
-    .text-stroke {
-      color: transparent;
-      -webkit-text-stroke: 2px #0011ff;
+    .guest-bg-image {
+        @apply absolute top-[-350px] left-0 w-full h-full object-cover z-[1];
+        mask-image: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0) 5%,
+            rgba(229, 231, 235, 1) 70%
+        );
     }
 
-    #dashboard-image{
-      mask-image: linear-gradient(to bottom, rgba(0,0,0,.95), rgba(0,0,0,0.0));
+    .dark .guest-bg-image {
+        mask-image: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0) 5%,
+            rgba(31, 41, 55, 1) 200%
+        );
     }
-    
-  }
-  
+
+    .text-stroke {
+        color: transparent;
+        -webkit-text-stroke: 2px #0011ff;
+    }
+
+    #dashboard-image {
+        mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.95),
+            rgba(0, 0, 0, 0)
+        );
+    }
+
+    .dark .react-datepicker__header {
+        background-color: #1f2937 !important;
+        color: white !important;
+    }
+
+    .dark .react-datepicker__current-month {
+        color: rgb(219, 219, 219) !important;
+    }
+
+    .dark .react-datepicker__day-name {
+        color: rgb(219, 219, 219) !important;
+    }
+
+    .dark .react-datepicker .react-datepicker__day--keyboard-selected {
+        color: white !important;
+        background-color: #216ba5 !important;
+    }
+
+    .dark .react-datepicker .react-datepicker__day--keyboard-selected:hover {
+        color: white !important;
+    }
+
+    .dark .react-datepicker__day {
+        color: white;
+    }
+
+    .dark .react-datepicker__day:hover {
+        color: black;
+    }
+
+    .dark .react-datepicker .react-datepicker__day--keyboard-selected {
+        color: white !important;
+        background-color: #65747f !important;
+    }
+
+    .dark .ql-toolbar.ql-snow {
+        border: 2px solid rgb(55, 65, 81) !important;
+        background-color: rgb(17, 24, 39);
+    }
+
+    .dark .ql-snow .ql-stroke {
+        stroke: #c5c5c5;
+    }
+
+    .dark .ql-picker-label {
+        color: #c5c5c5;
+    }
+
+    .dark .ql-container.ql-snow {
+        border: none;
+    }
+
+    .dark .ql-editor::before {
+        color: white !important;
+    }
+
+
+    .ql-editor {
+      font-size: 16px; 
+      line-height: 1.5;
+    }
+
+
+    .ql-editor h1 {
+      font-size: 2rem !important; 
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .ql-editor h2 {
+      font-size: 1.75rem !important;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .ql-editor h3 {
+      font-size: 1.5rem !important; 
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+
+
+    }

@@ -69,7 +69,7 @@ const Content = ({
                 leaveTo="opacity-0 scale-95"
             >
                 <div
-                    className={`fixed z-50 mt-2 mr-5 ${alignmentClasses} ${widthClasses}`}
+                    className={`absolute z-50 mt-2  ${alignmentClasses} ${widthClasses}`}
                     onClick={() => setOpen(false)}
                 >
                     <div

@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, useForm } from "@inertiajs/react";
+import { CiImport, CiExport } from "react-icons/ci";
+import { exportToCSV } from "@/Context/exportToCSV";
+import { importCSV } from "@/Context/importCSV";
+import { format } from "date-fns";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { CiImport } from "react-icons/ci";
-import { CiExport } from "react-icons/ci";
 import Drawer from "@/Components/Drawer";
 import Modal from "@/Components/Modal";
 import InputLabel from "@/Components/InputLabel";
@@ -19,12 +21,13 @@ import Dropdown from "@/Components/Dropdown";
 import Pagination from "@/Components/Pagination";
 import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
-import { exportToCSV } from "@/Context/exportToCSV";
-import { importCSV } from "@/Context/importCSV";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import QuillEditor from "@/Context/QuillEditor";
+import "quill/dist/quill.snow.css";
 import axios from "axios";
 
 export default function ItemList() {
-
     //State Management
 
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -37,7 +40,7 @@ export default function ItemList() {
     const { data, setData, post, reset, errors } = useForm({
         image: null,
         categories: "",
-        brand: "",
+        description: "",
         items: "",
         quantity: "",
         price: "",
@@ -64,7 +67,7 @@ export default function ItemList() {
             setSuccessMessage(
                 response.data.message || "Item imported successfully!"
             );
-            fetchItems(); 
+            fetchItems();
         } catch (error) {
             console.error("Error importing data:", error);
             setSuccessMessage(
@@ -91,14 +94,13 @@ export default function ItemList() {
                 setData({
                     id: item.id,
                     categories: item.categories || "",
-                    brand: item.brand || "",
+                    description: item.description || "",
                     items: item.items || "",
                     quantity: item.quantity || "",
                     price: item.price || "",
                     image: null,
                 });
 
-       
                 setSelectedFileName(
                     item.image ? item.image.split("/").pop() : "Select a file"
                 );
@@ -116,7 +118,7 @@ export default function ItemList() {
 
         const formData = new FormData();
         formData.append("categories", data.categories || "");
-        formData.append("brand", data.brand || "");
+        formData.append("description", data.description || "");
         formData.append("items", data.items || "");
         formData.append("quantity", data.quantity || 0);
         formData.append("price", data.price || 0);
@@ -135,10 +137,10 @@ export default function ItemList() {
                     fetchItems();
                     setSuccessMessage("Item successfully added!");
                     setIsSuccessDialogOpen(true);
-                    setProcessing(false); 
+                    setProcessing(false);
                 },
                 onError: () => {
-                    setProcessing(false); 
+                    setProcessing(false);
                 },
             });
         } else {
@@ -153,7 +155,6 @@ export default function ItemList() {
                     reset();
                     setSelectedFileName("Select a file");
 
-              
                     setItems((prevItems) =>
                         prevItems.map((item) =>
                             item.id === data.id ? response.data.item : item
@@ -162,11 +163,11 @@ export default function ItemList() {
 
                     setSuccessMessage("Item successfully updated!");
                     setIsSuccessDialogOpen(true);
-                    setProcessing(false); 
+                    setProcessing(false);
                 })
                 .catch((error) => {
                     console.error("Error updating item:", error);
-                    setProcessing(false); 
+                    setProcessing(false);
                 });
         }
     };
@@ -220,33 +221,47 @@ export default function ItemList() {
         fetchItems();
     }, []);
 
-
     //Filtering Items
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+    const [showPicker, setShowPicker] = useState(false);
 
     useEffect(() => {
-        const filtered = items.filter((item) =>
-            [
+        if (items.length === 0) return;
+
+        const filtered = items.filter((item) => {
+            const itemDate = new Date(item.created_at);
+
+            // Ensure endDate includes the full day
+            const adjustedEndDate = endDate
+                ? new Date(endDate.setHours(23, 59, 59, 999))
+                : null;
+
+            const isInRange =
+                (!startDate || itemDate.getTime() >= startDate.getTime()) &&
+                (!adjustedEndDate ||
+                    itemDate.getTime() <= adjustedEndDate.getTime());
+
+            const matchesSearch = [
                 item.name,
                 item.department,
                 item.categories,
-                item.brand,
+                item.description,
                 item.items,
             ].some((field) =>
                 field?.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-        );
+            );
+
+            return matchesSearch && isInRange;
+        });
+
         setFilteredItems(filtered);
         setCurrentPage(1);
-    }, [searchTerm, items]);
-
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-
-    const paginatedItems = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        return filteredItems.slice(startIndex, startIndex + itemsPerPage);
-    }, [filteredItems, currentPage]);
+    }, [searchTerm, startDate, endDate, items]);
 
     //Pagination Logic
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages) return;
@@ -257,7 +272,7 @@ export default function ItemList() {
         setSelectedItems((prev) =>
             prev.includes(item.id)
                 ? prev.filter((id) => id !== item.id)
-                : [...prev, item.id] 
+                : [...prev, item.id]
         );
     };
 
@@ -290,16 +305,12 @@ export default function ItemList() {
         if (!deleteTarget || deleteTarget.length === 0) return;
 
         try {
-            await Promise.all(
-                deleteTarget.map((id) =>
-                    axios.delete(route("items.destroy", { id }))
-                )
-            );
+            // Send one request to delete multiple items
+            await axios.post(route("items.bulkDestroy"), { ids: deleteTarget });
 
             fetchItems();
-            setSelectedItems([]); 
+            setSelectedItems([]);
             setDeleteTarget(null);
-
             setIsConfirmDialogOpen(false);
 
             setTimeout(() => {
@@ -322,10 +333,10 @@ export default function ItemList() {
     const headers = [
         {
             label: (
-               <Checkbox
-                checked={isSelectAllChecked}
-                onChange={handleSelectAll}
-            />
+                <Checkbox
+                    checked={isSelectAllChecked}
+                    onChange={handleSelectAll}
+                />
             ),
             key: "select-all",
         },
@@ -334,14 +345,21 @@ export default function ItemList() {
         { label: "Department", key: "department" },
         { label: "Image", key: "image" },
         { label: "Category", key: "categories" },
-        { label: "Brand", key: "brand" },
         { label: "Item", key: "items" },
+        { label: "Description", key: "description" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "price" },
-        { label: "Timestamp", key: "created_at" },
+        { label: "Created_At", key: "created_at" },
     ];
 
-    const sortedPaginatedItems = [...paginatedItems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const paginatedItems = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredItems.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredItems, currentPage]);
+
+    const sortedPaginatedItems = [...paginatedItems].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
 
     const rows = sortedPaginatedItems.map((item, index) => ({
         id: item.id,
@@ -351,18 +369,25 @@ export default function ItemList() {
                 onChange={() => handleCheckboxChange(item)}
             />
         ),
-        index: index + 1 + (currentPage - 1) * itemsPerPage, 
+        index: index + 1 + (currentPage - 1) * itemsPerPage,
         name: item.name,
-        department: item.user?.department ?? "N/A",
+        department: item.department ?? "N/A",
         image: item.image ? item.image.split("/").pop() : "No Image",
         categories: item.categories ?? "N/A",
-        brand: item.brand ?? "N/A",
         items: item.items ?? "N/A",
+        description: (
+            <div
+                className="ql-editor ql-snow"
+                dangerouslySetInnerHTML={{ __html: item.description }}
+            />
+        ),
         quantity: item.quantity ?? 0,
         price: item.price ? `₱ ${item.price}` : "N/A",
-        created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "N/A",
+        created_at: item.created_at
+            ? new Date(item.created_at).toLocaleString()
+            : "N/A",
     }));
-    
+
     //Select Option for Categories
 
     const selectOption = categories.map((category) => ({
@@ -373,11 +398,11 @@ export default function ItemList() {
     //Action Buttons for Items
 
     const actions = (row) => (
-        <Dropdown>
+        <Dropdown className="">
             <Dropdown.Trigger>
                 <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
             </Dropdown.Trigger>
-            <Dropdown.Content>
+            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-108px] bg-gray-700 ">
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();
@@ -386,7 +411,10 @@ export default function ItemList() {
                                 ? `/storage/images/${row.image}`
                                 : null;
 
-                        console.log("🚀 Image Debug - Full Image URL:", imageSrc);
+                        console.log(
+                            "🚀 Image Debug - Full Image URL:",
+                            imageSrc
+                        );
 
                         setModalContent(
                             <div className="flex justify-center items-center p-4">
@@ -437,18 +465,73 @@ export default function ItemList() {
             {/* Main Content */}
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className=" px-6 py-4  overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
-                        <div className="w-full flex justify-between">
-                            <div className="flex-1">
+                    <div className="px-6 py-4 overflow-visible bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
+                        <div className="w-full flex justify-between items-center">
+                            {/* Search and Date Range Picker */}
+                            <div className="flex gap-2 items-center">
+        
                                 <input
                                     type="text"
                                     placeholder="Search..."
-                                    className="dark:text-white border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                                    className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
                                     onChange={(e) =>
                                         setSearchTerm(e.target.value)
                                     }
                                 />
+
+                                {/* Date Range Picker Input */}
+                                <div className="relative z-50">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        placeholder="Select date range"
+                                        value={
+                                            startDate && endDate
+                                                ? `${format(
+                                                      startDate,
+                                                      "MM/dd/yyyy"
+                                                  )} - ${format(
+                                                      endDate,
+                                                      "MM/dd/yyyy"
+                                                  )}`
+                                                : ""
+                                        }
+                                        onClick={() =>
+                                            setShowPicker(!showPicker)
+                                        }
+                                        className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer  w-60"
+                                    />
+                                    {/* Date Picker Dropdown */}
+                                    {showPicker && (
+                                        <div className="absolute mt-2 z-50">
+                                            <DatePicker
+                                                selectsRange
+                                                startDate={startDate}
+                                                endDate={endDate}
+                                                onChange={(dates) => {
+                                                    const [start, end] = dates;
+                                                    setStartDate(start);
+                                                    setEndDate(end);
+                                                }}
+                                                inline
+                                                calendarClassName="dark:bg-gray-800 pb-7"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    setStartDate(null);
+                                                    setEndDate(null);
+                                                    setFilteredItems(items);
+                                                }}
+                                                className="absolute bottom-4 right-2 px-3 py-1 text-sm bg-[#216ba5] text-white rounded-md shadow-md transition duration-300 hover:bg-blue-500"
+                                            >
+                                                Reset Filter
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Export, Import, Add, and Delete Icons */}
                             <div className="flex">
                                 <div className="pr-2 flex gap-2 items-center">
                                     <CiExport
@@ -464,8 +547,6 @@ export default function ItemList() {
                                         className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer"
                                         onClick={triggerFileInput}
                                     />
-
-                                    {/* Hidden file input */}
                                     <input
                                         id="importFile"
                                         type="file"
@@ -495,6 +576,7 @@ export default function ItemList() {
                                 </div>
                             </div>
                         </div>
+
                         <div className="text-gray-900 dark:text-gray-100">
                             <Table
                                 headers={headers}
@@ -538,10 +620,10 @@ export default function ItemList() {
                     </div>
 
                     <div className="mt-4">
-                        <InputLabel htmlFor="categories" value="Categories" />
+                        <InputLabel htmlFor="categories" value="Category" />
                         <SelectOption
                             id="categories"
-                            className="mt-2 block w-full h-10 rounded-sm"
+                            className="mt-2 block w-full h-10 rounded-sm text-sm"
                             placeholder="Select a category"
                             options={selectOption}
                             value={data.categories}
@@ -555,17 +637,7 @@ export default function ItemList() {
                         />
                     </div>
                     <div className="mt-4">
-                        <InputLabel htmlFor="brand" value="Brand" />
-                        <TextInput
-                            id="brand"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.brand}
-                            onChange={(e) => setData("brand", e.target.value)}
-                        />
-                        <InputError message={errors.brand} className="mt-2" />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="items" value="Items" />
+                        <InputLabel htmlFor="items" value="Item" />
                         <TextInput
                             id="items"
                             className="mt-2 block w-full h-10 rounded-sm"
@@ -573,6 +645,19 @@ export default function ItemList() {
                             onChange={(e) => setData("items", e.target.value)}
                         />
                         <InputError message={errors.items} className="mt-2" />
+                    </div>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="description" value="Description" />
+                        <QuillEditor
+                            value={data.description}
+                            onChange={(content) =>
+                                setData("description", content)
+                            }
+                        />
+                        <InputError
+                            message={errors.description}
+                            className="mt-2"
+                        />
                     </div>
                     <div className="mt-4">
                         <InputLabel htmlFor="quantity" value="Quantity" />

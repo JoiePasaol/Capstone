@@ -1,22 +1,20 @@
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-    // Generate an array of page numbers
+  
     const pageNumbers = [];
-    const maxVisiblePages = 5; // The number of pages to display at a time
+    const maxVisiblePages = 5; 
 
     for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(i);
     }
 
-    // Function to handle page number click
     const handlePageClick = (pageNumber) => {
         if (pageNumber < 1 || pageNumber > totalPages) return;
         onPageChange(pageNumber);
     };
 
-    // Generate visible pages with ellipsis handling
     const getVisiblePages = () => {
         if (totalPages <= maxVisiblePages) {
-            return pageNumbers; // No need for ellipsis
+            return pageNumbers; 
         }
 
         if (currentPage <= 3) {
@@ -56,7 +54,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                 </button>
             )}
 
-            {/* Loop through the visible pages and render buttons */}
+     
             {getVisiblePages().map((page, index) => (
                 <button
                     key={index}

@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             'role' => 'Admin',
             'status' => 'active',
             'email_verified_at' => now(),
-            'password' => bcrypt('password'), // Default password
+            'password' => bcrypt('password'), 
             'remember_token' => Str::random(10),
             'created_at' => now(),
             'updated_at' => now(),

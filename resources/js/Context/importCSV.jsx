@@ -10,25 +10,25 @@ export function importCSV(event, callback) {
     const reader = new FileReader();
 
     reader.onload = (e) => {
-        const text = e.target.result.trim(); // Trim whitespace
-        const rows = text.split("\n").map((row) => row.split(",").map(cell => cell.trim())); // Trim each cell
+        const text = e.target.result.trim();
+        const rows = text.split("\n").map((row) => row.split(",").map(cell => cell.trim()));
 
         if (rows.length < 2) {
             alert("Invalid CSV format.");
             return;
         }
 
-        const headers = rows[0].map((h) => h.replace(/"/g, "").trim()); // Remove quotes and trim
+        const headers = rows[0].map((h) => h.replace(/"/g, "").trim());
+        
         const data = rows.slice(1).map((row) => {
             let obj = {};
             headers.forEach((header, index) => {
-                obj[header] = row[index]?.replace(/"/g, "").trim() ?? ""; // Remove quotes and trim
+                obj[header.toLowerCase()] = row[index]?.replace(/"/g, "").trim() ?? "";
             });
             return obj;
         });
 
-        // Ensure data is correctly structured before sending it
-        console.log("Parsed CSV Data:", data);
+        console.log("Parsed CSV Data Before Sending:", data);
 
         callback(data);
     };
