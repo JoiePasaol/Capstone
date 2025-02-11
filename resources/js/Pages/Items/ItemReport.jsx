@@ -185,7 +185,7 @@ export default function ItemReport() {
                                         Print
                                     </TrueButton>
                                 </div>
-                                <div className="flex bg-gray-900 w-[200px] p-2 rounded-md">
+                                <div className="flex  dark:bg-gray-900 w-[200px] p-2 rounded-md  border-[1px] border-gray-400 dark:border-gray-400">
                                 <p className="text-lg text-black dark:text-white">₱ {totalSum.toFixed(2)}</p>
                                 </div>
                             </div>
