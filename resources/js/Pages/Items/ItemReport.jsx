@@ -10,6 +10,7 @@ import Table from "@/Components/Table";
 import Pagination from "@/Components/Pagination";
 import TrueButton from "@/Components/TrueButton";
 import PrintIcon from "@mui/icons-material/Print";
+import handlePrint from "@/Utils/PrintReport";
 
 export default function ItemReport() {
     const [startDate, setStartDate] = useState(null);
@@ -171,7 +172,7 @@ export default function ItemReport() {
                                                     onClick={() => {
                                                         setStartDate(null);
                                                         setEndDate(null);
-                                                        setFilteredItems([]); // Clear table data
+                                                        setFilteredItems([]); 
                                                     }}
                                                     className="absolute bottom-4 right-2 px-3 py-1 text-sm bg-[#216ba5] text-white rounded-md shadow-md transition duration-300 hover:bg-blue-500"
                                                 >
@@ -180,13 +181,25 @@ export default function ItemReport() {
                                             </div>
                                         )}
                                     </div>
-                                    <TrueButton className="bg-green-500 hover:bg-green-600 rounded-md py-[5px]">
-                                        <PrintIcon className="mr-1" />
+                                    <TrueButton
+                                        className="bg-green-500 hover:bg-green-600 rounded-md py-[5px] active:bg-green-700 dark:active:bg-green-700"
+                                        onClick={() =>
+                                            handlePrint(
+                                                startDate,
+                                                endDate,
+                                                filteredItems,
+                                                totalSum
+                                            )
+                                        }
+                                    >
+                                        <PrintIcon className="mr-1 " />
                                         Print
                                     </TrueButton>
                                 </div>
                                 <div className="flex  dark:bg-gray-900 w-[200px] p-2 rounded-md  border-[1px] border-gray-400 dark:border-gray-400">
-                                <p className="text-lg text-black dark:text-white">₱ {totalSum.toFixed(2)}</p>
+                                    <p className="text-lg text-black dark:text-white">
+                                        ₱ {totalSum.toFixed(2)}
+                                    </p>
                                 </div>
                             </div>
 

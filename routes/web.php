@@ -26,7 +26,9 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
+        return Inertia::render('Dashboard', [
+            'successMessage' => session('successMessage'), 
+        ]);
     })->name('dashboard');
 
     // User Status
@@ -59,6 +61,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/users', [UserController::class, 'fetchUsers'])->name('users.fetch');
         Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('users.update-status');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::get('/users/pending-count', [UserController::class, 'getPendingUsersCount']);
+        Route::get('/users/approved-count', [UserController::class, 'getApprovedUsersCount']);
     });
     
 
@@ -69,28 +73,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
     Route::put('items/{id}', [ItemController::class, 'update'])->name('items.update');
     Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
-
     Route::get('/items-report', function (Request $request) {
-        // Check if start_date and end_date exist
+ 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
     
         if ($startDate && $endDate) {
-            // Convert to Carbon date objects
+        
             $startDate = Carbon::parse($startDate)->startOfDay();
             $endDate = Carbon::parse($endDate)->endOfDay();
     
-            // Fetch items within date range
+   
             $items = Item::whereBetween('created_at', [$startDate, $endDate])
-                ->select('name as item', 'description', 'quantity', 'price as amount', 'created_at')
+                ->select('items as item', 'description', 'quantity', 'price as amount', 'created_at')
                 ->get();
         } else {
-            // If no date range, return all items
-            $items = Item::select('name as item', 'description', 'quantity', 'price as amount', 'created_at')->get();
+            
+            $items = Item::select('items as item', 'description', 'quantity', 'price as amount', 'created_at')->get();
         }
     
         return response()->json($items);
     });
+    Route::get('/api/items/total-count', [ItemController::class, 'getTotalItemsCount']);
+    Route::get('/api/items/total-amount', [ItemController::class, 'getTotalAmount']);
+
+
 
 
     // Update User

@@ -235,6 +235,30 @@ class ItemController extends Controller
             ], 500);
         }
     }
+
+        public function getTotalItemsCount()
+    {
+        try {
+            $count = Item::count();
+            return response()->json(['total_items' => $count], 200);
+        } catch (\Exception $e) {
+            \Log::error("Error fetching total items count: {$e->getMessage()}");
+            return response()->json(['error' => 'Server error'], 500);
+        }
+    }
+
+    public function getTotalAmount()
+{
+    try {
+        $totalAmount = Item::sum(\DB::raw('quantity * price'));
+        return response()->json(['total_amount' => $totalAmount], 200);
+    } catch (\Exception $e) {
+        \Log::error("Error fetching total amount: {$e->getMessage()}");
+        return response()->json(['error' => 'Server error'], 500);
+    }
+}
+
+
     
     
      

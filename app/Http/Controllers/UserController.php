@@ -96,6 +96,31 @@ class UserController extends Controller
             return response()->json(['error' => 'Server error'], 500);
         }
     }
+
+    public function getPendingUsersCount()
+    {
+        try {
+            $count = User::where('status', 'pending')->count();
+            return response()->json(['pending_users' => $count], 200);
+        } catch (\Exception $e) {
+            \Log::error("Error fetching pending users count: {$e->getMessage()}");
+            return response()->json(['error' => 'Server error'], 500);
+        }
+    }
+    
+    public function getApprovedUsersCount()
+    {
+        try {
+            $count = User::where('status', 'approved')->count();
+            return response()->json(['approved_users' => $count], 200);
+        } catch (\Exception $e) {
+            \Log::error("Error fetching approved users count: {$e->getMessage()}");
+            return response()->json(['error' => 'Server error'], 500);
+        }
+    }
+    
+
+
     
 
 }

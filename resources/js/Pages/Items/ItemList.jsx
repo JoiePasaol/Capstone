@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Head, useForm } from "@inertiajs/react";
 import { CiImport, CiExport } from "react-icons/ci";
-import { exportToCSV } from "@/Context/exportToCSV";
-import { importCSV } from "@/Context/importCSV";
+import { exportToCSV } from "@/Utils/exportToCSV";
+import { importCSV } from "@/Utils/importCSV";
 import { format } from "date-fns";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
@@ -23,7 +23,7 @@ import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import QuillEditor from "@/Context/QuillEditor";
+import QuillEditor from "@/Utils/QuillEditor";
 import "quill/dist/quill.snow.css";
 import axios from "axios";
 
@@ -377,9 +377,9 @@ export default function ItemList() {
         items: item.items ?? "N/A",
         description: (
             <div
-                className="ql-editor ql-snow"
-                dangerouslySetInnerHTML={{ __html: item.description }}
-            />
+            className="ql-editor ql-snow w-[250px] whitespace-normal"
+            dangerouslySetInnerHTML={{ __html: item.description }}
+        />
         ),
         quantity: item.quantity ?? 0,
         price: item.price ? `₱ ${item.price}` : "N/A",
@@ -469,7 +469,6 @@ export default function ItemList() {
                         <div className="w-full flex justify-between items-center">
                             {/* Search and Date Range Picker */}
                             <div className="flex gap-2 items-center">
-        
                                 <input
                                     type="text"
                                     placeholder="Search..."
