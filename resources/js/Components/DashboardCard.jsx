@@ -12,7 +12,7 @@ const DashboardCard = ({ title, value, icon, bgColor, link }) => {
                 href={link} 
                 className="absolute bottom-0 left-0 w-full bg-white/20 py-2 text-center text-white font-semibold hover:bg-white/30 transition"
             >
-                View More →
+                More Info →
             </Link>
         </div>
     );

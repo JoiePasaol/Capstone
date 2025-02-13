@@ -58,7 +58,7 @@ export default function ItemReport() {
         { label: "Description", key: "description" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "amount" },
-        { label: "Total Amount", key: "totalAmount" }, // New Column
+        { label: "Total Amount", key: "totalAmount" }, 
     ];
 
     const rows = paginatedItems.map((item, index) => {

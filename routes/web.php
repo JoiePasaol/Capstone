@@ -96,6 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     Route::get('/api/items/total-count', [ItemController::class, 'getTotalItemsCount']);
     Route::get('/api/items/total-amount', [ItemController::class, 'getTotalAmount']);
+    
 
 
 

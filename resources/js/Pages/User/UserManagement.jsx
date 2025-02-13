@@ -327,19 +327,12 @@ const UserManagement = () => {
                         )}
 
                         <div className="text-gray-900 dark:text-gray-100">
-                            {users.length > 0 ? (
+                         
                                 <Table
                                     headers={headers}
                                     rows={paginatedRows}
                                     actions={actions}
                                 />
-                            ) : (
-                                <div className="flex items-center justify-center h-48">
-                                    <p className="text-xl font-semibold text-gray-500 dark:text-gray-400">
-                                        No User!
-                                    </p>
-                                </div>
-                            )}
                         </div>
 
                         <Pagination
