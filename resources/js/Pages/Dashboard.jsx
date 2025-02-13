@@ -6,18 +6,18 @@ import { IoIosCheckmarkCircle } from "react-icons/io";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import CategoryIcon from "@mui/icons-material/Category";
 import DashboardCard from "@/Components/DashboardCard";
-import "../../css/toaster.css"
+import "../../css/toaster.css";
+import LineChart from "@/components/LineChart";
 import axios from "axios";
 
-
-
 export default function Dashboard({ successMessage }) {
-
     const [pendingUsers, setPendingUsers] = useState(0);
     const [approvedUsers, setApprovedUsers] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
     const [totalAmount, setTotalAmount] = useState(0);
+    const [totalCategories, setTotalCategories] = useState(0);
 
     useEffect(() => {
         const fetchCounts = async () => {
@@ -27,17 +27,20 @@ export default function Dashboard({ successMessage }) {
                     approvedResponse,
                     itemsResponse,
                     amountResponse,
+                    categoriesResponse,
                 ] = await Promise.all([
                     axios.get("/api/users/pending-count"),
                     axios.get("/api/users/approved-count"),
                     axios.get("/api/items/total-count"),
                     axios.get("/api/items/total-amount"),
+                    axios.get("/api/categories/total-count"),
                 ]);
 
                 setPendingUsers(pendingResponse.data.pending_users);
                 setApprovedUsers(approvedResponse.data.approved_users);
                 setTotalItems(itemsResponse.data.total_items);
                 setTotalAmount(amountResponse.data.total_amount);
+                setTotalCategories(categoriesResponse.data.total_categories);
             } catch (error) {
                 console.error("Error fetching counts:", error);
             }
@@ -48,20 +51,25 @@ export default function Dashboard({ successMessage }) {
 
     useEffect(() => {
         if (successMessage) {
-            toast.custom((t) => (
-                <div
-                    className="slide-in flex items-center p-3 bg-[#008558] text-white rounded-md shadow-md"
-                    style={{
-                        marginTop: "60px",
-                    }}
-                >
-                    <IoIosCheckmarkCircle style={{ fontSize: "24px", marginRight: "8px" }} />
-                    {successMessage}
-                </div>
-            ), {
-                duration: 3000,
-                position: "top-right",
-            });
+            toast.custom(
+                (t) => (
+                    <div
+                        className="slide-in flex items-center p-3 bg-[#008558] text-white rounded-md shadow-md"
+                        style={{
+                            marginTop: "60px",
+                        }}
+                    >
+                        <IoIosCheckmarkCircle
+                            style={{ fontSize: "24px", marginRight: "8px" }}
+                        />
+                        {successMessage}
+                    </div>
+                ),
+                {
+                    duration: 3000,
+                    position: "top-right",
+                }
+            );
         }
     }, [successMessage]);
 
@@ -87,7 +95,7 @@ export default function Dashboard({ successMessage }) {
                                     style={{ fontSize: "230px" }}
                                 />
                             }
-                            bgColor=" bg-red-500"
+                            bgColor="bg-red-500"
                         />
                         <DashboardCard
                             title="Total Users"
@@ -100,6 +108,19 @@ export default function Dashboard({ successMessage }) {
                             }
                             bgColor="bg-green-500"
                         />
+
+                        <DashboardCard
+                            title="Total Category"
+                            value={totalCategories}
+                            icon={
+                                <CategoryIcon
+                                    className="absolute right-[-50px] bottom-[-40px]"
+                                    style={{ fontSize: "205px" }}
+                                />
+                            }
+                            bgColor="bg-teal-500"
+                        />
+
                         <DashboardCard
                             title="Total Items"
                             value={totalItems}
@@ -109,9 +130,22 @@ export default function Dashboard({ successMessage }) {
                                     style={{ fontSize: "205px" }}
                                 />
                             }
-                            bgColor=" bg-blue-500"
+                            bgColor="bg-blue-500"
                             link={route("item-list")}
                         />
+
+                        <DashboardCard
+                            title="Total Supplier"
+                            value={0}
+                            icon={
+                                <PeopleAltIcon
+                                    className="absolute right-[-40px] bottom-[-40px]"
+                                    style={{ fontSize: "230px" }}
+                                />
+                            }
+                            bgColor="bg-purple-500"
+                        />
+
                         <DashboardCard
                             title="Total Amount"
                             value={`₱${totalAmount.toLocaleString()}`}
@@ -123,6 +157,13 @@ export default function Dashboard({ successMessage }) {
                             }
                             bgColor="bg-orange-500"
                         />
+
+                        <div className="lg:col-span-2 p-6 bg-white dark:bg-gray-900 ring-1 ring-gray-400 dark:ring-gray-400  rounded-lg shadow-md flex flex-col justify-between">
+                            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                                Monthly Report
+                            </h2>
+                            <LineChart />
+                        </div>
                     </div>
                 </div>
             </div>

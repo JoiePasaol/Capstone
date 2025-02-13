@@ -4,7 +4,7 @@
 
 @layer utilities {
     .guest-bg-image {
-        @apply absolute top-[-350px] left-0 w-full h-full object-cover z-[1];
+        @apply absolute top-[-300px] left-0 w-full h-full object-cover z-[1];
         mask-image: linear-gradient(
             to top,
             rgba(0, 0, 0, 0) 5%,

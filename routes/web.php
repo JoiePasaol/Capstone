@@ -63,54 +63,52 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::get('/users/pending-count', [UserController::class, 'getPendingUsersCount']);
         Route::get('/users/approved-count', [UserController::class, 'getApprovedUsersCount']);
-    });
-    
-
-    Route::post('/items', [ItemController::class, 'store'])->name('items.store');
-    Route::get('/items', [ItemController::class, 'index'])->name('items.index');
-    Route::delete('/items/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
-    Route::post('/items/bulk-delete', [ItemController::class, 'bulkDestroy'])->name('items.bulkDestroy');
-    Route::get('items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
-    Route::put('items/{id}', [ItemController::class, 'update'])->name('items.update');
-    Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
-    Route::get('/items-report', function (Request $request) {
- 
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
-    
-        if ($startDate && $endDate) {
-        
-            $startDate = Carbon::parse($startDate)->startOfDay();
-            $endDate = Carbon::parse($endDate)->endOfDay();
-    
    
-            $items = Item::whereBetween('created_at', [$startDate, $endDate])
-                ->select('items as item', 'description', 'quantity', 'price as amount', 'created_at')
-                ->get();
-        } else {
-            
-            $items = Item::select('items as item', 'description', 'quantity', 'price as amount', 'created_at')->get();
-        }
-    
-        return response()->json($items);
     });
-    Route::get('/api/items/total-count', [ItemController::class, 'getTotalItemsCount']);
-    Route::get('/api/items/total-amount', [ItemController::class, 'getTotalAmount']);
+
+       // Categories Routes
+       Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
+       Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+       Route::put('categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
+       Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+       Route::post('/categories/bulkDestroy', [CategoryController::class, 'bulkDestroy'])->name('categories.bulkDestroy');
+       Route::get('/api/categories/total-count', [CategoryController::class, 'getTotalCategoriesCount']);
+
+        
+        //Item Routes
+        Route::post('/items', [ItemController::class, 'store'])->name('items.store');
+        Route::get('/items', [ItemController::class, 'index'])->name('items.index');
+        Route::delete('/items/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
+        Route::post('/items/bulk-delete', [ItemController::class, 'bulkDestroy'])->name('items.bulkDestroy');
+        Route::get('items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
+        Route::put('items/{id}', [ItemController::class, 'update'])->name('items.update');
+        Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
+        Route::get('/items-report', function (Request $request) {
     
-
-
-
-
-    // Update User
-    Route::put('/api/users/{id}', [UserController::class, 'update'])->name('users.update');
-
-    // Categories Routes
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::put('categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
-    Route::post('/categories/bulkDestroy', [CategoryController::class, 'bulkDestroy'])->name('categories.bulkDestroy');
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+        
+            if ($startDate && $endDate) {
+            
+                $startDate = Carbon::parse($startDate)->startOfDay();
+                $endDate = Carbon::parse($endDate)->endOfDay();
+        
     
+                $items = Item::whereBetween('created_at', [$startDate, $endDate])
+                    ->select('items as item', 'description', 'quantity', 'price as amount', 'created_at')
+                    ->get();
+            } else {
+                
+                $items = Item::select('items as item', 'description', 'quantity', 'price as amount', 'created_at')->get();
+            }
+        
+            return response()->json($items);
+        });
+        Route::get('/api/items/total-count', [ItemController::class, 'getTotalItemsCount']);
+        Route::get('/api/items/total-amount', [ItemController::class, 'getTotalAmount']);
+
+        Route::put('/api/users/{id}', [UserController::class, 'update'])->name('users.update');
+        
     // Profile Routes
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
