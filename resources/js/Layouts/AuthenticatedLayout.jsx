@@ -1,16 +1,13 @@
 import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
-import DarkModeToggle from "@/Components/DarkModeToggle";
+import LightDarkToggle from "@/Components/LightDarkToggle";
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 
-
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
-
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    const { user } = usePage().props.auth;
+    const [isNavDropdownVisible, setNavDropdownVisible] = useState(false);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -25,7 +22,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </Link>
                         </div>
 
-                        <div className="hidden h-100 space-x-3 sm:-my-px  sm:flex ">
+                        <div className="hidden h-100 space-x-3 sm:-my-px sm:flex">
                             <NavLink
                                 href={route("dashboard")}
                                 active={route().current("dashboard")}
@@ -102,17 +99,16 @@ export default function AuthenticatedLayout({ header, children }) {
                             </NavLink>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center ">
-                            <div className="relative ms-4 ">
+                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                            <div className="relative ms-4">
                                 <Dropdown>
                                     <Dropdown.Trigger>
                                         <span className="inline-flex">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center border border-transparent  px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
+                                                className="inline-flex items-center border border-transparent px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
                                             >
                                                 {user.firstname}
-
                                                 <svg
                                                     className="-me-0.5 ms-2 h-4 w-4"
                                                     xmlns="http://www.w3.org/2000/svg"
@@ -150,9 +146,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div className="-me-2 flex items-center sm:hidden">
                             <button
                                 onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState
-                                    )
+                                    setNavDropdownVisible((prev) => !prev)
                                 }
                                 className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400 dark:focus:bg-gray-900 dark:focus:text-gray-400"
                             >
@@ -164,7 +158,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     <path
                                         className={
-                                            !showingNavigationDropdown
+                                            !isNavDropdownVisible
                                                 ? "inline-flex"
                                                 : "hidden"
                                         }
@@ -175,7 +169,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     />
                                     <path
                                         className={
-                                            showingNavigationDropdown
+                                            isNavDropdownVisible
                                                 ? "inline-flex"
                                                 : "hidden"
                                         }
@@ -192,7 +186,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
                 <div
                     className={
-                        (showingNavigationDropdown ? "block" : "hidden") +
+                        (isNavDropdownVisible ? "block" : "hidden") +
                         " sm:hidden"
                     }
                 >
@@ -203,12 +197,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Dashboard
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                        // href={route("user")}
-                        // active={route().current("user")}
-                        >
-                            User
-                        </ResponsiveNavLink>
+                        <ResponsiveNavLink>User</ResponsiveNavLink>
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
@@ -246,7 +235,7 @@ export default function AuthenticatedLayout({ header, children }) {
             )}
 
             <main>{children}</main>
-            <DarkModeToggle/>
+            <LightDarkToggle />
         </div>
     );
 }

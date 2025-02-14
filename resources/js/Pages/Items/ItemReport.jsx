@@ -1,5 +1,6 @@
 import { Head } from "@inertiajs/react";
 import { useState, useMemo } from "react";
+import { useEffect } from "react";
 import { format } from "date-fns";
 import "quill/dist/quill.snow.css";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -19,15 +20,15 @@ export default function ItemReport() {
     const [filteredItems, setFilteredItems] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+    const [selectedYear, setSelectedYear] = useState("");
+    const [years, setYears] = useState([]);
 
     const fetchData = async (start, end) => {
         if (!start) return;
 
         try {
-            const startDateFormatted = start.toISOString().split("T")[0];
-            const endDateFormatted = end
-                ? end.toISOString().split("T")[0]
-                : startDateFormatted;
+            const startDateFormatted = format(start, "yyyy-MM-dd");
+            const endDateFormatted = end ? format(end, "yyyy-MM-dd") : startDateFormatted;
 
             const response = await axios.get("/items-report", {
                 params: {
@@ -46,6 +47,22 @@ export default function ItemReport() {
         }
     };
 
+    useEffect(() => {
+        const currentYear = new Date().getFullYear();
+        const yearsList = Array.from(
+            { length: currentYear - 2000 + 1 },
+            (_, i) => i + 2000
+        );
+        setYears(yearsList);
+    }, []);
+
+    const handleYearChange = (e) => {
+        setSelectedYear(e.target.value);
+        const start = new Date(`${e.target.value}-01-01`);
+        const end = new Date(`${e.target.value}-12-31`);
+        fetchData(start, end);
+    };
+
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
     const paginatedItems = useMemo(() => {
@@ -58,7 +75,7 @@ export default function ItemReport() {
         { label: "Description", key: "description" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "amount" },
-        { label: "Total Amount", key: "totalAmount" }, 
+        { label: "Total Amount", key: "totalAmount" },
     ];
 
     const rows = paginatedItems.map((item, index) => {
@@ -99,16 +116,35 @@ export default function ItemReport() {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="relative bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
-                        <div className="p-6 text-gray-900 dark:text-gray-100">
+                    <div className="px-6 py-4  overflow-visible bg-white ring-1 ring-black/20 sm:rounded-lg dark:bg-gray-800">
+                        <div className=" text-gray-900 dark:text-gray-100">
                             {/* Date Range Picker */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
+                                    <select
+                                        value={selectedYear}
+                                        onChange={handleYearChange}
+                                        className="border border-black/20 dark:border-white py-1 rounded-md  text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                    >
+                                        <option
+                                            hidden
+                                            className="dark:bg-gray-800 dark:text-gray-300"
+                                            value=""
+                                        >
+                                            Select year
+                                        </option>
+                                        {years.map((year) => (
+                                            <option
+                                                className="dark:bg-gray-800 dark:text-gray-300"
+                                                key={year}
+                                                value={year}
+                                            >
+                                                {year}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <div className="relative z-50">
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            placeholder="Select date range"
+                                        <select
                                             value={
                                                 startDate && endDate
                                                     ? `${format(
@@ -123,10 +159,15 @@ export default function ItemReport() {
                                             onClick={() =>
                                                 setShowPicker(!showPicker)
                                             }
-                                            className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
-                                        />
+                                            className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                        >
+                                            {" "}
+                                            <option hidden value="">
+                                                Select date range
+                                            </option>
+                                        </select>
                                         {showPicker && (
-                                            <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+                                            <div className="absolute z-50">
                                                 <DatePicker
                                                     selectsRange
                                                     startDate={startDate}
@@ -172,7 +213,7 @@ export default function ItemReport() {
                                                     onClick={() => {
                                                         setStartDate(null);
                                                         setEndDate(null);
-                                                        setFilteredItems([]); 
+                                                        setFilteredItems([]);
                                                     }}
                                                     className="absolute bottom-4 right-2 px-3 py-1 text-sm bg-[#216ba5] text-white rounded-md shadow-md transition duration-300 hover:bg-blue-500"
                                                 >

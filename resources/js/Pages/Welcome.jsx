@@ -1,6 +1,6 @@
 import { Head, Link } from "@inertiajs/react";
 import "../../css/custom.css";
-import DarkModeToggle from "@/Components/DarkModeToggle";
+import DarkModeToggle from "@/Components/LightDarkToggle";
 
 export default function Welcome({ auth }) {
     return (
@@ -53,7 +53,7 @@ export default function Welcome({ auth }) {
                                         className="flex items-start gap-6 lg:flex-col flex-col"
                                     >
                                         <img
-                                          id="dashboard-image"
+                                            id="dashboard-image"
                                             className="border border-black/30 dark:border-black/30 h-[400px] lg:h-[400px] sm:h-[300px] w-full lg:w-auto"
                                             src={"/img/light-dashboard.png"}
                                             alt="Dashboard"
@@ -183,7 +183,8 @@ export default function Welcome({ auth }) {
                                     />
                                     <div>
                                         <h2 className="text-lg font-semibold text-black dark:text-white ">
-                                            Denzel Ivan Roi Dupa - Project Manager
+                                            Denzel Ivan Roi Dupa - Project
+                                            Manager
                                         </h2>
                                         <div className="relative w-20 h-[4px] bg-[#0011ff] mb-3 mt-3">
                                             <div className="absolute  top-[-4px] w-3 h-3 bg-[#0011ff] transform rotate-45 origin-center"></div>

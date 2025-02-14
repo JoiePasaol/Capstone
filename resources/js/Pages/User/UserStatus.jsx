@@ -5,10 +5,13 @@ import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
 import TrueButton from "@/Components/TrueButton";
 import FalseButton from "@/Components/FalseButton";
+import SuccessDialog from "@/Components/SuccessDialog"
 import axios from "axios";
 
 export default function UserStatus() {
     const [users, setUsers] = useState([]);
+    const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
 
     useEffect(() => {
         fetchUsers();
@@ -35,6 +38,9 @@ export default function UserStatus() {
                 role: user.role,
             });
 
+            setSuccessMessage("User successfully accepted!");
+            setIsSuccessDialogOpen(true);
+
             fetchUsers();
         } catch (error) {
             console.error("Error updating user status:", error);
@@ -42,9 +48,13 @@ export default function UserStatus() {
     };
 
     const handleDecline = async (id) => {
-        console.log("Deleting user with ID:", id);
+       
         try {
             await axios.delete(`/api/users/${id}`);
+
+            setSuccessMessage("User successfully declined!");
+            setIsSuccessDialogOpen(true);
+
             fetchUsers();
         } catch (error) {
             console.error("Error deleting user:", error);
@@ -129,6 +139,11 @@ export default function UserStatus() {
                     </div>
                 </div>
             </div>
+            <SuccessDialog
+                isOpen={isSuccessDialogOpen}
+                onClose={() => setIsSuccessDialogOpen(false)}
+                message={successMessage}
+            />
         </AuthenticatedLayout>
     );
 };

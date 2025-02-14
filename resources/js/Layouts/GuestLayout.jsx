@@ -1,13 +1,16 @@
 import { Link } from "@inertiajs/react";
-import DarkModeToggle from "@/Components/DarkModeToggle";
+import LightDarkToggle from "@/Components/LightDarkToggle";
 
 export default function GuestLayout({ children }) {
+
+ 
+
     return (
         <div className="relative flex min-h-screen flex-col items-center bg-gray-200 pt-6 sm:justify-center sm:pt-0 dark:bg-gray-900 overflow-hidden">
-            {/* Background Image */}
+        
             <img className="guest-bg-image" src="/img/bg.jpeg" alt="Background" />
 
-            {/* Logos in Top-Left Corner */}
+          
             <div className="absolute top-[-5px] left-4 flex items-center space-x-4 z-10 dark:opacity-40">
                 <img className="h-[120px] w-auto mr-[-20px]" src="/img/MAGALLANES_LOGO.png" alt="Magallanes Logo" />
                 <img className="h-[100px] w-auto" src="/img/CSUCC_LOGO.png" alt="CSUCC Logo" />
@@ -26,7 +29,7 @@ export default function GuestLayout({ children }) {
                 {children}
             </div>
 
-            <DarkModeToggle />
+            <LightDarkToggle />
         </div>
     );
 }

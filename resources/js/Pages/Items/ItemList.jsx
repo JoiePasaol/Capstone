@@ -465,7 +465,7 @@ export default function ItemList() {
             {/* Main Content */}
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="px-6 py-4 overflow-visible bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
+                    <div className="px-6 py-4 overflow-visible bg-white ring-1 ring-black/20 sm:rounded-lg dark:bg-gray-800">
                         <div className="w-full flex justify-between items-center">
                             {/* Search and Date Range Picker */}
                             <div className="flex gap-2 items-center">
@@ -480,7 +480,7 @@ export default function ItemList() {
 
                                 {/* Date Range Picker Input */}
                                 <div className="relative z-50">
-                                    <input
+                                    <select
                                         type="text"
                                         readOnly
                                         placeholder="Select date range"
@@ -498,11 +498,11 @@ export default function ItemList() {
                                         onClick={() =>
                                             setShowPicker(!showPicker)
                                         }
-                                        className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer  w-60"
-                                    />
+                                        className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer  w-60"
+                                   >  <option hidden value="">Select date range</option></select>  
                                     {/* Date Picker Dropdown */}
                                     {showPicker && (
-                                        <div className="absolute mt-2 z-50">
+                                        <div className="absolute z-50">
                                             <DatePicker
                                                 selectsRange
                                                 startDate={startDate}
