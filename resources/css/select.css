@@ -1,0 +1,97 @@
+/* Main select container */
+.dark .custom-select-input{
+    color: #fff !important;
+}
+
+
+
+.custom-select-container {
+    border: 1px solid #d1d5db !important;
+    background-color: #ffffff !important;
+    border-radius: 2px !important;
+    height: 40px !important;
+    transition: border-color 0.2s ease-in-out;
+}
+
+/* Dark mode */
+.dark .custom-select-container {
+    border: 1px solid #374151 !important;
+    background-color: #111827 !important;
+}
+
+/* Focused state - NO box shadow */
+.custom-select-container--focused {
+    border-color: #6A6EEC !important;
+    box-shadow: none !important;
+}
+
+/* Dark mode focused */
+.dark .custom-select-container--focused {
+    border-color: #6A6EEC !important;
+    box-shadow: none !important;
+}
+
+/* Value container */
+.custom-select-value {
+    color: #000 !important;
+}
+
+/* Dark mode value */
+.dark .custom-select-value {
+    color: #fff !important;
+}
+
+/* Placeholder */
+.custom-select-placeholder {
+    color: #374151 !important;
+}
+
+/* Dark mode placeholder */
+.dark .custom-select-placeholder {
+    color: #6b7280 !important;
+}
+
+/* Dropdown menu */
+.custom-select-menu {
+    padding: 0 !important;
+    border: 1px solid #8d8d8d !important;
+    background-color: #ffffff !important;
+}
+
+/* Dark mode dropdown menu */
+.dark .custom-select-menu {
+    background-color: #111827 !important;
+}
+
+/* Options */
+/* Override react-select's default selected option background */
+.custom-select-option,
+.custom-select-option:active,
+.custom-select-option.is-selected {
+    background-color: transparent !important;
+    color: inherit !important;
+    font-weight: normal !important;
+}
+
+/* Override hover effect */
+.custom-select-option:hover {
+    background-color: #f3f4f6 !important; /* Light gray hover */
+}
+
+/* Dark mode adjustments */
+.dark .custom-select-option,
+.dark .custom-select-option:active,
+.dark .custom-select-option.is-selected {
+    background-color: transparent !important;
+    color: #fff !important;
+}
+
+.dark .custom-select-option:hover {
+    background-color: #374151 !important; /* Dark gray hover */
+}
+
+/* Ensure no focus effect on click */
+.custom-select-option:focus,
+.dark .custom-select-option:focus {
+    background-color: transparent !important;
+}

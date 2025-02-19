@@ -73,6 +73,7 @@ export default function ItemReport() {
     const headers = [
         { label: "Item", key: "item" },
         { label: "Description", key: "description" },
+        { label: "Life_Span", key: "estimated_life" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "amount" },
         { label: "Total Amount", key: "totalAmount" },
@@ -92,6 +93,7 @@ export default function ItemReport() {
                     dangerouslySetInnerHTML={{ __html: item.description }}
                 />
             ),
+            estimated_life: item.estimated_life,
             quantity: quantity,
             amount: amount ? `₱ ${amount.toFixed(2)}` : "N/A",
             totalAmount: totalAmount ? `₱ ${totalAmount.toFixed(2)}` : "N/A",
@@ -127,7 +129,6 @@ export default function ItemReport() {
                                         className="border border-black/20 dark:border-white py-1 rounded-md  text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
                                     >
                                         <option
-                                            hidden
                                             className="dark:bg-gray-800 dark:text-gray-300"
                                             value=""
                                         >
@@ -145,8 +146,15 @@ export default function ItemReport() {
                                     </select>
                                     <div className="relative z-50">
                                         <select
-                                            value={
-                                                startDate && endDate
+
+                                            onClick={() =>
+                                                setShowPicker(!showPicker)
+                                            }
+                                            className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                        >
+                                        
+                                            <option hidden value="">
+                                                {startDate && endDate
                                                     ? `${format(
                                                           startDate,
                                                           "MM/dd/yyyy"
@@ -154,16 +162,7 @@ export default function ItemReport() {
                                                           endDate,
                                                           "MM/dd/yyyy"
                                                       )}`
-                                                    : ""
-                                            }
-                                            onClick={() =>
-                                                setShowPicker(!showPicker)
-                                            }
-                                            className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
-                                        >
-                                            {" "}
-                                            <option hidden value="">
-                                                Select date range
+                                                    : "Select date range"}
                                             </option>
                                         </select>
                                         {showPicker && (

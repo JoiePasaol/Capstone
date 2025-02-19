@@ -10,7 +10,7 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'name', 'department', 'image', 'categories', 'items', 'description', 'quantity', 'price'
+        'user_id', 'name', 'department', 'image', 'categories', 'items', 'description', 'estimated_life', 'quantity', 'price'
     ];
 
     // Define the relationship: Each item belongs to a user

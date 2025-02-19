@@ -70,12 +70,17 @@ export default function AuthenticatedLayout({ header, children }) {
                             <NavLink
                                 active={
                                     route().current("item-list") ||
-                                    route().current("item-report")
+                                    route().current("item-borrow") ||
+                                    route().current("item-report") 
                                 }
                                 dropdownItems={[
                                     {
                                         label: "Item List",
                                         href: route("item-list"),
+                                    },
+                                    {
+                                        label: "Item Borrow",
+                                        href: route("item-borrow"),
                                     },
                                     {
                                         label: "Item Report",

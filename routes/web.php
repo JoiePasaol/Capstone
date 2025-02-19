@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\BorrowController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -47,11 +48,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('categories');
 
     // Items
+    Route::get('/item-borrow', function () {
+        return Inertia::render('Items/ItemBorrow');
+    })->name('item-borrow');
+
     Route::get('/item-list', function () {
         return Inertia::render('Items/ItemList');
     })->name('item-list');
 
-    
+
     Route::get('/item-report', function () {
         return Inertia::render('Items/ItemReport');
     })->name('item-report');
@@ -63,7 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::get('/users/pending-count', [UserController::class, 'getPendingUsersCount']);
         Route::get('/users/approved-count', [UserController::class, 'getApprovedUsersCount']);
-   
+        Route::put('/api/users/{id}', [UserController::class, 'update'])->name('users.update');
     });
 
        // Categories Routes
@@ -95,11 +100,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
     
                 $items = Item::whereBetween('created_at', [$startDate, $endDate])
-                    ->select('items as item', 'description', 'quantity', 'price as amount', 'created_at')
+                    ->select('items as item', 'description', 'estimated_life', 'quantity', 'price as amount', 'created_at')
                     ->get();
             } else {
                 
-                $items = Item::select('items as item', 'description', 'quantity', 'price as amount', 'created_at')->get();
+                $items = Item::select('items as item', 'description',  'estimated_life',  'quantity', 'price as amount', 'created_at')->get();
             }
         
             return response()->json($items);
@@ -107,8 +112,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/api/items/total-count', [ItemController::class, 'getTotalItemsCount']);
         Route::get('/api/items/total-amount', [ItemController::class, 'getTotalAmount']);
 
-        Route::put('/api/users/{id}', [UserController::class, 'update'])->name('users.update');
-        
+        Route::get('/search-items', [BorrowController::class, 'searchItems']);
+        Route::post('/borrow', [BorrowController::class, 'store']);
+
+    
     // Profile Routes
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');

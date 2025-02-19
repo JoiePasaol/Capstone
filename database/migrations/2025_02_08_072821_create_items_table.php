@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('categories');
             $table->string('items');
             $table->longText('description');
+            $table->string('estimated_life');
             $table->integer('quantity');
             $table->decimal('price', 8, 2);
             $table->timestamps();

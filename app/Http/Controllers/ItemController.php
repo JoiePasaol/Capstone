@@ -35,6 +35,7 @@ class ItemController extends Controller
             'categories' => 'required|string',
             'description' => 'required|string',
             'items' => 'required|string',
+            'estimated_life' => 'required|string',
             'quantity' => 'required|integer',
             'price' => 'required|numeric',
             'image' => 'nullable|image|max:2048',
@@ -58,6 +59,7 @@ class ItemController extends Controller
             'categories' => $request->categories,
             'description' => $request->description,
             'items' => $request->items,
+            'estimated_life' => $request->estimated_life,
             'quantity' => $request->quantity,
             'price' => $request->price,
         ]);
@@ -80,13 +82,7 @@ class ItemController extends Controller
         return response()->json(['message' => 'Item deleted successfully.']);
     }
 
-   public function edit($id)
-    {
- 
-        $item = Item::findOrFail($id);
-
-        return response()->json(['item' => $item]);
-    }
+  
 
     public function bulkDestroy(Request $request)
 {
@@ -113,6 +109,14 @@ class ItemController extends Controller
 }
 
 
+public function edit($id)
+{
+
+    $item = Item::findOrFail($id);
+
+    return response()->json(['item' => $item]);
+}
+
     public function update(Request $request, $id)
     {
     
@@ -121,6 +125,7 @@ class ItemController extends Controller
             'categories' => 'nullable|string',
             'description' => 'nullable|string',
             'items' => 'nullable|string',
+            'estimated_life'=> 'nullable|string',
             'quantity' => 'nullable|integer',
             'price' => 'nullable|numeric',
         ]);
@@ -145,6 +150,7 @@ class ItemController extends Controller
         $item->categories = $validatedData['categories'] ?? $item->categories;
         $item->description = $validatedData['description'] ?? $item->description;
         $item->items = $validatedData['items'] ?? $item->items;
+        $item->estimated_life = $validatedData['estimated_life'] ?? $item->estimated_life;
         $item->quantity = $validatedData['quantity'] ?? $item->quantity;
         $item->price = $validatedData['price'] ?? $item->price;
     
@@ -170,7 +176,7 @@ class ItemController extends Controller
                 return response()->json(['message' => 'Invalid CSV data format.'], 400);
             }
     
-            $requiredHeaders = ['name', 'department', 'categories', 'description', 'items', 'quantity', 'price', 'created_at'];
+            $requiredHeaders = ['name', 'department', 'categories', 'description', 'items', 'estimated_life', 'quantity', 'price', 'created_at'];
     
             $headers = array_keys($data[0] ?? []);
             foreach ($requiredHeaders as $requiredColumn) {
@@ -196,6 +202,9 @@ class ItemController extends Controller
                     ['categories', $row['categories']],
                     ['description', $row['description']],
                     ['items', $row['items']],
+                    ['estimated_life', $row['estimated_life']],
+                    ['quantity', $row['quantity']],
+                    ['price', $row['price']],
                     ['department', $department], 
                     ['name', $row['name']]
                 ])->exists();
@@ -212,6 +221,7 @@ class ItemController extends Controller
                         'categories' => $row['categories'],
                         'description' => $row['description'],
                         'items' => $row['items'],
+                        'estimated_life' => $row['estimated_life'],
                         'quantity' => intval($row['quantity']),
                         'price' => floatval($row['price']),
                         'created_at' => $createdAt,

@@ -42,9 +42,11 @@ export default function ItemList() {
         categories: "",
         description: "",
         items: "",
+        estimated_life: "",
         quantity: "",
         price: "",
     });
+    
     const [processing, setProcessing] = useState(false);
     const [categories, setCategories] = useState([]);
     const [items, setItems] = useState([]);
@@ -96,6 +98,7 @@ export default function ItemList() {
                     categories: item.categories || "",
                     description: item.description || "",
                     items: item.items || "",
+                    estimated_life: item.estimated_life || "",
                     quantity: item.quantity || "",
                     price: item.price || "",
                     image: null,
@@ -120,6 +123,7 @@ export default function ItemList() {
         formData.append("categories", data.categories || "");
         formData.append("description", data.description || "");
         formData.append("items", data.items || "");
+        formData.append("estimated_life", data.estimated_life || "");
         formData.append("quantity", data.quantity || 0);
         formData.append("price", data.price || 0);
 
@@ -248,6 +252,7 @@ export default function ItemList() {
                 item.categories,
                 item.description,
                 item.items,
+                item.estimated_life,
             ].some((field) =>
                 field?.toLowerCase().includes(searchTerm.toLowerCase())
             );
@@ -347,9 +352,11 @@ export default function ItemList() {
         { label: "Category", key: "categories" },
         { label: "Item", key: "items" },
         { label: "Description", key: "description" },
+        { label: "Life_Span", key: "estimated_life" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "price" },
         { label: "Created_At", key: "created_at" },
+        { label: "Updated_At", key: "updated_at" },
     ];
 
     const paginatedItems = useMemo(() => {
@@ -377,14 +384,18 @@ export default function ItemList() {
         items: item.items ?? "N/A",
         description: (
             <div
-            className="ql-editor ql-snow w-[250px] whitespace-normal"
-            dangerouslySetInnerHTML={{ __html: item.description }}
-        />
+                className="ql-editor ql-snow w-[250px] whitespace-normal"
+                dangerouslySetInnerHTML={{ __html: item.description }}
+            />
         ),
+        estimated_life: item.estimated_life ?? "N/A",
         quantity: item.quantity ?? 0,
         price: item.price ? `₱ ${item.price}` : "N/A",
         created_at: item.created_at
             ? new Date(item.created_at).toLocaleString()
+            : "N/A",
+        updated_at: item.updated_at
+            ? new Date(item.updated_at).toLocaleString()
             : "N/A",
     }));
 
@@ -402,7 +413,7 @@ export default function ItemList() {
             <Dropdown.Trigger>
                 <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
             </Dropdown.Trigger>
-            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-108px] bg-gray-700 ">
+            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px] bg-gray-700">
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();
@@ -456,7 +467,7 @@ export default function ItemList() {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Items
+                    Item List
                 </h2>
             }
         >
@@ -481,11 +492,14 @@ export default function ItemList() {
                                 {/* Date Range Picker Input */}
                                 <div className="relative z-50">
                                     <select
-                                        type="text"
-                                        readOnly
-                                        placeholder="Select date range"
-                                        value={
-                                            startDate && endDate
+                                        onClick={() =>
+                                            setShowPicker(!showPicker)
+                                        }
+                                        className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer  w-60"
+                                    >
+                                        {" "}
+                                        <option hidden value="">
+                                            {startDate && endDate
                                                 ? `${format(
                                                       startDate,
                                                       "MM/dd/yyyy"
@@ -493,13 +507,9 @@ export default function ItemList() {
                                                       endDate,
                                                       "MM/dd/yyyy"
                                                   )}`
-                                                : ""
-                                        }
-                                        onClick={() =>
-                                            setShowPicker(!showPicker)
-                                        }
-                                        className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer  w-60"
-                                   >  <option hidden value="">Select date range</option></select>  
+                                                : "Select date range"}
+                                        </option>
+                                    </select>
                                     {/* Date Picker Dropdown */}
                                     {showPicker && (
                                         <div className="absolute z-50">
@@ -655,6 +665,21 @@ export default function ItemList() {
                         />
                         <InputError
                             message={errors.description}
+                            className="mt-2"
+                        />
+                    </div>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="estimated_life" value="Life_Span" />
+                        <TextInput
+                            id="quantity"
+                            className="mt-2 block w-full h-10 rounded-sm"
+                            value={data.estimated_life}
+                            onChange={(e) =>
+                                setData("estimated_life", e.target.value)
+                            }
+                        />
+                        <InputError
+                            message={errors.estimated_life}
                             className="mt-2"
                         />
                     </div>

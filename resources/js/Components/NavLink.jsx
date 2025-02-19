@@ -60,7 +60,7 @@ export default function NavLink({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
             >
-                <div className="absolute left-0 mt-2 w-48 rounded-md ring-1 ring-black/30 dark:ring-white/30 bg-white dark:bg-gray-700 py-1">
+                <div className="absolute z-50 left-0 mt-2 w-48 rounded-md ring-1 ring-black/30 dark:ring-white/30 bg-white dark:bg-gray-700 py-1">
                     {dropdownItems.map((item, index) => (
                         <Link
                             key={index}
