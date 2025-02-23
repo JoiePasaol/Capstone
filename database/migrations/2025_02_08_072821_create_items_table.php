@@ -17,17 +17,20 @@ return new class extends Migration
             $table->string('categories');
             $table->string('items');
             $table->longText('description');
-            $table->string('estimated_life');
+            $table->string('estimated_life')->after('description');
             $table->integer('quantity');
             $table->decimal('price', 8, 2);
+            $table->string('ics')->nullable();
+            $table->string('pr')->nullable();
+            $table->date('pr_date')->nullable();
+            $table->string('po')->nullable();
+            $table->date('po_date')->nullable();
             $table->timestamps();
         });
-        
     }
 
     public function down(): void
     {
         Schema::dropIfExists('items');
-
     }
 };

@@ -1,4 +1,4 @@
-
+import { format } from "date-fns";
 
 const Table = ({ headers, rows, actions }) => {
     return (
@@ -9,9 +9,7 @@ const Table = ({ headers, rows, actions }) => {
                         {headers.map((header, index) => (
                             <th
                                 key={index}
-                                onClick={() =>
-                                    header.key !== "select-all"
-                                }
+                                onClick={() => header.key !== "select-all"}
                                 className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left cursor-pointer"
                             >
                                 {header.label}
@@ -32,15 +30,33 @@ const Table = ({ headers, rows, actions }) => {
                             className="odd:bg-white even:bg-gray-300 dark:odd:bg-gray-800 dark:even:bg-gray-700"
                         >
                             {Object.keys(row).map((key, index) => {
-                                if (key === "id") return null; 
+                                if (key === "id") return null;
                                 return (
                                     <td
                                         key={index}
                                         className="border border-gray-400 dark:border-gray-600 px-4 py-2 whitespace-nowrap"
                                     >
-                                        {key === "created_at" || key === "updated_at"
-                                            ? new Date(row[key]).toLocaleString() 
-                                            : row[key]}
+                                        {[
+                                            "pr_date",
+                                            "po_date",
+                                            "vc_date",
+                                        ].includes(key) &&
+                                        row[key] &&
+                                        !isNaN(new Date(row[key]))
+                                            ? format(
+                                                  new Date(row[key]),
+                                                  "MM/dd/yyyy"
+                                              )
+                                            : [
+                                                  "created_at",
+                                                  "updated_at",
+                                              ].includes(key) &&
+                                              row[key] &&
+                                              !isNaN(new Date(row[key]))
+                                            ? new Date(
+                                                  row[key]
+                                              ).toLocaleString()
+                                            : row[key] ?? "N/A"}
                                     </td>
                                 );
                             })}

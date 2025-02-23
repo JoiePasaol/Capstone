@@ -6,6 +6,7 @@ const Drawer = ({
     isDrawerOpen,
     toggleDrawer,
     title = "Drawer Title",
+    width = "350px",
     children,
 
 }) => {
@@ -17,7 +18,7 @@ const Drawer = ({
                 anchor="right"
               
             >
-                <div className="w-[350px] h-full dark:bg-gray-800 overflow-x-hidden">
+                <div className={`h-full dark:bg-gray-800 overflow-x-hidden`} style={{ width }}>
                 <div className="h-[65px] w-full px-4 border-b-2 border-b-gray-400 dark:text-white/70 text-xl flex items-center justify-between">
                     {title}
                     <CloseIcon

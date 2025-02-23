@@ -18,7 +18,6 @@ import Pagination from "@/Components/Pagination";
 import axios from "axios";
 
 const UserManagement = () => {
-
     //State Management
 
     const [users, setUsers] = useState([]);
@@ -105,7 +104,7 @@ const UserManagement = () => {
 
     const handleDeleteClick = (user = null) => {
         if (user) {
-            setSelectedUsers([user]); 
+            setSelectedUsers([user]);
             setDialogTitle("Are you sure you want to delete this user?");
         } else {
             const userCount = selectedUsers.length;
@@ -137,8 +136,7 @@ const UserManagement = () => {
                     (user) => !selectedUsers.some((u) => u.id === user.id)
                 )
             );
-    
-      
+
             const userCount = selectedUsers.length;
             setSuccessMessage(
                 userCount === 1
@@ -153,7 +151,7 @@ const UserManagement = () => {
             setSelectedUsers([]);
         }
     };
-    
+
     const handleCancelDelete = () => setIsDialogOpen(false);
 
     // 7. Saving Edited User
@@ -254,11 +252,11 @@ const UserManagement = () => {
     const actions = useCallback(
         (user) => (
             <div className="flex justify-center" key={`actions-${user.id}`}>
-                <Dropdown>
+                <Dropdown className="">
                     <Dropdown.Trigger>
                         <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
                     </Dropdown.Trigger>
-                    <Dropdown.Content contentClasses=" py-1 right-7 top-[-90px] bg-gray-700 ">
+                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px] bg-gray-100 dark:bg-gray-700">
                         <Dropdown.Link
                             onClick={(e) => {
                                 e.preventDefault();
@@ -274,14 +272,13 @@ const UserManagement = () => {
                             }}
                         >
                             Delete
-                        </Dropdown.Link>
+                        </Dropdown.Link>    
                     </Dropdown.Content>
                 </Dropdown>
             </div>
         ),
         [handleEditClick, handleDeleteClick]
     );
-    
 
     //Returning the JSX Layout
 
@@ -327,12 +324,11 @@ const UserManagement = () => {
                         )}
 
                         <div className="text-gray-900 dark:text-gray-100">
-                         
-                                <Table
-                                    headers={headers}
-                                    rows={paginatedRows}
-                                    actions={actions}
-                                />
+                            <Table
+                                headers={headers}
+                                rows={paginatedRows}
+                                actions={actions}
+                            />
                         </div>
 
                         <Pagination

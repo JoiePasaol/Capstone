@@ -22,6 +22,7 @@ import "../../../css/select.css";
 import axios from "axios";
 
 export default function ItemBorrow() {
+    
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
@@ -118,6 +119,7 @@ export default function ItemBorrow() {
 
     const rows = [
         {
+            select: <Checkbox />,
             id: 1,
             index: 1,
             name: "John Doe",
@@ -128,6 +130,7 @@ export default function ItemBorrow() {
             updated_at: "2022-01-01",
         },
         {
+            select: <Checkbox />,
             id: 2,
             index: 2,
             name: "Jane Doe",
@@ -138,6 +141,7 @@ export default function ItemBorrow() {
             updated_at: "2022-01-02",
         },
         {
+            select: <Checkbox />,
             id: 3,
             index: 3,
             name: "Bob Doe",

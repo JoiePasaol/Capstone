@@ -28,15 +28,18 @@ import "quill/dist/quill.snow.css";
 import axios from "axios";
 
 export default function ItemList() {
-    //State Management
-
+    //Drawer Management
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+
+    //Dialog Management
     const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
     const [confirmMessage, setConfirmMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [deleteTarget, setDeleteTarget] = useState(null);
+
+    //Form Management
     const { data, setData, post, reset, errors } = useForm({
         image: null,
         categories: "",
@@ -45,18 +48,35 @@ export default function ItemList() {
         estimated_life: "",
         quantity: "",
         price: "",
+        ics: "",
+        pr: "",
+        pr_date: "",
+        po: "",
+        po_date: "",
+        vc: "",
+        vc_date: "",
     });
-    
+
+    //Item Management
     const [processing, setProcessing] = useState(false);
     const [categories, setCategories] = useState([]);
     const [items, setItems] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalContent, setModalContent] = useState(null);
-    const [selectedFileName, setSelectedFileName] = useState("Select a file");
     const [filteredItems, setFilteredItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedItems, setSelectedItems] = useState([]);
+
+    //DatePicker Management
+    const [activeDatePicker, setActiveDatePicker] = useState(null);
+    const toggleDatePicker = (picker) => {
+        setActiveDatePicker(activeDatePicker === picker ? null : picker);
+    };
+
+    //Modal Management
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalContent, setModalContent] = useState(null);
+    const [selectedFileName, setSelectedFileName] = useState("Select a file");
+
     const itemsPerPage = 10;
 
     //Import/Export Logic
@@ -90,7 +110,7 @@ export default function ItemList() {
     const toggleDrawer = (open, isEdit = false, item = null) => {
         setIsDrawerOpen(open);
         setIsEditMode(isEdit);
-
+    
         if (open) {
             if (isEdit && item) {
                 setData({
@@ -101,9 +121,16 @@ export default function ItemList() {
                     estimated_life: item.estimated_life || "",
                     quantity: item.quantity || "",
                     price: item.price || "",
+                    ics: item.ics || "",
+                    pr: item.pr || "",
+                    pr_date: item.pr_date || "",
+                    po: item.po || "",
+                    po_date: item.po_date || "",
+                    vc: item.vc || "",
+                    vc_date: item.vc_date || "",
                     image: null,
                 });
-
+    
                 setSelectedFileName(
                     item.image ? item.image.split("/").pop() : "Select a file"
                 );
@@ -113,12 +140,12 @@ export default function ItemList() {
             }
         }
     };
-
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+    
         setProcessing(true);
-
+    
         const formData = new FormData();
         formData.append("categories", data.categories || "");
         formData.append("description", data.description || "");
@@ -126,11 +153,18 @@ export default function ItemList() {
         formData.append("estimated_life", data.estimated_life || "");
         formData.append("quantity", data.quantity || 0);
         formData.append("price", data.price || 0);
-
+        formData.append("ics", data.ics || "");
+        formData.append("pr", data.pr || "");
+        formData.append("pr_date", data.pr_date || "");
+        formData.append("po", data.po || "");
+        formData.append("po_date", data.po_date || "");
+        formData.append("vc", data.vc || "");
+        formData.append("vc_date", data.vc_date || "");
+    
         if (data.image instanceof File) {
             formData.append("image", data.image);
         }
-
+    
         if (!data.id) {
             post(route("items.store"), {
                 data: formData,
@@ -149,7 +183,7 @@ export default function ItemList() {
             });
         } else {
             formData.append("_method", "PUT");
-
+    
             axios
                 .post(route("items.update", { id: data.id }), formData, {
                     headers: { "Content-Type": "multipart/form-data" },
@@ -158,13 +192,13 @@ export default function ItemList() {
                     toggleDrawer(false);
                     reset();
                     setSelectedFileName("Select a file");
-
+    
                     setItems((prevItems) =>
                         prevItems.map((item) =>
                             item.id === data.id ? response.data.item : item
                         )
                     );
-
+    
                     setSuccessMessage("Item successfully updated!");
                     setIsSuccessDialogOpen(true);
                     setProcessing(false);
@@ -175,6 +209,7 @@ export default function ItemList() {
                 });
         }
     };
+    
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -228,7 +263,7 @@ export default function ItemList() {
     //Filtering Items
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
-    const [showPicker, setShowPicker] = useState(false);
+    const [showDateRangePicker, setDateRangeShowPicker] = useState(false);
 
     useEffect(() => {
         if (items.length === 0) return;
@@ -236,26 +271,26 @@ export default function ItemList() {
         const filtered = items.filter((item) => {
             const itemDate = new Date(item.created_at);
 
-            // Ensure endDate includes the full day
-            const adjustedEndDate = endDate
-                ? new Date(endDate.setHours(23, 59, 59, 999))
-                : null;
+            // Create a copy of endDate to avoid mutating state
+            const adjustedEndDate = endDate ? new Date(endDate) : null;
+            adjustedEndDate?.setHours(23, 59, 59, 999);
 
             const isInRange =
-                (!startDate || itemDate.getTime() >= startDate.getTime()) &&
-                (!adjustedEndDate ||
-                    itemDate.getTime() <= adjustedEndDate.getTime());
+                (!startDate || itemDate >= startDate) &&
+                (!adjustedEndDate || itemDate <= adjustedEndDate);
 
-            const matchesSearch = [
-                item.name,
-                item.department,
-                item.categories,
-                item.description,
-                item.items,
-                item.estimated_life,
-            ].some((field) =>
-                field?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const matchesSearch =
+                item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.department
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase()) ||
+                item.categories
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase()) ||
+                item.description
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase()) ||
+                item.items.toLowerCase().includes(searchTerm.toLowerCase());
 
             return matchesSearch && isInRange;
         });
@@ -355,6 +390,13 @@ export default function ItemList() {
         { label: "Life_Span", key: "estimated_life" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "price" },
+        { label: "ICS_#", key: "ics" },
+        { label: "PR_#", key: "pr" },
+        { label: "PR_Date", key: "pr_date" },
+        { label: "PO_#", key: "po" },
+        { label: "PO_Date", key: "po_date" },
+        { label: "VC_#", key: "vc" },
+        { label: "VC_Date", key: "vc_date" },
         { label: "Created_At", key: "created_at" },
         { label: "Updated_At", key: "updated_at" },
     ];
@@ -379,7 +421,7 @@ export default function ItemList() {
         index: index + 1 + (currentPage - 1) * itemsPerPage,
         name: item.name,
         department: item.department ?? "N/A",
-        image: item.image ? item.image.split("/").pop() : "No Image",
+        image: item.image ? item.image.split("/").pop() : "N/A",
         categories: item.categories ?? "N/A",
         items: item.items ?? "N/A",
         description: (
@@ -391,6 +433,20 @@ export default function ItemList() {
         estimated_life: item.estimated_life ?? "N/A",
         quantity: item.quantity ?? 0,
         price: item.price ? `₱ ${item.price}` : "N/A",
+        ics: item.ics ?? "N/A",
+        pr: item.pr ?? "N/A",
+        pr: item.pr ?? "N/A",
+        pr_date: item.pr_date
+            ? format(new Date(item.pr_date), "MM/dd/yyyy")
+            : "N/A",
+        po: item.po ?? "N/A",
+        po_date: item.po_date
+            ? format(new Date(item.po_date), "MM/dd/yyyy")
+            : "N/A",
+        vc: item.vc ?? "N/A",
+        vc_date: item.vc_date
+            ? format(new Date(item.vc_date), "MM/dd/yyyy")
+            : "N/A",
         created_at: item.created_at
             ? new Date(item.created_at).toLocaleString()
             : "N/A",
@@ -400,7 +456,6 @@ export default function ItemList() {
     }));
 
     //Select Option for Categories
-
     const selectOption = categories.map((category) => ({
         label: category.name,
         value: category.name,
@@ -413,12 +468,12 @@ export default function ItemList() {
             <Dropdown.Trigger>
                 <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
             </Dropdown.Trigger>
-            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px] bg-gray-700">
+            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-108px] bg-gray-100 dark:bg-gray-700">
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();
                         let imageSrc =
-                            row.image !== "No Image"
+                            row.image !== "N/A"
                                 ? `/storage/images/${row.image}`
                                 : null;
 
@@ -493,7 +548,9 @@ export default function ItemList() {
                                 <div className="relative z-50">
                                     <select
                                         onClick={() =>
-                                            setShowPicker(!showPicker)
+                                            setDateRangeShowPicker(
+                                                !showDateRangePicker
+                                            )
                                         }
                                         className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer  w-60"
                                     >
@@ -511,7 +568,7 @@ export default function ItemList() {
                                         </option>
                                     </select>
                                     {/* Date Picker Dropdown */}
-                                    {showPicker && (
+                                    {showDateRangePicker && (
                                         <div className="absolute z-50">
                                             <DatePicker
                                                 selectsRange
@@ -608,107 +665,347 @@ export default function ItemList() {
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
                 title={isEditMode ? "Edit Item" : "Add Item"}
+                width="550px"
             >
                 <form onSubmit={handleSubmit}>
-                    <div className="mt-2">
-                        <InputLabel htmlFor="image" value="Image" />
-                        <div className="relative mt-2">
-                            <TextInput
-                                id="image"
-                                type="file"
-                                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                                onChange={handleImageChange}
-                            />
-                            <div className="block w-full h-10 rounded-sm ring-1 ring-gray-300 dark:ring-gray-600 dark:bg-gray-900 flex items-center text-gray-700 dark:text-gray-300 px-2">
-                                <span className="text-sm truncate">
-                                    {selectedFileName}
-                                </span>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <div className="mt-2">
+                                <InputLabel htmlFor="image" value="Image" />
+                                <div className="relative mt-2">
+                                    <TextInput
+                                        id="image"
+                                        type="file"
+                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                        onChange={handleImageChange}
+                                    />
+                                    <div className="block w-full h-10 rounded-sm ring-1 ring-gray-300 dark:ring-gray-600 dark:bg-gray-900 flex items-center text-gray-700 dark:text-gray-300 px-2">
+                                        <span className="text-sm truncate">
+                                            {selectedFileName}
+                                        </span>
+                                    </div>
+                                </div>
+                                <InputError
+                                    message={errors.image}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div className="mt-4">
+                                <InputLabel
+                                    htmlFor="categories"
+                                    value="Category"
+                                />
+                                <SelectOption
+                                    id="categories"
+                                    className="mt-2 block w-full h-10 rounded-sm text-sm"
+                                    placeholder="Select a category"
+                                    options={selectOption}
+                                    value={data.categories}
+                                    onChange={(e) =>
+                                        setData("categories", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.categories}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4">
+                                <InputLabel htmlFor="items" value="Item" />
+                                <TextInput
+                                    id="items"
+                                    className="mt-2 block w-full h-10 rounded-sm"
+                                    value={data.items}
+                                    onChange={(e) =>
+                                        setData("items", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.items}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4">
+                                <InputLabel
+                                    htmlFor="description"
+                                    value="Description"
+                                />
+                                <QuillEditor
+                                    value={data.description}
+                                    onChange={(content) =>
+                                        setData("description", content)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.description}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4">
+                                <InputLabel
+                                    htmlFor="estimated_life"
+                                    value="Life_Span"
+                                />
+                                <TextInput
+                                    id="quantity"
+                                    className="mt-2 block w-full h-10 rounded-sm"
+                                    value={data.estimated_life}
+                                    onChange={(e) =>
+                                        setData(
+                                            "estimated_life",
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                                <InputError
+                                    message={errors.estimated_life}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4">
+                                <InputLabel
+                                    htmlFor="quantity"
+                                    value="Quantity"
+                                />
+                                <TextInput
+                                    id="quantity"
+                                    className="mt-2 block w-full h-10 rounded-sm"
+                                    value={data.quantity}
+                                    onChange={(e) =>
+                                        setData("quantity", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.quantity}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4">
+                                <InputLabel htmlFor="price" value="Amount" />
+                                <TextInput
+                                    id="price"
+                                    className="mt-2 block w-full h-10 rounded-sm"
+                                    value={data.price}
+                                    onChange={(e) =>
+                                        setData("price", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.price}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-2">
+                                <InputLabel htmlFor="ics" value="ICS #" />
+                                <TextInput
+                                    id="ics"
+                                    className="mt-2 block w-60 h-10 rounded-sm"
+                                    value={data.ics}
+                                    onChange={(e) =>
+                                        setData("ics", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.ics}
+                                    className="mt-2"
+                                />
                             </div>
                         </div>
-                        <InputError message={errors.image} className="mt-2" />
+                        <div>
+                            <div className="mt-2">
+                                <InputLabel htmlFor="price" value="PR #" />
+                                <TextInput
+                                    id="pr"
+                                    className="mt-2 block w-60 h-10 rounded-sm"
+                                    value={data.pr}
+                                    onChange={(e) =>
+                                        setData("pr", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.pr}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4 w-60">
+                                <InputLabel htmlFor="pr#" value="PR Date" />
+                                <div className="relative">
+                                    <div
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+                        rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer flex items-center"
+                                        onClick={() =>
+                                            toggleDatePicker("pr_date")
+                                        }
+                                    >
+                                        {data.pr_date
+                                            ? format(
+                                                  new Date(data.pr_date),
+                                                  "MM/dd/yyyy"
+                                              )
+                                            : "Select date"}
+                                    </div>
+                                    {activeDatePicker === "pr_date" && (
+                                        <div className="absolute z-50">
+                                            <DatePicker
+                                                selected={
+                                                    data.pr_date
+                                                        ? new Date(data.pr_date)
+                                                        : null
+                                                }
+                                                onChange={(date) => {
+                                                    setData(
+                                                        "pr_date",
+                                                        format(
+                                                            date,
+                                                            "MM/dd/yyyy"
+                                                        )
+                                                    );
+                                                }}
+                                                inline
+                                                calendarClassName="dark:bg-gray-800 pb-7"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <InputError
+                                    message={errors.date}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4">
+                                <InputLabel htmlFor="po#" value="P.O #" />
+                                <TextInput
+                                    id="po"
+                                    className="mt-2 block w-60 h-10 rounded-sm"
+                                    value={data.po}
+                                    onChange={(e) =>
+                                        setData("po", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.po}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-4 w-60">
+                                <InputLabel
+                                    htmlFor="po_date"
+                                    value="P.O Date"
+                                />
+                                <div className="relative">
+                                    <div
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+                        rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer flex items-center"
+                                        onClick={() =>
+                                            toggleDatePicker("po_date")
+                                        }
+                                    >
+                                        {data.po_date
+                                            ? format(
+                                                  new Date(data.po_date),
+                                                  "MM/dd/yyyy"
+                                              )
+                                            : "Select date"}
+                                    </div>
+                                    {activeDatePicker === "po_date" && (
+                                        <div className="absolute z-50">
+                                            <DatePicker
+                                                selected={
+                                                    data.po_date
+                                                        ? new Date(data.po_date)
+                                                        : null
+                                                }
+                                                onChange={(date) => {
+                                                    setData(
+                                                        "po_date",
+                                                        format(
+                                                            date,
+                                                            "MM/dd/yyyy"
+                                                        )
+                                                    );
+                                                    setActiveDatePicker(null);
+                                                }}
+                                                inline
+                                                calendarClassName="dark:bg-gray-800 pb-7"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <InputError
+                                    message={errors.date}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="mt-2.5">
+                                <InputLabel htmlFor="vc#" value="V.C #" />
+                                <TextInput
+                                    id="vc"
+                                    className="mt-2 block w-60 h-10 rounded-sm"
+                                    value={data.vc}
+                                    onChange={(e) =>
+                                        setData("vc", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.vc}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div className="mt-4 w-60">
+                                <InputLabel
+                                    htmlFor="vc_date"
+                                    value="V.C Date"
+                                />
+                                <div className="relative">
+                                    <div
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+            rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer flex items-center"
+                                        onClick={() =>
+                                            toggleDatePicker("vc_date")
+                                        }
+                                    >
+                                        {data.vc_date
+                                            ? format(
+                                                  new Date(data.vc_date),
+                                                  "MM/dd/yyyy"
+                                              )
+                                            : "Select date"}
+                                    </div>
+                                    {activeDatePicker === "vc_date" && (
+                                        <div className="absolute z-50">
+                                            <DatePicker
+                                                selected={
+                                                    data.vc_date
+                                                        ? new Date(data.vc_date)
+                                                        : null
+                                                }
+                                                onChange={(date) => {
+                                                    setData(
+                                                        "vc_date",
+                                                        format(
+                                                            date,
+                                                            "MM/dd/yyyy"
+                                                        )
+                                                    );
+                                                    setActiveDatePicker(null);
+                                                }}
+                                                inline
+                                                calendarClassName="dark:bg-gray-800 pb-7"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <InputError
+                                    message={errors.vc_date}
+                                    className="mt-2"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="mt-4">
-                        <InputLabel htmlFor="categories" value="Category" />
-                        <SelectOption
-                            id="categories"
-                            className="mt-2 block w-full h-10 rounded-sm text-sm"
-                            placeholder="Select a category"
-                            options={selectOption}
-                            value={data.categories}
-                            onChange={(e) =>
-                                setData("categories", e.target.value)
-                            }
-                        />
-                        <InputError
-                            message={errors.categories}
-                            className="mt-2"
-                        />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="items" value="Item" />
-                        <TextInput
-                            id="items"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.items}
-                            onChange={(e) => setData("items", e.target.value)}
-                        />
-                        <InputError message={errors.items} className="mt-2" />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="description" value="Description" />
-                        <QuillEditor
-                            value={data.description}
-                            onChange={(content) =>
-                                setData("description", content)
-                            }
-                        />
-                        <InputError
-                            message={errors.description}
-                            className="mt-2"
-                        />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="estimated_life" value="Life_Span" />
-                        <TextInput
-                            id="quantity"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.estimated_life}
-                            onChange={(e) =>
-                                setData("estimated_life", e.target.value)
-                            }
-                        />
-                        <InputError
-                            message={errors.estimated_life}
-                            className="mt-2"
-                        />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="quantity" value="Quantity" />
-                        <TextInput
-                            id="quantity"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.quantity}
-                            onChange={(e) =>
-                                setData("quantity", e.target.value)
-                            }
-                        />
-                        <InputError
-                            message={errors.quantity}
-                            className="mt-2"
-                        />
-                    </div>
-                    <div className="mt-4">
-                        <InputLabel htmlFor="price" value="Amount" />
-                        <TextInput
-                            id="price"
-                            className="mt-2 block w-full h-10 rounded-sm"
-                            value={data.price}
-                            onChange={(e) => setData("price", e.target.value)}
-                        />
-                        <InputError message={errors.price} className="mt-2" />
-                    </div>
-                    <div className="mt-5">
+                    <div className="mt-6">
                         <SecondaryButton
                             type="submit"
                             className="w-full h-10 rounded-sm"

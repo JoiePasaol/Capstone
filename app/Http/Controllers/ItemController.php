@@ -29,8 +29,11 @@ class ItemController extends Controller
         ]);
     }
     
+
     public function store(Request $request)
     {
+        \Log::info('Received Request Data:', $request->all()); 
+    
         $request->validate([
             'categories' => 'required|string',
             'description' => 'required|string',
@@ -38,18 +41,26 @@ class ItemController extends Controller
             'estimated_life' => 'required|string',
             'quantity' => 'required|integer',
             'price' => 'required|numeric',
+            'ics' => 'nullable|string',
+            'pr' => 'nullable|string',
+            'pr_date' => 'nullable|date',
+            'po' => 'nullable|string',
+            'po_date' => 'nullable|date',
             'image' => 'nullable|image|max:2048',
         ]);
     
         $user = Auth::user();
         $fullName = trim($user->firstname . ' ' . $user->lastname);
     
- 
         $imagePath = null;
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');  
+            $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
         }
+    
+        // Convert dates to 'YYYY-MM-DD' format
+        $prDate = $request->pr_date ? Carbon::createFromFormat('m/d/Y', $request->pr_date)->format('Y-m-d') : null;
+        $poDate = $request->po_date ? Carbon::createFromFormat('m/d/Y', $request->po_date)->format('Y-m-d') : null;
     
         $item = Item::create([
             'user_id' => $user->id,
@@ -62,10 +73,16 @@ class ItemController extends Controller
             'estimated_life' => $request->estimated_life,
             'quantity' => $request->quantity,
             'price' => $request->price,
+            'ics' => $request->ics,
+            'pr' => $request->pr, 
+            'pr_date' => $prDate,
+            'po' => $request->po, 
+            'po_date' => $poDate, 
         ]);
     
         return redirect()->route('item-list')->with('success', 'Item added successfully.');
     }
+    
     
     
     public function destroy($id)
@@ -117,52 +134,57 @@ public function edit($id)
     return response()->json(['item' => $item]);
 }
 
-    public function update(Request $request, $id)
-    {
-    
-        $validatedData = $request->validate([
-            'image' => 'nullable|image|max:2048',
-            'categories' => 'nullable|string',
-            'description' => 'nullable|string',
-            'items' => 'nullable|string',
-            'estimated_life'=> 'nullable|string',
-            'quantity' => 'nullable|integer',
-            'price' => 'nullable|numeric',
-        ]);
-    
+public function update(Request $request, $id)
+{
+    $validatedData = $request->validate([
+        'image' => 'nullable|image|max:2048',
+        'categories' => 'nullable|string',
+        'description' => 'nullable|string',
+        'items' => 'nullable|string',
+        'estimated_life'=> 'nullable|string',
+        'quantity' => 'nullable|integer',
+        'price' => 'nullable|numeric',
+        'ics' => 'nullable|string',
+        'pr' => 'nullable|string',
+        'pr_date' => 'nullable|date',
+        'po' => 'nullable|string',
+        'po_date' => 'nullable|date',
+       
+    ]);
 
-        $item = Item::findOrFail($id);
-    
+    $item = Item::findOrFail($id);
 
-        if ($request->hasFile('image')) {
-   
-            if ($item->image && \Storage::disk('public')->exists($item->image)) {
-                \Storage::disk('public')->delete($item->image);
-            }
-    
-     
-            $image = $request->file('image');
-            $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
-            $item->image = $imagePath; 
+    if ($request->hasFile('image')) {
+        if ($item->image && \Storage::disk('public')->exists($item->image)) {
+            \Storage::disk('public')->delete($item->image);
         }
-    
 
-        $item->categories = $validatedData['categories'] ?? $item->categories;
-        $item->description = $validatedData['description'] ?? $item->description;
-        $item->items = $validatedData['items'] ?? $item->items;
-        $item->estimated_life = $validatedData['estimated_life'] ?? $item->estimated_life;
-        $item->quantity = $validatedData['quantity'] ?? $item->quantity;
-        $item->price = $validatedData['price'] ?? $item->price;
-    
-  
-        $item->save();
-    
-   
-        return response()->json([
-            'message' => 'Item successfully updated!',
-            'item' => $item, 
-        ]);
+        $image = $request->file('image');
+        $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
+        $item->image = $imagePath; 
     }
+
+    $item->categories = $validatedData['categories'] ?? $item->categories;
+    $item->description = $validatedData['description'] ?? $item->description;
+    $item->items = $validatedData['items'] ?? $item->items;
+    $item->estimated_life = $validatedData['estimated_life'] ?? $item->estimated_life;
+    $item->quantity = $validatedData['quantity'] ?? $item->quantity;
+    $item->price = $validatedData['price'] ?? $item->price;
+    $item->ics = $validatedData['ics'] ?? $item->ics;
+    $item->pr = $validatedData['pr'] ?? $item->pr;
+    $item->pr_date = $validatedData['pr_date'] ?? $item->pr_date;
+    $item->po = $validatedData['po'] ?? $item->po;
+    $item->po_date = $validatedData['po_date'] ?? $item->po_date;
+
+
+    $item->save();
+
+    return response()->json([
+        'message' => 'Item successfully updated!',
+        'item' => $item, 
+    ]);
+}
+
     
     
     public function import(Request $request)

@@ -10,10 +10,27 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'name', 'department', 'image', 'categories', 'items', 'description', 'estimated_life', 'quantity', 'price'
+        'user_id',
+        'name',
+        'department',
+        'image',
+        'categories',
+        'items',
+        'description',
+        'estimated_life',
+        'quantity',
+        'price',
+        'ics',
+        'pr',
+        'pr_date',
+        'po',
+        'po_date',
+        'vc',
+        'vc_date',
+       
     ];
 
-    // Define the relationship: Each item belongs to a user
+
     public function user()
     {
         return $this->belongsTo(User::class);
