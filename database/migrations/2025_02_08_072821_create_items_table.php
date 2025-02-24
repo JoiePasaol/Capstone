@@ -19,12 +19,18 @@ return new class extends Migration
             $table->longText('description');
             $table->string('estimated_life')->after('description');
             $table->integer('quantity');
-            $table->decimal('price', 8, 2);
+            $table->decimal('price', 15, 2);
             $table->string('ics')->nullable();
             $table->string('pr')->nullable();
             $table->date('pr_date')->nullable();
             $table->string('po')->nullable();
             $table->date('po_date')->nullable();
+            $table->string('vc')->nullable();
+            $table->date('vc_date')->nullable();
+            $table->string('ch')->nullable();
+            $table->date('ch_date')->nullable();
+            $table->string('or')->nullable();
+            $table->date('or_date')->nullable();
             $table->timestamps();
         });
     }

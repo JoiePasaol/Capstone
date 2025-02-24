@@ -6,7 +6,7 @@ export function exportToCSV(data, filename = "items.csv") {
 
 
     const headers = Object.keys(data[0]).filter((key) => 
-        !["id", "user_id", "updated_at", "image", "user"].includes(key)
+        !["id", "user_id", "image", "user"].includes(key)
     );
 
 

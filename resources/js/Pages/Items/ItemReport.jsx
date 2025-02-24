@@ -126,7 +126,7 @@ export default function ItemReport() {
                                     <select
                                         value={selectedYear}
                                         onChange={handleYearChange}
-                                        className="border border-black/20 dark:border-white py-1 rounded-md  text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
                                     >
                                         <option
                                             className="dark:bg-gray-800 dark:text-gray-300"
@@ -150,7 +150,7 @@ export default function ItemReport() {
                                             onClick={() =>
                                                 setShowPicker(!showPicker)
                                             }
-                                            className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                            className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
                                         >
                                         
                                             <option hidden value="">
@@ -236,7 +236,7 @@ export default function ItemReport() {
                                         Print
                                     </TrueButton>
                                 </div>
-                                <div className="flex  dark:bg-gray-900 w-[200px] p-2 rounded-md  border-[1px] border-gray-400 dark:border-gray-400">
+                                <div className="flex  dark:bg-gray-900 w-[250px] p-2 rounded-md  border-[1px] border-gray-400 dark:border-gray-400">
                                     <p className="text-lg text-black dark:text-white">
                                         ₱ {totalSum.toFixed(2)}
                                     </p>

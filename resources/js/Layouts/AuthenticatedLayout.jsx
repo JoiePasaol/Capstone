@@ -79,12 +79,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                         href: route("item-list"),
                                     },
                                     {
-                                        label: "Item Borrow",
-                                        href: route("item-borrow"),
-                                    },
-                                    {
                                         label: "Item Report",
                                         href: route("item-report"),
+                                    },
+                                    {
+                                        label: "Item Borrow",
+                                        href: route("item-borrow"),
                                     },
                                 ]}
                             >

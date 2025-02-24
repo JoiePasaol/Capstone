@@ -46,6 +46,12 @@ class ItemController extends Controller
             'pr_date' => 'nullable|date',
             'po' => 'nullable|string',
             'po_date' => 'nullable|date',
+            'vc' => 'nullable|string',
+            'vc_date' => 'nullable|date',
+            'ch' => 'nullable|string',
+            'ch_date' => 'nullable|date',
+            'or' => 'nullable|string',
+            'or_date' => 'nullable|date',
             'image' => 'nullable|image|max:2048',
         ]);
     
@@ -58,10 +64,13 @@ class ItemController extends Controller
             $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
         }
     
-        // Convert dates to 'YYYY-MM-DD' format
-        $prDate = $request->pr_date ? Carbon::createFromFormat('m/d/Y', $request->pr_date)->format('Y-m-d') : null;
-        $poDate = $request->po_date ? Carbon::createFromFormat('m/d/Y', $request->po_date)->format('Y-m-d') : null;
-    
+     
+        $prDate = $request->pr_date ? Carbon::parse($request->pr_date)->format('Y-m-d') : null;
+        $poDate = $request->po_date ? Carbon::parse($request->po_date)->format('Y-m-d') : null;
+        $vcDate = $request->vc_date ? Carbon::parse($request->vc_date)->format('Y-m-d') : null;
+        $chDate = $request->ch_date ? Carbon::parse($request->ch_date)->format('Y-m-d') : null;
+        $orDate = $request->or_date ? Carbon::parse($request->or_date)->format('Y-m-d') : null;
+
         $item = Item::create([
             'user_id' => $user->id,
             'name' => $fullName,
@@ -78,6 +87,12 @@ class ItemController extends Controller
             'pr_date' => $prDate,
             'po' => $request->po, 
             'po_date' => $poDate, 
+            'vc' => $request->vc, 
+            'vc_date' => $vcDate, 
+            'ch' => $request->ch, 
+            'ch_date' => $chDate, 
+            'or' => $request->or,
+            'or_date' => $orDate
         ]);
     
         return redirect()->route('item-list')->with('success', 'Item added successfully.');
@@ -149,6 +164,12 @@ public function update(Request $request, $id)
         'pr_date' => 'nullable|date',
         'po' => 'nullable|string',
         'po_date' => 'nullable|date',
+        'vc' => 'nullable|string',
+        'vc_date' => 'nullable|date',
+        'ch' => 'nullable|string',
+        'ch_date' => 'nullable|date',
+        'or' => 'nullable|string',
+        'or_date' => 'nullable|date',
        
     ]);
 
@@ -175,7 +196,12 @@ public function update(Request $request, $id)
     $item->pr_date = $validatedData['pr_date'] ?? $item->pr_date;
     $item->po = $validatedData['po'] ?? $item->po;
     $item->po_date = $validatedData['po_date'] ?? $item->po_date;
-
+    $item->vc = $validatedData['vc'] ?? $item->vc;
+    $item->vc_date = $validatedData['vc_date'] ?? $item->vc_date;
+    $item->ch = $validatedData['ch'] ?? $item->ch;
+    $item->ch_date = $validatedData['ch_date'] ?? $item->ch_date;
+    $item->or = $validatedData['or'] ?? $item->or;
+    $item->or_date = $validatedData['or_date'] ?? $item->or_date;
 
     $item->save();
 
@@ -187,86 +213,125 @@ public function update(Request $request, $id)
 
     
     
-    public function import(Request $request)
-    {
-        try {
-            \Log::debug('Import request received:', $request->all());
-    
-            $data = $request->input('data');
-    
-            if (!$data || !is_array($data)) {
-                return response()->json(['message' => 'Invalid CSV data format.'], 400);
-            }
-    
-            $requiredHeaders = ['name', 'department', 'categories', 'description', 'items', 'estimated_life', 'quantity', 'price', 'created_at'];
-    
-            $headers = array_keys($data[0] ?? []);
-            foreach ($requiredHeaders as $requiredColumn) {
-                if (!in_array($requiredColumn, $headers)) {
-                    return response()->json([
-                        'message' => "Missing column: $requiredColumn in CSV."
-                    ], 400);
-                }
-            }
-    
-            $inserted = 0;
-            foreach ($data as $row) {
-                \Log::debug('Processing row:', $row);
-    
-                $department = $row['department'] ?? 'N/A';
-    
-                if (!$department || empty($department)) {
-                    \Log::warning("Skipping row due to missing department:", $row);
-                    continue;
-                }
-    
-                $exists = Item::where([
-                    ['categories', $row['categories']],
-                    ['description', $row['description']],
-                    ['items', $row['items']],
-                    ['estimated_life', $row['estimated_life']],
-                    ['quantity', $row['quantity']],
-                    ['price', $row['price']],
-                    ['department', $department], 
-                    ['name', $row['name']]
-                ])->exists();
-    
-                if (!$exists) {
-                    // Ensure created_at is formatted correctly
-                    $createdAt = !empty($row['created_at']) ? Carbon::parse($row['created_at']) : now();
-    
-                    // Insert while disabling automatic timestamps
-                    Item::insert([
-                        'user_id' => Auth::id(), 
-                        'name' => $row['name'],
-                        'department' => $department, 
-                        'categories' => $row['categories'],
-                        'description' => $row['description'],
-                        'items' => $row['items'],
-                        'estimated_life' => $row['estimated_life'],
-                        'quantity' => intval($row['quantity']),
-                        'price' => floatval($row['price']),
-                        'created_at' => $createdAt,
-                        'updated_at' => now(),
-                    ]);
-    
-                    $inserted++;
-                } else {
-                    \Log::info('Duplicate item skipped:', $row);
-                }
-            }
-    
-            return response()->json([
-                'message' => "$inserted new items imported successfully.",
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Import failed: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Import failed. Please try again later.',
-                'error' => $e->getMessage(),
-            ], 500);
+public function import(Request $request)
+{
+    try {
+        \Log::debug('Import request received:', $request->all());
+
+        $data = $request->input('data');
+
+        if (!$data || !is_array($data)) {
+            return response()->json(['message' => 'Invalid CSV data format.'], 400);
         }
+
+        // ✅ Required CSV columns
+        $requiredHeaders = [
+            'name', 'department', 'categories', 'items', 'description', 'estimated_life',
+            'quantity', 'price', 'ics', 'pr', 'pr_date', 'po', 'po_date',
+            'vc', 'vc_date', 'ch', 'ch_date', 'or', 'or_date', 'created_at', 'updated_at'
+        ];
+
+        // ✅ Check for missing columns
+        $headers = array_keys($data[0] ?? []);
+        foreach ($requiredHeaders as $requiredColumn) {
+            if (!in_array($requiredColumn, $headers)) {
+                return response()->json([
+                    'message' => "Missing column: $requiredColumn in CSV."
+                ], 400);
+            }
+        }
+
+        $inserted = 0;
+        foreach ($data as $row) {
+            \Log::debug('Processing row:', $row);
+
+            $department = $row['department'] ?? 'N/A';
+
+            if (!$department || empty($department)) {
+                \Log::warning("Skipping row due to missing department:", $row);
+                continue;
+            }
+
+            // ✅ Check if the item already exists
+            $exists = Item::where([
+                ['categories', $row['categories']],
+                ['description', $row['description']],
+                ['items', $row['items']],
+                ['estimated_life', $row['estimated_life']],
+                ['quantity', $row['quantity']],
+                ['price', $row['price']],
+                ['department', $department],
+                ['name', $row['name']],
+                ['ics', $row['ics']],
+                ['pr', $row['pr']],
+                ['pr_date', $row['pr_date']],
+                ['po', $row['po']],
+                ['po_date', $row['po_date']],
+                ['vc', $row['vc']],
+                ['vc_date', $row['vc_date']],
+                ['ch', $row['ch']],
+                ['ch_date', $row['ch_date']],
+                ['or', $row['or']],
+                ['or_date', $row['or_date']],
+            ])->exists();
+
+            if (!$exists) {
+                // ✅ Ensure `created_at` & `updated_at` are formatted correctly
+                $createdAt = !empty($row['created_at']) ? Carbon::parse($row['created_at']) : now();
+                $updatedAt = !empty($row['updated_at']) ? Carbon::parse($row['updated_at']) : now();
+
+                // ✅ Insert while disabling automatic timestamps
+                Item::insert([
+                    'user_id' => Auth::id(),
+                    'name' => $row['name'],
+                    'department' => $department,
+                    'categories' => $row['categories'],
+                    'description' => $row['description'],
+                    'items' => $row['items'],
+                    'estimated_life' => $row['estimated_life'],
+                    'quantity' => intval($row['quantity']),
+                    'price' => floatval($row['price']),
+                    'ics' => $row['ics'] ?? null,
+                    'pr' => $row['pr'] ?? null,
+                    'pr_date' => !empty($row['pr_date']) ? Carbon::parse($row['pr_date']) : null,
+                    'po' => $row['po'] ?? null,
+                    'po_date' => !empty($row['po_date']) ? Carbon::parse($row['po_date']) : null,
+                    'vc' => $row['vc'] ?? null,
+                    'vc_date' => !empty($row['vc_date']) ? Carbon::parse($row['vc_date']) : null,
+                    'ch' => $row['ch'] ?? null,
+                    'ch_date' => !empty($row['ch_date']) ? Carbon::parse($row['ch_date']) : null,
+                    'or' => $row['or'] ?? null,
+                    'or_date' => !empty($row['or_date']) ? Carbon::parse($row['or_date']) : null,
+                    'created_at' => $createdAt,
+                    'updated_at' => $updatedAt,
+                ]);
+
+                $inserted++;
+            } else {
+                \Log::info('Duplicate item skipped:', $row);
+            }
+        }
+
+        if ($inserted == 1) {
+            $message = '1 new item imported successfully!';
+        } else {
+            $message = "$inserted items imported successfully!";
+        }
+
+        return response()->json([
+            'message' => $message,
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Import failed: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Import failed. Please try again later.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
 
         public function getTotalItemsCount()
     {

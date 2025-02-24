@@ -303,7 +303,7 @@ export default function Categories({ categories }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-custom overflow-hidden">
                         <div className="py-4 px-3">
                             <div className="h-60 bg-white ring-1 ring-gray-400 dark:ring-gray-400 sm:rounded-lg dark:bg-gray-800">
-                                <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl font-medium text-gray-500 dark:text-gray-300">
+                                <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl  font-bold text-blue-500  dark:text-gray-300">
                                     Add New Category
                                 </div>
                                 <div className="w-full p-4">
@@ -328,7 +328,7 @@ export default function Categories({ categories }) {
                         </div>
                         <div className="p-4 px-3">
                             <div className="pb-4 bg-white ring-1 ring-gray-400 dark:ring-gray-400 sm:rounded-lg dark:bg-gray-800">
-                                <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl font-medium text-gray-500 dark:text-gray-300">
+                                <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl font-bold text-blue-500 dark:text-gray-300">
                                     All Categories
                                 </div>
                                 <div className="w-full flex justify-end px-4 mt-4 text-gray-900 dark:text-gray-100">

@@ -27,7 +27,10 @@ class Item extends Model
         'po_date',
         'vc',
         'vc_date',
-       
+        'ch',
+        'ch_date',
+        'or',
+        'or_date',
     ];
 
 

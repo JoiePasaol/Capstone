@@ -43,8 +43,11 @@ export default function QuillEditor({ value, onChange, placeholder = "Enter text
             "dark:text-gray-300",
             "dark:focus:border-indigo-600",
             "dark:focus:ring-indigo-600",
-            "p-2"
+            "p-2",
+            "text-sm",
         );
+
+        editor.style.fontSize = "0.875rem"; 
     }, []);
 
     return (
