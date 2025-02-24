@@ -21,14 +21,19 @@ export default function ItemReport() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [selectedYear, setSelectedYear] = useState("");
+    const [selectedMonth, setSelectedMonth] = useState("");
     const [years, setYears] = useState([]);
+
+
 
     const fetchData = async (start, end) => {
         if (!start) return;
 
         try {
             const startDateFormatted = format(start, "yyyy-MM-dd");
-            const endDateFormatted = end ? format(end, "yyyy-MM-dd") : startDateFormatted;
+            const endDateFormatted = end
+                ? format(end, "yyyy-MM-dd")
+                : startDateFormatted;
 
             const response = await axios.get("/items-report", {
                 params: {
@@ -57,9 +62,27 @@ export default function ItemReport() {
     }, []);
 
     const handleYearChange = (e) => {
-        setSelectedYear(e.target.value);
-        const start = new Date(`${e.target.value}-01-01`);
-        const end = new Date(`${e.target.value}-12-31`);
+        const year = e.target.value;
+        setSelectedYear(year);
+    
+        if (selectedMonth) {
+            const start = new Date(`${year}-${selectedMonth}-01`);
+            const end = new Date(year, selectedMonth, 0);
+            fetchData(start, end);
+        } else {
+            const start = new Date(`${year}-01-01`);
+            const end = new Date(`${year}-12-31`);
+            fetchData(start, end);
+        }
+    };
+    
+    const handleMonthChange = (e) => {
+        const month = e.target.value;
+        setSelectedMonth(month);
+    
+        const year = selectedYear || new Date().getFullYear();
+        const start = new Date(`${year}-${month}-01`);
+        const end = new Date(year, month, 0);
         fetchData(start, end);
     };
 
@@ -126,13 +149,13 @@ export default function ItemReport() {
                                     <select
                                         value={selectedYear}
                                         onChange={handleYearChange}
-                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
                                     >
                                         <option
                                             className="dark:bg-gray-800 dark:text-gray-300"
                                             value=""
                                         >
-                                            Select year
+                                            Filter year
                                         </option>
                                         {years.map((year) => (
                                             <option
@@ -144,15 +167,48 @@ export default function ItemReport() {
                                             </option>
                                         ))}
                                     </select>
+                                    <select
+                                        value={selectedMonth}
+                                        onChange={handleMonthChange}
+                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
+                                    >
+                                        <option
+                                            className="dark:bg-gray-800 dark:text-gray-300"
+                                            value=""
+                                        >
+                                            Filter month
+                                        </option>
+                                        {[
+                                            "January",
+                                            "February",
+                                            "March",
+                                            "April",
+                                            "May",
+                                            "June",
+                                            "July",
+                                            "August",
+                                            "September",
+                                            "October",
+                                            "November",
+                                            "December",
+                                        ].map((month, index) => (
+                                            <option
+                                                className="dark:bg-gray-800 dark:text-gray-300"
+                                                key={index}
+                                                value={index + 1}
+                                            >
+                                                {month}
+                                            </option>
+                                        ))}
+                                    </select>
+
                                     <div className="relative z-50">
                                         <select
-
                                             onClick={() =>
                                                 setShowPicker(!showPicker)
                                             }
-                                            className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                            className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
                                         >
-                                        
                                             <option hidden value="">
                                                 {startDate && endDate
                                                     ? `${format(
@@ -162,7 +218,7 @@ export default function ItemReport() {
                                                           endDate,
                                                           "MM/dd/yyyy"
                                                       )}`
-                                                    : "Select date range"}
+                                                    : "Filter date range"}
                                             </option>
                                         </select>
                                         {showPicker && (
@@ -236,7 +292,7 @@ export default function ItemReport() {
                                         Print
                                     </TrueButton>
                                 </div>
-                                <div className="flex  dark:bg-gray-900 w-[250px] p-2 rounded-md  border-[1px] border-gray-400 dark:border-gray-400">
+                                <div className="flex  dark:bg-gray-900 w-[250px] p-2 rounded-sm  border-[1px] border-gray-400 dark:border-gray-400">
                                     <p className="text-lg text-black dark:text-white">
                                         ₱ {totalSum.toFixed(2)}
                                     </p>

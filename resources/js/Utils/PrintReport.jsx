@@ -1,12 +1,30 @@
 import { format } from "date-fns";
 
-const handlePrint = (startDate, endDate, filteredItems) => {
+const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMonth) => {
     const printFrame = document.createElement("iframe");
     printFrame.style.position = "absolute";
     printFrame.style.width = "0";
     printFrame.style.height = "0";
     printFrame.style.border = "none";
     document.body.appendChild(printFrame);
+
+    const totalSum = filteredItems.reduce(
+        (sum, item) => sum + (Number(item.amount) * Number(item.quantity) || 0),
+        0
+    );
+
+    let dateLabel = "N/A";
+
+    if (selectedYear && selectedMonth) {
+     
+        const monthNumber = parseInt(selectedMonth, 10);
+        dateLabel = `DATE: ${selectedYear}, ${format(new Date(selectedYear, monthNumber - 1), "MMMM")}`;
+    } else if (selectedYear) {
+        dateLabel = `YEAR: ${selectedYear}`;
+    } else if (startDate && endDate) {
+        dateLabel = `DATE RANGE: ${format(startDate, "MM/dd/yyyy")} - ${format(endDate, "MM/dd/yyyy")}`;
+    }
+    
 
     const doc = printFrame.contentDocument || printFrame.contentWindow.document;
     doc.open();
@@ -69,18 +87,14 @@ const handlePrint = (startDate, endDate, filteredItems) => {
                     word-wrap: break-word;
                     border: 1px solid black;
                 }
-                
-                th:nth-child(1), td:nth-child(1) { width: 10%; } /* Quantity */
-                th:nth-child(2), td:nth-child(2) { width: 15%; } /* Unit Cost */
-                th:nth-child(3), td:nth-child(3) { width: 15%; } /* Total Cost */
-                th:nth-child(4), td:nth-child(4) { width: 35%; } /* Description */
-                th:nth-child(5), td:nth-child(5) { width: 12.5%; } /* Inventory Items */
-                th:nth-child(6), td:nth-child(6) { width: 12.5%; } /* Estimated Useful Life */
-                .purpose-row {
-                    background-color: #fff9c4;
-                    padding: 5px 10px;
-                   
-                }
+
+                th:nth-child(1), td:nth-child(1) { width: 15%; }
+                th:nth-child(2), td:nth-child(2) { width: 35%; } 
+                th:nth-child(3), td:nth-child(3) { width: 15%; } 
+                th:nth-child(4), td:nth-child(4) { width: 10%; } 
+                th:nth-child(5), td:nth-child(5) { width: 15%; } 
+                th:nth-child(6), td:nth-child(6) { width: 20%; } 
+
                 .signature-section {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
@@ -113,6 +127,11 @@ const handlePrint = (startDate, endDate, filteredItems) => {
                     font-size: 11px;
                 }
                 
+                .date-label {
+                  margin-left: 8px;
+                  margin-bottom: 8px
+                }
+                
             </style>
         </head>
         <body>
@@ -124,60 +143,53 @@ const handlePrint = (startDate, endDate, filteredItems) => {
                 <div>MAGALLANES, AGUSAN DEL NORTE</div>
                 <div class="org-label">FUND</div>
                 <div>GENERAL FUND</div>
-                <div class="org-label">Date:</div>
-                <div>
-                    ${startDate ? format(startDate, "MM/dd/yyyy") : "N/A"} - ${
-                    endDate ? format(endDate, "MM/dd/yyyy") : "N/A"
-                }
-                </div>
+              
             </div>
-            
+            <div class="date-label">${dateLabel}</div>
+
+            <table>
+            <thead>
+                <tr>
+                    <th>Inventory Items</th>
+                    <th>Description</th>
+                    <th>Estimated Useful Life</th>
+                    <th>Quantity</th>
+                    <th>Cost</th>
+                    <th>Total Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredItems
+                    .map(
+                        (item) => `
+                    <tr>
+                        <td>${item.item || "N/A"}</td>
+                        <td>${item.description || "N/A"}</td>
+                        <td>${item.estimated_life || "N/A"}</td>
+                        <td>${item.quantity || "0"}</td>
+                        <td>₱${Number(item.amount).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        })}</td>
+                        <td>₱${(Number(item.amount) * Number(item.quantity)).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        })}</td>
+                    </tr>
+                `
+                    )
+                    .join("")}
 
               
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Quantity</th>
-                            <th>Unit Cost</th>
-                            <th>Total Cost</th>
-                            <th>Description</th>
-                            <th>Inventory Items</th>
-                            <th>Estimated Useful Life</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${filteredItems
-                            .map(
-                                (item) => `
-                            <tr>
-                                <td>${item.quantity || ""}</td>
-                                <td>${Number(item.amount).toLocaleString(
-                                    "en-US",
-                                    {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    }
-                                )}</td>
-                                <td>${(
-                                    Number(item.amount) * Number(item.quantity)
-                                ).toLocaleString("en-US", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                })}</td>
-                                <td>${item.description || ""}</td>
-                                <td>${item.item || ""}</td>
-                                <td>${item.estimated_life || ""}</td>
-                            </tr>
-                        `
-                            )
-                            .join("")}
-                    </tbody>
-                </table>
-
-                <div class="purpose-row">
-                    <strong>Purpose:</strong>
-                </div>
+                <tr class="total-sum-row">
+                    <td colspan="5"><strong>Total Sum:</strong></td>
+                    <td>₱${totalSum.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    })}</td>
+                </tr>
+            </tbody>
+        </table>
 
                 <div class="signature-section">
                     <div class="signature-box">

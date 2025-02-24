@@ -81,7 +81,11 @@ export default function ItemList() {
     const [modalContent, setModalContent] = useState(null);
     const [selectedFileName, setSelectedFileName] = useState("Select file");
 
-    const itemsPerPage = 10;
+    const [itemsPerPage, setItemsPerPage] = useState(5);
+
+    const handleRowsPerPageChange = (event) => {
+        setItemsPerPage(Number(event.target.value));
+    };
 
     //Import Logic
 
@@ -426,7 +430,7 @@ export default function ItemList() {
     const paginatedItems = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         return filteredItems.slice(startIndex, startIndex + itemsPerPage);
-    }, [filteredItems, currentPage]);
+    }, [filteredItems, currentPage, itemsPerPage]);
 
     const sortedPaginatedItems = [...paginatedItems].sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
@@ -585,18 +589,18 @@ export default function ItemList() {
                     <div className="px-6 py-4 overflow-visible bg-white ring-1 ring-black/20 sm:rounded-lg dark:bg-gray-800">
                         <div className="w-full flex justify-between items-center">
                             {/* Search and Date Range Picker */}
-                            <div className="flex gap-2 items-center">
+                            <div className="flex gap-2 items-center ">
                                 <input
                                     type="text"
                                     placeholder="Search..."
-                                    className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                                    className="dark:placeholder-gray-300 placeholder-gray-600 dark:text-gray-300 border border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
                                     onChange={(e) =>
                                         setSearchTerm(e.target.value)
                                     }
                                 />
 
                                 <select
-                                    className="border border-black/20 dark:border-white py-1 rounded-sm text-md  text-gray-600 dark:text-gray-500 bg-transparent cursor-pointer w-60"
+                                    className="border border-black/20 dark:border-white py-1 rounded-sm text-md  text-gray-600 dark:text-gray-300 bg-transparent cursor-pointer w-60"
                                     value={selectedCategory}
                                     onChange={handleCategoryChange}
                                 >
@@ -625,7 +629,7 @@ export default function ItemList() {
                                                 !showDateRangePicker
                                             )
                                         }
-                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer  w-60"
+                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-[245px]"
                                     >
                                         {" "}
                                         <option hidden value="">
@@ -673,6 +677,24 @@ export default function ItemList() {
                             {/* Export, Import, Add, and Delete Icons */}
                             <div className="flex">
                                 <div className="pr-2 flex gap-2 items-center">
+                                    <div className="font-semibold text-gray-600 dark:text-gray-300">
+                                        Rows per page:
+                                        <select
+                                            className="ml-2 border border-black/20 dark:border-white py-1 rounded-sm text-md text-gray-600 dark:text-gray-300 bg-transparent cursor-pointer w-[70px]"
+                                            value={itemsPerPage}
+                                            onChange={handleRowsPerPageChange}  
+                                        >
+                                            {[5, 10, 15].map((num) => (
+                                                <option
+                                                    key={num}
+                                                    className="dark:bg-gray-800 dark:text-gray-300"
+                                                    value={num}
+                                                >
+                                                    {num}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <CiExport
                                         onClick={() =>
                                             exportToCSV(
