@@ -19,6 +19,7 @@ class ItemSeeder extends Seeder
     {
         $faker = Faker::create();
         $userIds = \App\Models\User::pluck('id')->toArray();
+        $supplierNames = ['Supplier A', 'Supplier B', 'Supplier C', 'Supplier D', 'Supplier E'];
 
         for ($i = 0; $i < 60; $i++) {
             // Ensure created_at is within the past year with proper format
@@ -36,6 +37,7 @@ class ItemSeeder extends Seeder
                 'estimated_life' => $faker->numberBetween(1, 10) . ' years',
                 'quantity' => $faker->numberBetween(1, 100),
                 'price' => $faker->randomFloat(2, 1000, 50000), 
+                'suppliers' => $faker->randomElement($supplierNames), // New suppliers field
                 'ics' => '24-' . $faker->randomNumber(4),
                 'pr' => '01-24-' . $faker->randomNumber(4),
                 'pr_date' => $faker->date('Y-m-d'),

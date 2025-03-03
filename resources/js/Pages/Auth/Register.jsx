@@ -26,6 +26,7 @@ export default function Register() {
 
         post(route("register"), {
             onFinish: () => reset("password", "password_confirmation"),
+            onSuccess: () => window.location.href = route('verification.notice'),
         });
     };
 

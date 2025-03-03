@@ -35,12 +35,14 @@ class ItemController extends Controller
         \Log::info('Received Request Data:', $request->all()); 
     
         $request->validate([
+            'image' => 'nullable|image|max:2048',
             'categories' => 'required|string',
-            'description' => 'required|string',
             'items' => 'required|string',
+            'description' => 'required|string',
             'estimated_life' => 'required|string',
             'quantity' => 'required|integer',
             'price' => 'required|numeric',
+            'suppliers' => 'required|string',
             'ics' => 'nullable|string',
             'pr' => 'nullable|string',
             'pr_date' => 'nullable|date',
@@ -52,7 +54,7 @@ class ItemController extends Controller
             'ch_date' => 'nullable|date',
             'or' => 'nullable|string',
             'or_date' => 'nullable|date',
-            'image' => 'nullable|image|max:2048',
+   
         ]);
     
         $user = Auth::user();
@@ -77,11 +79,12 @@ class ItemController extends Controller
             'department' => $user->department ?? 'N/A',
             'image' => $imagePath,
             'categories' => $request->categories,
-            'description' => $request->description,
             'items' => $request->items,
+            'description' => $request->description,
             'estimated_life' => $request->estimated_life,
             'quantity' => $request->quantity,
             'price' => $request->price,
+            'suppliers' => $request->suppliers,
             'ics' => $request->ics,
             'pr' => $request->pr, 
             'pr_date' => $prDate,
@@ -159,6 +162,7 @@ public function update(Request $request, $id)
         'estimated_life'=> 'nullable|string',
         'quantity' => 'nullable|integer',
         'price' => 'nullable|numeric',
+        'suppliers' => 'nullable|string',
         'ics' => 'nullable|string',
         'pr' => 'nullable|string',
         'pr_date' => 'nullable|date',
@@ -191,6 +195,7 @@ public function update(Request $request, $id)
     $item->estimated_life = $validatedData['estimated_life'] ?? $item->estimated_life;
     $item->quantity = $validatedData['quantity'] ?? $item->quantity;
     $item->price = $validatedData['price'] ?? $item->price;
+    $item->suppliers = $validatedData['suppliers'] ?? $item->suppliers;
     $item->ics = $validatedData['ics'] ?? $item->ics;
     $item->pr = $validatedData['pr'] ?? $item->pr;
     $item->pr_date = $validatedData['pr_date'] ?? $item->pr_date;
@@ -227,7 +232,7 @@ public function import(Request $request)
         // ✅ Required CSV columns
         $requiredHeaders = [
             'name', 'department', 'categories', 'items', 'description', 'estimated_life',
-            'quantity', 'price', 'ics', 'pr', 'pr_date', 'po', 'po_date',
+            'quantity', 'price', 'suppliers', 'ics', 'pr', 'pr_date', 'po', 'po_date',
             'vc', 'vc_date', 'ch', 'ch_date', 'or', 'or_date', 'created_at', 'updated_at'
         ];
 
@@ -260,6 +265,7 @@ public function import(Request $request)
                 ['estimated_life', $row['estimated_life']],
                 ['quantity', $row['quantity']],
                 ['price', $row['price']],
+                ['suppliers', $row['suppliers']],
                 ['department', $department],
                 ['name', $row['name']],
                 ['ics', $row['ics']],
@@ -291,6 +297,7 @@ public function import(Request $request)
                     'estimated_life' => $row['estimated_life'],
                     'quantity' => intval($row['quantity']),
                     'price' => floatval($row['price']),
+                    'suppliers' => $row['suppliers'],
                     'ics' => $row['ics'] ?? null,
                     'pr' => $row['pr'] ?? null,
                     'pr_date' => !empty($row['pr_date']) ? Carbon::parse($row['pr_date']) : null,

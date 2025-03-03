@@ -14,8 +14,6 @@ import PrintIcon from "@mui/icons-material/Print";
 import handlePrint from "@/Utils/PrintReport";
 
 export default function ItemReport() {
-    const [startDate, setStartDate] = useState(null);
-    const [endDate, setEndDate] = useState(null);
     const [showPicker, setShowPicker] = useState(false);
     const [filteredItems, setFilteredItems] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -24,23 +22,32 @@ export default function ItemReport() {
     const [selectedMonth, setSelectedMonth] = useState("");
     const [years, setYears] = useState([]);
 
-
-
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
     const fetchData = async (start, end) => {
         if (!start) return;
 
-        try {
-            const startDateFormatted = format(start, "yyyy-MM-dd");
-            const endDateFormatted = end
-                ? format(end, "yyyy-MM-dd")
-                : startDateFormatted;
+        const startDateFormatted = format(start, "yyyy-MM-dd");
+        const endDateFormatted = end
+            ? format(end, "yyyy-MM-dd")
+            : startDateFormatted;
 
+        console.log(
+            "Fetching data for:",
+            startDateFormatted,
+            "to",
+            endDateFormatted
+        );
+
+        try {
             const response = await axios.get("/items-report", {
                 params: {
                     start_date: startDateFormatted,
                     end_date: endDateFormatted,
                 },
             });
+
+            console.log("Response Data:", response.data);
 
             setFilteredItems(response.data);
             setCurrentPage(1);
@@ -62,27 +69,31 @@ export default function ItemReport() {
     }, []);
 
     const handleYearChange = (e) => {
-        const year = e.target.value;
+        const year = Number(e.target.value); // Convert to number
         setSelectedYear(year);
-    
+
         if (selectedMonth) {
-            const start = new Date(`${year}-${selectedMonth}-01`);
+            const start = new Date(year, selectedMonth - 1, 1);
             const end = new Date(year, selectedMonth, 0);
             fetchData(start, end);
         } else {
-            const start = new Date(`${year}-01-01`);
-            const end = new Date(`${year}-12-31`);
+            const start = new Date(year, 0, 1); // Corrected: Start of year
+            const end = new Date(year, 11, 31); // Corrected: End of year
             fetchData(start, end);
         }
     };
-    
+
     const handleMonthChange = (e) => {
-        const month = e.target.value;
+        const month = Number(e.target.value);
         setSelectedMonth(month);
-    
+
+        // Use the selected year or fallback to the current year
         const year = selectedYear || new Date().getFullYear();
-        const start = new Date(`${year}-${month}-01`);
-        const end = new Date(year, month, 0);
+        setSelectedYear(year); // Ensure year is updated
+
+        const start = new Date(year, month - 1, 1);
+        const end = new Date(year, month, 0); // Last day of selected month
+
         fetchData(start, end);
     };
 
@@ -149,7 +160,7 @@ export default function ItemReport() {
                                     <select
                                         value={selectedYear}
                                         onChange={handleYearChange}
-                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
+                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer "
                                     >
                                         <option
                                             className="dark:bg-gray-800 dark:text-gray-300"
@@ -170,7 +181,7 @@ export default function ItemReport() {
                                     <select
                                         value={selectedMonth}
                                         onChange={handleMonthChange}
-                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
+                                        className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer"
                                     >
                                         <option
                                             className="dark:bg-gray-800 dark:text-gray-300"
@@ -232,6 +243,8 @@ export default function ItemReport() {
                                                             dates;
                                                         setStartDate(start);
                                                         setEndDate(end);
+
+                                                        // Ensure the correct range is passed when only one date is selected
                                                         if (start && !end) {
                                                             fetchData(
                                                                 start,
@@ -262,8 +275,10 @@ export default function ItemReport() {
                                                         }
                                                     }}
                                                     inline
-                                                    calendarClassName="dark:bg-gray-800 pb-7"
+                                                    calendarClassName="dark:bg-gray-800
+                                                    pb-7"
                                                 />
+
                                                 <button
                                                     onClick={() => {
                                                         setStartDate(null);
@@ -278,13 +293,14 @@ export default function ItemReport() {
                                         )}
                                     </div>
                                     <TrueButton
-                                        className="bg-green-500 hover:bg-green-600 rounded-md py-[5px] active:bg-green-700 dark:active:bg-green-700"
+                                        className="bg-green-500 hover:bg-green-600 rounded-sm py-[5px] active:bg-green-700 dark:active:bg-green-700"
                                         onClick={() =>
                                             handlePrint(
                                                 startDate,
                                                 endDate,
                                                 filteredItems,
-                                                totalSum
+                                                selectedYear,
+                                                selectedMonth
                                             )
                                         }
                                     >
@@ -292,7 +308,7 @@ export default function ItemReport() {
                                         Print
                                     </TrueButton>
                                 </div>
-                                <div className="flex  dark:bg-gray-900 w-[250px] p-2 rounded-sm  border-[1px] border-gray-400 dark:border-gray-400">
+                                <div className="flex dark:bg-gray-900 w-[230px] min-w-[230px] p-2 rounded-sm  border-[1px] border-gray-400 dark:border-gray-400">
                                     <p className="text-lg text-black dark:text-white">
                                         ₱ {totalSum.toFixed(2)}
                                     </p>

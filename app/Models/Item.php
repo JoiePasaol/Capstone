@@ -20,6 +20,7 @@ class Item extends Model
         'estimated_life',
         'quantity',
         'price',
+        'suppliers',
         'ics',
         'pr',
         'pr_date',

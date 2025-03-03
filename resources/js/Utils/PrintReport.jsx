@@ -8,22 +8,29 @@ const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMo
     printFrame.style.border = "none";
     document.body.appendChild(printFrame);
 
+    let dateLabel = "N/A";
+
+    if (startDate && endDate) {
+        // Show full date range
+        dateLabel = `DATE RANGE: ${format(startDate, "MM/dd/yyyy")} - ${format(endDate, "MM/dd/yyyy")}`;
+    } else if (selectedMonth && !selectedYear) {
+        // If only the month is selected, use the current year
+        const currentYear = new Date().getFullYear();
+        dateLabel = `DATE: ${currentYear}, ${format(new Date(currentYear, selectedMonth - 1), "MMMM")}`;
+    } else if (selectedYear && selectedMonth) {
+        // If both year and month are selected
+        dateLabel = `DATE: ${selectedYear}, ${format(new Date(selectedYear, selectedMonth - 1), "MMMM")}`;
+    } else if (selectedYear) {
+        // If only the year is selected
+        dateLabel = `YEAR: ${selectedYear}`;
+    }
+    
+    
+
     const totalSum = filteredItems.reduce(
         (sum, item) => sum + (Number(item.amount) * Number(item.quantity) || 0),
         0
     );
-
-    let dateLabel = "N/A";
-
-    if (selectedYear && selectedMonth) {
-     
-        const monthNumber = parseInt(selectedMonth, 10);
-        dateLabel = `DATE: ${selectedYear}, ${format(new Date(selectedYear, monthNumber - 1), "MMMM")}`;
-    } else if (selectedYear) {
-        dateLabel = `YEAR: ${selectedYear}`;
-    } else if (startDate && endDate) {
-        dateLabel = `DATE RANGE: ${format(startDate, "MM/dd/yyyy")} - ${format(endDate, "MM/dd/yyyy")}`;
-    }
     
 
     const doc = printFrame.contentDocument || printFrame.contentWindow.document;
@@ -139,9 +146,9 @@ const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMo
                 <div class="header">INVENTORY REPORT</div>
                 
                 <div class="org-info">
-                <div class="org-label">LGU</div>
+                <div class="org-label">LGU:</div>
                 <div>MAGALLANES, AGUSAN DEL NORTE</div>
-                <div class="org-label">FUND</div>
+                <div class="org-label">FUND:</div>
                 <div>GENERAL FUND</div>
               
             </div>

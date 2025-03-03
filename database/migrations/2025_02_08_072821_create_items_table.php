@@ -12,12 +12,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             $table->string('name');
-            $table->string('department')->nullable(); 
+            $table->string('department'); 
             $table->string('image')->nullable();
             $table->string('categories');
             $table->string('items');
             $table->longText('description');
-            $table->string('estimated_life')->after('description');
+            $table->string('estimated_life');
             $table->integer('quantity');
             $table->decimal('price', 15, 2);
             $table->string('ics')->nullable();

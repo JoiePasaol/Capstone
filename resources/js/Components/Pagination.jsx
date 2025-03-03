@@ -48,7 +48,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                 <button
                     onClick={() => handlePageClick(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-gray-400 dark:bg-gray-700 text-white rounded-l-md"
+                    className="px-4 py-2 bg-blue-500 dark:bg-blue-500 text-white rounded-l-md"
                 >
                     &lt;
                 </button>
@@ -78,7 +78,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                 <button
                     onClick={() => handlePageClick(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-gray-400 dark:bg-gray-700 text-white rounded-r-md"
+                    className="px-4 py-2 bg-blue-500 dark:bg-blue-500 text-white rounded-r-md"
                 >
                     &gt;
                 </button>

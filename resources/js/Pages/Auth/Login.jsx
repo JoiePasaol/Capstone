@@ -7,11 +7,13 @@ import GuestLayout from "@/Layouts/GuestLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
 export default function Login({ status, canResetPassword }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        email: "",
-        password: "",
-        remember: false,
-    });
+    const { data, setData, post, processing, errors, reset } = useForm(
+        {
+            email: "",
+            password: "",
+            remember: false,
+        }
+    );
 
     const submit = (e) => {
         e.preventDefault();
@@ -28,6 +30,12 @@ export default function Login({ status, canResetPassword }) {
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600">
                     {status}
+                </div>
+            )}
+
+            {errors.pending && (
+                <div className="mb-4 text-sm font-medium text-orange-600">
+                    {errors.pending}
                 </div>
             )}
 

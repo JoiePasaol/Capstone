@@ -321,7 +321,7 @@ export default function ItemBorrow() {
                                  setData({
                                      ...data,
                                      item_id: option ? option.value : "",
-                                     item_name: option ? option.label : "", // ✅ Update item_name
+                                     item_name: option ? option.label : "", 
                                  });
                              }}
                              onInputChange={(newValue) => {

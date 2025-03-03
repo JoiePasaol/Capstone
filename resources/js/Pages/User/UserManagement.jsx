@@ -154,7 +154,7 @@ const UserManagement = () => {
 
     const handleCancelDelete = () => setIsDialogOpen(false);
 
-    // 7. Saving Edited User
+ 
 
     const handleSaveClick = async () => {
         try {
@@ -213,8 +213,8 @@ const UserManagement = () => {
             key: "select-all",
         },
         { label: "#", key: "index" },
-        { label: "First Name", key: "firstname" },
-        { label: "Last Name", key: "lastname" },
+        { label: "First_Name", key: "firstname" },
+        { label: "Last_Name", key: "lastname" },
         { label: "Email", key: "email" },
         { label: "Department", key: "department" },
         { label: "Role", key: "role" },
@@ -301,7 +301,7 @@ const UserManagement = () => {
                                         type="text"
                                         placeholder="Search..."
                                         value={searchTerm}
-                                        className="dark:text-white border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                                        className="dark:text-white border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
                                         onChange={(e) =>
                                             setSearchTerm(e.target.value)
                                         }

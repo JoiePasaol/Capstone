@@ -72,8 +72,8 @@ export default function UserStatus() {
     const headers = [
         { label: <Checkbox />, key: "select-all" },
         { label: "#", key: "index" },
-        { label: "First Name", key: "firstname" },
-        { label: "Last Name", key: "lastname" },
+        { label: "First_Name", key: "firstname" },
+        { label: "Last_Name", key: "lastname" },
         { label: "Email", key: "email" },
         { label: "Department", key: "department" },
         { label: "Role", key: "role" },
@@ -92,7 +92,7 @@ export default function UserStatus() {
             <select
             value={user.role}
             onChange={(e) => handleRoleChange(user.id, e.target.value)}
-            className="w-full flex dark:bg-gray-800 border-none focus:outline-none focus:ring-0"
+            className="w-[100px] flex dark:bg-gray-800 border-none focus:outline-none focus:ring-0"
           >
              <option value="Basic">Basic</option>
             <option value="Admin">Admin</option>
@@ -101,7 +101,7 @@ export default function UserStatus() {
           
         ),
         actions: (
-            <div className="flex justify-center" key={`actions-${user.id}`}>
+            <div className="flex justify-center " key={`actions-${user.id}`}>
                 <TrueButton onClick={() => handleAccept(user.id, user)}>
                     Accept
                 </TrueButton>

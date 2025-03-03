@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import { Head } from "@inertiajs/react";
 import { GrMoney } from "react-icons/gr";
 import { toast, Toaster } from "react-hot-toast";
+import "../../css/toaster.css";
 import { IoIosCheckmarkCircle } from "react-icons/io";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import CategoryIcon from "@mui/icons-material/Category";
 import DashboardCard from "@/Components/DashboardCard";
-import "../../css/toaster.css";
 import LineChart from "@/components/LineChart";
 import axios from "axios";
+import { usePage } from "@inertiajs/react";
 
 export default function Dashboard({ successMessage }) {
     const [pendingUsers, setPendingUsers] = useState(0);
@@ -18,6 +19,8 @@ export default function Dashboard({ successMessage }) {
     const [totalItems, setTotalItems] = useState(0);
     const [totalAmount, setTotalAmount] = useState(0);
     const [totalCategories, setTotalCategories] = useState(0);
+    const [totalSuppliers, setTotalSuppliers] = useState(0);
+    const { user } = usePage().props.auth;
 
     useEffect(() => {
         const fetchCounts = async () => {
@@ -28,12 +31,14 @@ export default function Dashboard({ successMessage }) {
                     itemsResponse,
                     amountResponse,
                     categoriesResponse,
+                    supplierResponse,
                 ] = await Promise.all([
                     axios.get("/api/users/pending-count"),
                     axios.get("/api/users/approved-count"),
                     axios.get("/api/items/total-count"),
                     axios.get("/api/items/total-amount"),
                     axios.get("/api/categories/total-count"),
+                    axios.get("/api/suppliers/total-count"),
                 ]);
 
                 setPendingUsers(pendingResponse.data.pending_users);
@@ -41,6 +46,7 @@ export default function Dashboard({ successMessage }) {
                 setTotalItems(itemsResponse.data.total_items);
                 setTotalAmount(amountResponse.data.total_amount);
                 setTotalCategories(categoriesResponse.data.total_categories);
+                setTotalSuppliers(supplierResponse.data.total_suppliers);
             } catch (error) {
                 console.error("Error fetching counts:", error);
             }
@@ -50,6 +56,7 @@ export default function Dashboard({ successMessage }) {
     }, []);
 
     useEffect(() => {
+        console.log("Success Message:", successMessage); // Debugging
         if (successMessage) {
             toast.custom(
                 (t) => (
@@ -86,28 +93,33 @@ export default function Dashboard({ successMessage }) {
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        <DashboardCard
-                            title="User Pending"
-                            value={pendingUsers}
-                            icon={
-                                <PeopleAltIcon
-                                    className="absolute right-[-40px] bottom-[-40px]"
-                                    style={{ fontSize: "230px" }}
+                        {user.role === "Admin" && (
+                            <>
+                                <DashboardCard
+                                    title="User Pending"
+                                    value={pendingUsers}
+                                    icon={
+                                        <PeopleAltIcon
+                                            className="absolute right-[-40px] bottom-[-40px]"
+                                            style={{ fontSize: "230px" }}
+                                        />
+                                    }
+                                    bgColor="bg-red-500"
                                 />
-                            }
-                            bgColor="bg-red-500"
-                        />
-                        <DashboardCard
-                            title="Total Users"
-                            value={approvedUsers}
-                            icon={
-                                <PeopleAltIcon
-                                    className="absolute right-[-40px] bottom-[-40px]"
-                                    style={{ fontSize: "230px" }}
+
+                                <DashboardCard
+                                    title="Total Users"
+                                    value={approvedUsers}
+                                    icon={
+                                        <PeopleAltIcon
+                                            className="absolute right-[-40px] bottom-[-40px]"
+                                            style={{ fontSize: "230px" }}
+                                        />
+                                    }
+                                    bgColor="bg-green-500"
                                 />
-                            }
-                            bgColor="bg-green-500"
-                        />
+                            </>
+                        )}
 
                         <DashboardCard
                             title="Total Category"
@@ -119,6 +131,18 @@ export default function Dashboard({ successMessage }) {
                                 />
                             }
                             bgColor="bg-teal-500"
+                        />
+
+                        <DashboardCard
+                            title="Total Supplier"
+                            value={totalSuppliers}
+                            icon={
+                                <PeopleAltIcon
+                                    className="absolute right-[-40px] bottom-[-40px]"
+                                    style={{ fontSize: "230px" }}
+                                />
+                            }
+                            bgColor="bg-purple-500"
                         />
 
                         <DashboardCard
@@ -134,19 +158,7 @@ export default function Dashboard({ successMessage }) {
                             link={route("item-list")}
                         />
 
-                        <DashboardCard
-                            title="Total Supplier"
-                            value={0}
-                            icon={
-                                <PeopleAltIcon
-                                    className="absolute right-[-40px] bottom-[-40px]"
-                                    style={{ fontSize: "230px" }}
-                                />
-                            }
-                            bgColor="bg-purple-500"
-                        />
-
-                        <DashboardCard
+                        {/* <DashboardCard
                             title="Total Amount"
                             value={`₱${totalAmount.toLocaleString()}`}
                             icon={
@@ -163,7 +175,7 @@ export default function Dashboard({ successMessage }) {
                                 Monthly Report
                             </h2>
                             <LineChart />
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

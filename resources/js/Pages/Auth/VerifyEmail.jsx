@@ -1,13 +1,17 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 export default function VerifyEmail({ status }) {
     const { post, processing } = useForm({});
 
+    useEffect(() => {
+        console.log("Verify Email Page Loaded"); 
+    }, []);
+
     const submit = (e) => {
         e.preventDefault();
-
         post(route('verification.send'));
     };
 

@@ -37,7 +37,6 @@ export default function ItemList() {
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
     const [confirmMessage, setConfirmMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const [deleteTarget, setDeleteTarget] = useState(null);
 
     //Form Management
     const { data, setData, post, reset, errors } = useForm({
@@ -64,11 +63,13 @@ export default function ItemList() {
     //Item Management
     const [processing, setProcessing] = useState(false);
     const [categories, setCategories] = useState([]);
+    const [suppliers, setSuppliers] = useState([]);
     const [items, setItems] = useState([]);
     const [filteredItems, setFilteredItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedItems, setSelectedItems] = useState([]);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     //DatePicker Management
     const [activeDatePicker, setActiveDatePicker] = useState(null);
@@ -129,6 +130,7 @@ export default function ItemList() {
                     estimated_life: item.estimated_life || "",
                     quantity: item.quantity || "",
                     price: item.price || "",
+                    supplier: item.supplier || "",
                     ics: item.ics || "",
                     pr: item.pr || "",
                     pr_date: item.pr_date || "",
@@ -165,6 +167,7 @@ export default function ItemList() {
         formData.append("estimated_life", data.estimated_life || "");
         formData.append("quantity", data.quantity || 0);
         formData.append("price", data.price || 0);
+        formData.append("supplier", data.supplier || "");
         formData.append("ics", data.ics || "");
         formData.append("pr", data.pr || "");
         formData.append("pr_date", data.pr_date || "");
@@ -248,6 +251,32 @@ export default function ItemList() {
         }
     };
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [categoriesResponse, suppliersResponse, itemsResponse] =
+                    await Promise.all([
+                        axios.get(route("categories")),
+                        axios.get(route("suppliers.index")),
+                        axios.get(route("items.index")),
+                    ]);
+
+                console.log("Categories Data:", categoriesResponse.data);
+                console.log("Suppliers Data:", suppliersResponse.data);
+                console.log("Items Data:", itemsResponse.data);
+
+                setCategories(categoriesResponse.data.categories || []);
+                setSuppliers(suppliersResponse.data.suppliers || []);
+                setItems(itemsResponse.data.items || []);
+                setFilteredItems(itemsResponse.data.items || []);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
     const fetchItem = async (id) => {
         try {
             const response = await axios.get(route("items.edit", { id }));
@@ -257,23 +286,6 @@ export default function ItemList() {
             console.error("Error fetching item:", error);
         }
     };
-
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await axios.get(route("categories"));
-                setCategories(response.data.categories);
-            } catch (error) {
-                console.error("Error fetching categories:", error);
-            }
-        };
-
-        fetchCategories();
-    }, []);
-
-    useEffect(() => {
-        fetchItems();
-    }, []);
 
     //Filtering Items
     const [startDate, setStartDate] = useState(null);
@@ -312,7 +324,10 @@ export default function ItemList() {
                 item.description
                     .toLowerCase()
                     .includes(searchTerm.toLowerCase()) ||
-                item.items.toLowerCase().includes(searchTerm.toLowerCase());
+                item.items.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.suppliers
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase());
 
             return matchesSearch && isInRange && matchesCategory;
         });
@@ -412,6 +427,7 @@ export default function ItemList() {
         { label: "Life_Span", key: "estimated_life" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "price" },
+        { label: "Supplier", key: "supplier" },
         { label: "ICS_#", key: "ics" },
         { label: "PR_#", key: "pr" },
         { label: "PR_Date", key: "pr_date" },
@@ -467,6 +483,7 @@ export default function ItemList() {
             estimated_life: item.estimated_life ?? "N/A",
             quantity: item.quantity ?? 0,
             price: item.price ? `₱ ${item.price}` : "N/A",
+            suppliers: item.suppliers ?? "N/A",
             ics: item.ics ?? "N/A",
             pr: item.pr ?? "N/A",
             pr_date:
@@ -511,13 +528,17 @@ export default function ItemList() {
     });
 
     //Select Option for Categories
-    const selectOption = categories.map((category) => ({
+    const categoryOptions = categories.map((category) => ({
         label: category.name,
         value: category.name,
     }));
 
-    //Action Buttons for Items
+    const supplierOptions = suppliers.map((supplier) => ({
+        label: supplier.name,
+        value: supplier.name,
+    }));
 
+    //Action Buttons for Items
     const actions = (row) => (
         <Dropdown className="">
             <Dropdown.Trigger>
@@ -587,7 +608,7 @@ export default function ItemList() {
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="px-6 py-4 overflow-visible bg-white ring-1 ring-black/20 sm:rounded-lg dark:bg-gray-800">
-                        <div className="w-full flex justify-between items-center">
+                        <div className="w-full flex justify-between items-center gap-4 flex-wrap">
                             {/* Search and Date Range Picker */}
                             <div className="flex gap-2 items-center ">
                                 <input
@@ -600,7 +621,7 @@ export default function ItemList() {
                                 />
 
                                 <select
-                                    className="border border-black/20 dark:border-white py-1 rounded-sm text-md  text-gray-600 dark:text-gray-300 bg-transparent cursor-pointer w-60"
+                                    className="border border-black/20 dark:border-white py-1 rounded-sm text-md  text-gray-600 dark:text-gray-300 bg-transparent cursor-pointer w-[245px]"
                                     value={selectedCategory}
                                     onChange={handleCategoryChange}
                                 >
@@ -610,7 +631,7 @@ export default function ItemList() {
                                     >
                                         Filter Category
                                     </option>
-                                    {selectOption.map((option, index) => (
+                                    {categoryOptions.map((option, index) => (
                                         <option
                                             key={index}
                                             value={option.value}
@@ -675,14 +696,14 @@ export default function ItemList() {
                             </div>
 
                             {/* Export, Import, Add, and Delete Icons */}
-                            <div className="flex">
+                            <div className="flex flex-wrap gap-2 items-center">
                                 <div className="pr-2 flex gap-2 items-center">
                                     <div className="font-semibold text-gray-600 dark:text-gray-300">
                                         Rows per page:
                                         <select
                                             className="ml-2 border border-black/20 dark:border-white py-1 rounded-sm text-md text-gray-600 dark:text-gray-300 bg-transparent cursor-pointer w-[70px]"
                                             value={itemsPerPage}
-                                            onChange={handleRowsPerPageChange}  
+                                            onChange={handleRowsPerPageChange}
                                         >
                                             {[5, 10, 15].map((num) => (
                                                 <option
@@ -702,10 +723,10 @@ export default function ItemList() {
                                                 "items_export.csv"
                                             )
                                         }
-                                        className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer"
+                                        className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer flex-shrink-0"
                                     />
                                     <CiImport
-                                        className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer"
+                                        className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer flex-shrink-0"
                                         onClick={triggerFileInput}
                                     />
                                     <input
@@ -795,7 +816,7 @@ export default function ItemList() {
                                     id="categories"
                                     className="mt-2 block w-full h-10 rounded-sm text-sm"
                                     placeholder="Select category"
-                                    options={selectOption}
+                                    options={categoryOptions}
                                     value={data.categories}
                                     onChange={(e) =>
                                         setData("categories", e.target.value)
@@ -891,6 +912,28 @@ export default function ItemList() {
                                     className="mt-2"
                                 />
                             </div>
+
+                            <div className="mt-4">
+                                <InputLabel
+                                    htmlFor="suppliers"
+                                    value="Supplier"
+                                />
+                                <SelectOption
+                                    id="suppliers"
+                                    className="mt-2 block w-full h-10 rounded-sm text-sm"
+                                    placeholder="Select supplier"
+                                    options={supplierOptions}
+                                    value={data.suppliers || ""}
+                                    onChange={(e) =>
+                                        setData("suppliers", e.target.value)
+                                    }
+                                />
+                                <InputError
+                                    message={errors.suppliers}
+                                    className="mt-2"
+                                />
+                            </div>
+
                             <div className="mt-2">
                                 <InputLabel htmlFor="ics" value="ICS #" />
                                 <TextInput

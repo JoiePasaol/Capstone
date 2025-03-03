@@ -29,36 +29,38 @@ export default function AuthenticatedLayout({ header, children }) {
                             >
                                 Dashboard
                             </NavLink>
-                            <NavLink
-                                active={
-                                    route().current("user-status") ||
-                                    route().current("user-management")
-                                }
-                                dropdownItems={[
-                                    {
-                                        label: "User Pending",
-                                        href: route("user-status"),
-                                    },
-                                    {
-                                        label: "User Management",
-                                        href: route("user-management"),
-                                    },
-                                ]}
-                            >
-                                Users
-                                <svg
-                                    className="-me-0.5 ms-2 h-4 w-4"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
+                            {user.role === "Admin" && (
+                                <NavLink
+                                    active={
+                                        route().current("user-status") ||
+                                        route().current("user-management")
+                                    }
+                                    dropdownItems={[
+                                        {
+                                            label: "User Pending",
+                                            href: route("user-status"),
+                                        },
+                                        {
+                                            label: "User Management",
+                                            href: route("user-management"),
+                                        },
+                                    ]}
                                 >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </NavLink>
+                                    Users
+                                    <svg
+                                        className="-me-0.5 ms-2 h-4 w-4"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                </NavLink>
+                            )}
 
                             <NavLink
                                 href={route("categories")}
@@ -68,10 +70,17 @@ export default function AuthenticatedLayout({ header, children }) {
                             </NavLink>
 
                             <NavLink
+                                href={route("supplier")}
+                                active={route().current("supplier")}
+                            >
+                                Supplier
+                            </NavLink>
+
+                            <NavLink
                                 active={
                                     route().current("item-list") ||
                                     route().current("item-borrow") ||
-                                    route().current("item-report") 
+                                    route().current("item-report")
                                 }
                                 dropdownItems={[
                                     {
@@ -104,7 +113,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </NavLink>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div className="hidden sm:flex sm:items-center">
                             <div className="relative ms-4">
                                 <Dropdown>
                                     <Dropdown.Trigger>
