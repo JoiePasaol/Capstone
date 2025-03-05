@@ -339,31 +339,50 @@ public function import(Request $request)
 
 
 
-        public function getTotalItemsCount()
-    {
-        try {
-            $count = Item::count();
-            return response()->json(['total_items' => $count], 200);
-        } catch (\Exception $e) {
-            \Log::error("Error fetching total items count: {$e->getMessage()}");
-            return response()->json(['error' => 'Server error'], 500);
-        }
-    }
-
-    public function getTotalAmount()
+public function getTotalItemsCount(Request $request)
 {
     try {
-        $totalAmount = Item::sum(\DB::raw('quantity * price'));
-        return response()->json(['total_amount' => $totalAmount], 200);
+        $user = $request->user(); // Get the authenticated user
+
+        // Start query
+        $query = Item::query();
+
+        // If user is a Basic User, they should only see their own items
+        if ($user->role === 'Basic') {
+            $query->where('user_id', $user->id);
+        } else {
+            // Exclude the authenticated user's items for non-Basic Users
+            $query->where('user_id', '!=', $user->id);
+
+            // If user is an Admin, filter by department
+            if ($user->role === 'Admin') {
+                $query->where('department', $user->department);
+            }
+        }
+
+        $count = $query->count();
+
+        return response()->json(['total_items' => $count], 200);
     } catch (\Exception $e) {
-        \Log::error("Error fetching total amount: {$e->getMessage()}");
+        \Log::error("Error fetching total items count: {$e->getMessage()}");
         return response()->json(['error' => 'Server error'], 500);
     }
 }
 
 
 
-    
-    
+
+//     public function getTotalAmount()
+// {
+//     try {
+//         $totalAmount = Item::sum(\DB::raw('quantity * price'));
+//         return response()->json(['total_amount' => $totalAmount], 200);
+//     } catch (\Exception $e) {
+//         \Log::error("Error fetching total amount: {$e->getMessage()}");
+//         return response()->json(['error' => 'Server error'], 500);
+//     }
+// }
+
+ 
      
 }

@@ -29,22 +29,22 @@ export default function Dashboard({ successMessage }) {
                     pendingResponse,
                     approvedResponse,
                     itemsResponse,
-                    amountResponse,
+                    // amountResponse,
                     categoriesResponse,
                     supplierResponse,
                 ] = await Promise.all([
                     axios.get("/api/users/pending-count"),
                     axios.get("/api/users/approved-count"),
                     axios.get("/api/items/total-count"),
-                    axios.get("/api/items/total-amount"),
+                    // axios.get("/api/items/total-amount"),
                     axios.get("/api/categories/total-count"),
                     axios.get("/api/suppliers/total-count"),
                 ]);
-
+            
                 setPendingUsers(pendingResponse.data.pending_users);
                 setApprovedUsers(approvedResponse.data.approved_users);
                 setTotalItems(itemsResponse.data.total_items);
-                setTotalAmount(amountResponse.data.total_amount);
+                // setTotalAmount(amountResponse.data.total_amount);
                 setTotalCategories(categoriesResponse.data.total_categories);
                 setTotalSuppliers(supplierResponse.data.total_suppliers);
             } catch (error) {

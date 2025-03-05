@@ -122,7 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('/api/items/total-count', [ItemController::class, 'getTotalItemsCount']);
-    Route::get('/api/items/total-amount', [ItemController::class, 'getTotalAmount']);
+    // Route::get('/api/items/total-amount', [ItemController::class, 'getTotalAmount']);
 
     // Supplier Routes
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');

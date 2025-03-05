@@ -119,10 +119,20 @@ class UserController extends Controller
         }
     }
 
-    public function getPendingUsersCount()
+    public function getPendingUsersCount(Request $request)
     {
         try {
-            $count = User::where('status', 'pending')->count();
+            $user = $request->user(); 
+    
+  
+            $query = User::where('status', 'pending');
+            
+            if ($user->role === 'Admin') {
+                $query->where('department', $user->department);
+            }
+    
+            $count = $query->count();
+    
             return response()->json(['pending_users' => $count], 200);
         } catch (\Exception $e) {
             \Log::error("Error fetching pending users count: {$e->getMessage()}");
@@ -130,10 +140,22 @@ class UserController extends Controller
         }
     }
     
-    public function getApprovedUsersCount()
+    
+    public function getApprovedUsersCount(Request $request)
     {
         try {
-            $count = User::where('status', 'approved')->count();
+            $user = $request->user(); // Get the authenticated user
+    
+            // If user is a regular admin, filter by department
+            $query = User::where('status', 'approved')
+                         ->where('id', '!=', $user->id); // Exclude the authenticated user
+    
+            if ($user->role === 'Admin') {
+                $query->where('department', $user->department);
+            }
+    
+            $count = $query->count();
+    
             return response()->json(['approved_users' => $count], 200);
         } catch (\Exception $e) {
             \Log::error("Error fetching approved users count: {$e->getMessage()}");
@@ -141,8 +163,6 @@ class UserController extends Controller
         }
     }
     
-
-
     
-
+    
 }
