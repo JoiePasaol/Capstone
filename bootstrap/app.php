@@ -8,7 +8,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
-        health: '/up',
+        health: '/up'
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
@@ -16,8 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // Register route middleware alias here (only once)
+        $middleware->alias([
+            'role.admin' => \App\Http\Middleware\RoleAdminMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->create();

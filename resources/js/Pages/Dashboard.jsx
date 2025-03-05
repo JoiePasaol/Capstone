@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import { GrMoney } from "react-icons/gr";
 import { toast, Toaster } from "react-hot-toast";
 import "../../css/toaster.css";
@@ -11,7 +11,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import DashboardCard from "@/Components/DashboardCard";
 import LineChart from "@/components/LineChart";
 import axios from "axios";
-import { usePage } from "@inertiajs/react";
+import { checkRole } from "@/utils/CheckRole";
 
 export default function Dashboard({ successMessage }) {
     const [pendingUsers, setPendingUsers] = useState(0);
@@ -93,7 +93,7 @@ export default function Dashboard({ successMessage }) {
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {user.role === "Admin" && (
+                    {checkRole(user, ["Super Admin", "Admin"]) && (
                             <>
                                 <DashboardCard
                                     title="User Pending"
@@ -122,7 +122,7 @@ export default function Dashboard({ successMessage }) {
                         )}
 
                         <DashboardCard
-                            title="Total Category"
+                            title="Total Categories"    
                             value={totalCategories}
                             icon={
                                 <CategoryIcon
@@ -134,7 +134,7 @@ export default function Dashboard({ successMessage }) {
                         />
 
                         <DashboardCard
-                            title="Total Supplier"
+                            title="Total Suppliers"
                             value={totalSuppliers}
                             icon={
                                 <PeopleAltIcon

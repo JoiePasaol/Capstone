@@ -65,6 +65,28 @@ class UserController extends Controller
         }
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:users,id', 
+        ]);
+    
+        try {
+            \Log::info("Deleting users: " . implode(',', $request->ids)); // Debugging
+    
+            User::whereIn('id', $request->ids)->delete();
+    
+            return response()->json(['message' => 'Users deleted successfully'], 200);
+        } catch (\Exception $e) {
+            \Log::error("Error deleting users: {$e->getMessage()}");
+            return response()->json(['error' => 'Server error'], 500);
+        }
+    }
+    
+
+    
+
     public function update(Request $request, $id)
     {
         \Log::info("Updating user with ID: {$id}");

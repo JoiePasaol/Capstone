@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
+import { checkRole } from "@/utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
@@ -19,10 +20,12 @@ import axios from "axios";
 
 const UserManagement = () => {
     //State Management
-
+    const { auth } = usePage().props;
+    const currentUser = auth.user;
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [processing, setProcessing] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -62,24 +65,38 @@ const UserManagement = () => {
         }
     };
 
+    useEffect(() => {
+        debounceSearch(searchTerm);
+    }, [searchTerm]);
+
     //Fetching Data
 
     useEffect(() => {
         const fetchUsers = async () => {
             try {
                 const response = await axios.get("/api/users?status=approved");
-                setUsers(response.data);
-                setFilteredUsers(response.data);
+
+                // Sort users by ID (Descending)
+                const sortedUsers = response.data.sort((a, b) => b.id - a.id);
+
+                // If the user is NOT a Super Admin, filter by department
+                const filteredUsers =
+                    currentUser.role === "Super Admin"
+                        ? sortedUsers // Super Admin sees all users
+                        : sortedUsers.filter(
+                              (user) =>
+                                  user.department === currentUser.department
+                          );
+
+                setUsers(filteredUsers);
+                setFilteredUsers(filteredUsers);
             } catch (error) {
                 console.error("Error fetching users:", error);
             }
         };
+
         fetchUsers();
     }, []);
-
-    useEffect(() => {
-        debounceSearch(searchTerm);
-    }, [searchTerm]);
 
     //User Actions
 
@@ -107,56 +124,70 @@ const UserManagement = () => {
             setSelectedUsers([user]);
             setDialogTitle("Are you sure you want to delete this user?");
         } else {
-            const userCount = selectedUsers.length;
             setDialogTitle(
-                `Are you sure you want to delete these ${userCount} user${
-                    userCount > 1 ? "s" : ""
-                }?`
+                `Are you sure you want to delete these (${selectedUsers.length}) users?`
             );
         }
         setIsDialogOpen(true);
     };
 
-    //Deleting Users
+    const handleBulkDeleteClick = () => {
+        if (selectedUsers.length < 2) return;
+
+        setDialogTitle(
+            `Are you sure you want to delete these (${selectedUsers.length}) users?`
+        );
+        setIsDialogOpen(true);
+    };
 
     const handleConfirmDelete = async () => {
-        try {
-            await Promise.all(
-                selectedUsers.map((user) =>
-                    axios.delete(`/api/users/${user.id}`)
-                )
-            );
-            setUsers((prev) =>
-                prev.filter(
-                    (user) => !selectedUsers.some((u) => u.id === user.id)
-                )
-            );
-            setFilteredUsers((prev) =>
-                prev.filter(
-                    (user) => !selectedUsers.some((u) => u.id === user.id)
-                )
-            );
+        if (!selectedUsers || selectedUsers.length === 0) return;
 
-            const userCount = selectedUsers.length;
-            setSuccessMessage(
-                userCount === 1
-                    ? "User successfully deleted!"
-                    : `(${userCount}) Users successfully deleted!`
-            );
-            setIsSuccessDialogOpen(true);
+        try {
+            console.log(
+                "Deleting users:",
+                selectedUsers.map((user) => user.id)
+            ); // Debugging
+
+            const response = await axios.post(route("users.bulk-destroy"), {
+                ids: selectedUsers.map((user) => user.id),
+            });
+
+            if (response.status === 200) {
+                setUsers((prev) =>
+                    prev.filter(
+                        (user) => !selectedUsers.some((u) => u.id === user.id)
+                    )
+                );
+                setFilteredUsers((prev) =>
+                    prev.filter(
+                        (user) => !selectedUsers.some((u) => u.id === user.id)
+                    )
+                );
+
+                setSuccessMessage(
+                    `(${selectedUsers.length}) users successfully deleted!`
+                );
+                setIsSuccessDialogOpen(true);
+            }
         } catch (error) {
-            console.error("Error deleting users:", error);
+            console.error(
+                "Failed to delete users:",
+                error.response?.data || error
+            );
         } finally {
             setIsDialogOpen(false);
             setSelectedUsers([]);
         }
     };
 
-    const handleCancelDelete = () => setIsDialogOpen(false);
-
- 
+    const handleCancelDelete = () => {
+        setIsDialogOpen(false);
+        setSelectedUsers([]);
+    };
 
     const handleSaveClick = async () => {
+        setProcessing(true);
         try {
             const response = await axios.put(
                 `/api/users/${selectedUser.id}`,
@@ -181,6 +212,8 @@ const UserManagement = () => {
             setIsDrawerOpen(false);
         } catch (error) {
             console.error("Error saving user:", error);
+        } finally {
+            setProcessing(false); // Ensures processing state is reset
         }
     };
 
@@ -217,31 +250,46 @@ const UserManagement = () => {
         { label: "Last_Name", key: "lastname" },
         { label: "Email", key: "email" },
         { label: "Department", key: "department" },
-        { label: "Role", key: "role" },
     ];
+
+    // Only add the Role column if the user is allowed (e.g., Super Admin)
+    if (checkRole(currentUser, ["Super Admin"])) {
+        headers.push({ label: "Role", key: "role" });
+    }
 
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
     const paginatedRows = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         return filteredUsers
+            .filter(user => user.id !== currentUser.id)
             .slice(startIndex, startIndex + itemsPerPage)
-            .map((user, index) => ({
-                id: user.id,
-                checkbox: (
-                    <Checkbox
-                        key={`checkbox-${user.id}`}
-                        checked={selectedUsers.some((u) => u.id === user.id)}
-                        onChange={() => handleCheckboxChange(user)}
-                    />
-                ),
-                index: startIndex + index + 1,
-                firstname: user.firstname,
-                lastname: user.lastname,
-                email: user.email,
-                department: user.department,
-                role: user.role,
-            }));
+            .map((user, index) => {
+                const row = {
+                    id: user.id,
+                    checkbox: (
+                        <Checkbox
+                            key={`checkbox-${user.id}`}
+                            checked={selectedUsers.some(
+                                (u) => u.id === user.id
+                            )}
+                            onChange={() => handleCheckboxChange(user)}
+                        />
+                    ),
+                    index: startIndex + index + 1,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    email: user.email,
+                    department: user.department,
+                };
+
+                // Add the role field only if the user is a Super Admin
+                if (checkRole(currentUser, ["Super Admin"])) {
+                    row.role = user.role;
+                }
+
+                return row;
+            });
     }, [filteredUsers, selectedUsers, currentPage]);
 
     const handlePageChange = (newPage) => {
@@ -272,7 +320,7 @@ const UserManagement = () => {
                             }}
                         >
                             Delete
-                        </Dropdown.Link>    
+                        </Dropdown.Link>
                     </Dropdown.Content>
                 </Dropdown>
             </div>
@@ -310,14 +358,12 @@ const UserManagement = () => {
                                 <div className="flex gap-2 items-center">
                                     <DeleteIcon
                                         className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
-                                            selectedUsers.length <= 1
+                                            selectedUsers.length < 2
                                                 ? "opacity-50 cursor-not-allowed"
                                                 : ""
                                         }`}
-                                        onClick={() =>
-                                            selectedUsers.length > 1 &&
-                                            handleDeleteClick()
-                                        }
+                                        onClick={handleBulkDeleteClick}
+                                        disabled={selectedUsers.length < 2}
                                     />
                                 </div>
                             </div>
@@ -399,6 +445,7 @@ const UserManagement = () => {
                             <InputError className="mt-2" />
                         </div>
 
+                        {checkRole(currentUser, ["Super Admin"]) && (
                         <div className="mt-4">
                             <InputLabel
                                 htmlFor="department"
@@ -418,30 +465,34 @@ const UserManagement = () => {
                             />
                             <InputError className="mt-2" />
                         </div>
+                         )}
 
-                        <div className="mt-4">
-                            <InputLabel htmlFor="role" value="Role" />
-                            <SelectOption
-                                id="role"
-                                options={roleOptions}
-                                className="mt-2 block w-full h-10 rounded-sm"
-                                value={selectedUser.role}
-                                onChange={(e) =>
-                                    setSelectedUser({
-                                        ...selectedUser,
-                                        role: e.target.value,
-                                    })
-                                }
-                            />
-                            <InputError className="mt-2" />
-                        </div>
+                        {checkRole(currentUser, ["Super Admin"]) && (
+                            <div className="mt-4">
+                                <InputLabel htmlFor="role" value="Role" />
+                                <SelectOption
+                                    id="role"
+                                    options={roleOptions}
+                                    className="mt-2 block w-full h-10 rounded-sm"
+                                    value={selectedUser.role}
+                                    onChange={(e) =>
+                                        setSelectedUser({
+                                            ...selectedUser,
+                                            role: e.target.value,
+                                        })
+                                    }
+                                />
+                                <InputError className="mt-2" />
+                            </div>
+                        )}
 
                         <div className="mt-5">
                             <SecondaryButton
-                                className="w-full h-10 rounded-sm"
+                                className="h-10 mt-4 w-full  rounded-sm"
                                 onClick={handleSaveClick}
+                                disabled={processing}
                             >
-                                Save
+                                {processing ? "Saving..." : "Save"}
                             </SecondaryButton>
                         </div>
                     </>

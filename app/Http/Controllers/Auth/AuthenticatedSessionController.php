@@ -53,7 +53,7 @@ class AuthenticatedSessionController extends Controller
      
          $request->session()->regenerate();
      
-         return redirect()->intended(route('dashboard'));
+         return redirect()->intended(route('dashboard'))->with('successMessage', 'You\'re successfully login!');
      }
     
 
@@ -68,6 +68,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect('/login');
     }
 }

@@ -1,31 +1,41 @@
 import { useState, useEffect } from "react";
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
+import { checkRole } from "@/utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
-import Checkbox from "@/Components/Checkbox";
 import TrueButton from "@/Components/TrueButton";
 import FalseButton from "@/Components/FalseButton";
-import SuccessDialog from "@/Components/SuccessDialog"
+import SuccessDialog from "@/Components/SuccessDialog";
 import axios from "axios";
 
 export default function UserStatus() {
+    const { auth } = usePage().props;
+    const currentUser = auth.user;
     const [users, setUsers] = useState([]);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
     const fetchUsers = async () => {
         try {
             const response = await axios.get("/api/users?status=pending");
-            setUsers(response.data);
+
+            // If the current user is a Super Admin, show all users
+            const filteredUsers =
+                currentUser.role === "Super Admin"
+                    ? response.data
+                    : response.data.filter(
+                          (user) => user.department === currentUser.department
+                      );
+
+            setUsers(filteredUsers);
         } catch (error) {
             console.error("Error fetching users:", error);
         }
     };
 
+    useEffect(() => {
+        fetchUsers();
+    }, []);
     const handleAccept = async (id, user) => {
         try {
             if (!user.role) {
@@ -48,7 +58,6 @@ export default function UserStatus() {
     };
 
     const handleDecline = async (id) => {
-       
         try {
             await axios.delete(`/api/users/${id}`);
 
@@ -70,48 +79,55 @@ export default function UserStatus() {
     };
 
     const headers = [
-        { label: <Checkbox />, key: "select-all" },
         { label: "#", key: "index" },
         { label: "First_Name", key: "firstname" },
         { label: "Last_Name", key: "lastname" },
         { label: "Email", key: "email" },
+        ...(checkRole(currentUser, ["Super Admin"])
+            ? [{ label: "Role", key: "role" }]
+            : []),
+        { label: "Action", key: "actions" },
         { label: "Department", key: "department" },
-        { label: "Role", key: "role" },
-        { label: "Action", key: "actions" }
     ];
-    
 
-    const rows = users.map((user, index) => ({
-        checkbox: <Checkbox key={`checkbox-${user.id}`} />,
-        index: index + 1,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-        department: user.department || "N/A",
-        role: (
-            <select
-            value={user.role}
-            onChange={(e) => handleRoleChange(user.id, e.target.value)}
-            className="w-[100px] flex dark:bg-gray-800 border-none focus:outline-none focus:ring-0"
-          >
-             <option value="Basic">Basic</option>
-            <option value="Admin">Admin</option>
-          
-          </select>
-          
-        ),
-        actions: (
-            <div className="flex justify-center " key={`actions-${user.id}`}>
-                <TrueButton onClick={() => handleAccept(user.id, user)}>
-                    Accept
-                </TrueButton>
-                <FalseButton onClick={() => handleDecline(user.id)}>
-                    Decline
-                </FalseButton>
-            </div>
-        ),
-    }));
+    const rows = users.map((user, index) => {
+        const baseRow = {
+            index: index + 1,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            department: user.department || "N/A",
+        };
 
+        if (checkRole(currentUser, ["Super Admin"])) {
+            baseRow.role = (
+                <select
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                    className="w-[100px] flex dark:bg-gray-800 border-none focus:outline-none focus:ring-0"
+                >
+                    <option value="Basic">Basic</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            );
+        }
+
+        return {
+            ...baseRow,
+            actions: (
+                <div className="flex justify-center" key={`actions-${user.id}`}>
+                    <TrueButton onClick={() => handleAccept(user.id, user)}>
+                        Accept
+                    </TrueButton>
+                    <FalseButton onClick={() => handleDecline(user.id)}>
+                        Decline
+                    </FalseButton>
+                </div>
+            ),
+        };
+    });
+
+     
     return (
         <AuthenticatedLayout
             header={
@@ -146,4 +162,4 @@ export default function UserStatus() {
             />
         </AuthenticatedLayout>
     );
-};
+}

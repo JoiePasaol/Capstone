@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, usePage } from "@inertiajs/react";
 import { CiImport, CiExport } from "react-icons/ci";
 import { exportToCSV } from "@/Utils/exportToCSV";
 import { importCSV } from "@/Utils/importCSV";
 import { format, parse } from "date-fns";
+import { checkRole } from "@/utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import Checkbox from "@/Components/Checkbox";
@@ -27,7 +28,16 @@ import QuillEditor from "@/Utils/QuillEditor";
 import "quill/dist/quill.snow.css";
 import axios from "axios";
 
+
 export default function ItemList() {
+
+    // Extract user authentication information
+    const { user } = usePage().props.auth;
+    const { auth } = usePage().props;
+    const currentUser = auth.user;
+    const basicUser = currentUser?.role === "Basic";
+   
+
     //Drawer Management
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -82,7 +92,9 @@ export default function ItemList() {
     const [modalContent, setModalContent] = useState(null);
     const [selectedFileName, setSelectedFileName] = useState("Select file");
 
-    const [itemsPerPage, setItemsPerPage] = useState(5);
+
+
+
 
     const handleRowsPerPageChange = (event) => {
         setItemsPerPage(Number(event.target.value));
@@ -325,9 +337,7 @@ export default function ItemList() {
                     .toLowerCase()
                     .includes(searchTerm.toLowerCase()) ||
                 item.items.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.suppliers
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase());
+                item.suppliers.toLowerCase().includes(searchTerm.toLowerCase());
 
             return matchesSearch && isInRange && matchesCategory;
         });
@@ -336,32 +346,7 @@ export default function ItemList() {
         setCurrentPage(1);
     }, [searchTerm, startDate, endDate, selectedCategory, items]);
 
-    //Pagination Logic
-
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-
-    const handlePageChange = (newPage) => {
-        if (newPage < 1 || newPage > totalPages) return;
-        setCurrentPage(newPage);
-    };
-
-    const handleCheckboxChange = (item) => {
-        setSelectedItems((prev) =>
-            prev.includes(item.id)
-                ? prev.filter((id) => id !== item.id)
-                : [...prev, item.id]
-        );
-    };
-
-    //Select All Checkbox Handler
-
-    const handleSelectAll = () => {
-        if (selectedItems.length === filteredItems.length) {
-            setSelectedItems([]);
-        } else {
-            setSelectedItems(filteredItems.map((item) => item.id));
-        }
-    };
+   
 
     //Deleting Items Logic
 
@@ -403,9 +388,51 @@ export default function ItemList() {
         }
     };
 
-    //Table Headers and Rows Mapping
+     //Pagination Logic
+    
+     const userFilteredItems = basicUser
+     ? filteredItems.filter(item => item.user_id === currentUser.id) 
+     : checkRole(currentUser, ["Admin"]) 
+     ? filteredItems.filter(item => item.department === currentUser.department)
+     : filteredItems; 
+ 
+     const [itemsPerPage, setItemsPerPage] = useState(5);
+     const totalPages = Math.ceil(userFilteredItems.length / itemsPerPage);
+     const isSelectAllChecked = selectedItems.length === filteredItems.length;
+ 
+     const paginatedItems = useMemo(() => {
+         const startIndex = (currentPage - 1) * itemsPerPage;
+         return userFilteredItems.slice(startIndex, startIndex + itemsPerPage);
+     }, [userFilteredItems, currentPage, itemsPerPage]);
+ 
+     const sortedPaginatedItems = [...paginatedItems].sort(
+         (a, b) => new Date(b.created_at) - new Date(a.created_at)
+     );
+ 
+     const handlePageChange = (newPage) => {
+         if (newPage < 1 || newPage > totalPages) return;
+         setCurrentPage(newPage);
+     };
+ 
+     const handleCheckboxChange = (item) => {
+         setSelectedItems((prev) =>
+             prev.includes(item.id)
+                 ? prev.filter((id) => id !== item.id)
+                 : [...prev, item.id]
+         );
+     };
+ 
+     //Select All Checkbox Handler
+ 
+     const handleSelectAll = () => {
+         if (selectedItems.length === filteredItems.length) {
+             setSelectedItems([]);
+         } else {
+             setSelectedItems(filteredItems.map((item) => item.id));
+         }
+     };
 
-    const isSelectAllChecked = selectedItems.length === filteredItems.length;
+    //Table Headers and Rows Mapping
 
     const headers = [
         {
@@ -418,8 +445,12 @@ export default function ItemList() {
             key: "select-all",
         },
         { label: "#", key: "index" },
-        { label: "Name", key: "name" },
-        { label: "Department", key: "department" },
+        ...(!basicUser
+            ? [
+                  { label: "Name", key: "name" },
+                  { label: "Department", key: "department" },
+              ]
+            : []),
         { label: "Image", key: "image" },
         { label: "Category", key: "categories" },
         { label: "Item", key: "items" },
@@ -427,7 +458,7 @@ export default function ItemList() {
         { label: "Life_Span", key: "estimated_life" },
         { label: "Quantity", key: "quantity" },
         { label: "Amount", key: "price" },
-        { label: "Supplier", key: "supplier" },
+        { label: "Supplier", key: "suppliers" },
         { label: "ICS_#", key: "ics" },
         { label: "PR_#", key: "pr" },
         { label: "PR_Date", key: "pr_date" },
@@ -443,24 +474,12 @@ export default function ItemList() {
         { label: "Updated_At", key: "updated_at" },
     ];
 
-    const paginatedItems = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        return filteredItems.slice(startIndex, startIndex + itemsPerPage);
-    }, [filteredItems, currentPage, itemsPerPage]);
-
-    const sortedPaginatedItems = [...paginatedItems].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-
     const rows = sortedPaginatedItems.map((item, index) => {
-        console.log("Raw pr_date:", item.pr_date);
         let parsedPrDate = item.pr_date
-            ? parse(item.pr_date, "yyyy-MM-dd", new Date()) // ✅ Correct parsing
+            ? parse(item.pr_date, "yyyy-MM-dd", new Date())
             : null;
 
-        console.log("Parsed pr_date:", parsedPrDate);
-
-        return {
+        let row = {
             id: item.id,
             select: (
                 <Checkbox
@@ -492,31 +511,19 @@ export default function ItemList() {
                     : "N/A",
             po: item.po ?? "N/A",
             po_date: item.po_date
-                ? format(
-                      parse(item.po_date, "yyyy-MM-dd", new Date()),
-                      "MM/dd/yyyy"
-                  )
+                ? format(parse(item.po_date, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
                 : "N/A",
             vc: item.vc ?? "N/A",
             vc_date: item.vc_date
-                ? format(
-                      parse(item.vc_date, "yyyy-MM-dd", new Date()),
-                      "MM/dd/yyyy"
-                  )
+                ? format(parse(item.vc_date, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
                 : "N/A",
             ch: item.ch ?? "N/A",
             ch_date: item.ch_date
-                ? format(
-                      parse(item.ch_date, "yyyy-MM-dd", new Date()),
-                      "MM/dd/yyyy"
-                  )
+                ? format(parse(item.ch_date, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
                 : "N/A",
             or: item.or ?? "N/A",
             or_date: item.or_date
-                ? format(
-                      parse(item.or_date, "yyyy-MM-dd", new Date()),
-                      "MM/dd/yyyy"
-                  )
+                ? format(parse(item.or_date, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
                 : "N/A",
             created_at: item.created_at
                 ? new Date(item.created_at).toLocaleString()
@@ -525,6 +532,14 @@ export default function ItemList() {
                 ? new Date(item.updated_at).toLocaleString()
                 : "N/A",
         };
+
+        // Remove the "name" and "department" properties for Basic users.
+        if (basicUser) {
+            delete row.name;
+            delete row.department;
+        }
+
+        return row;
     });
 
     //Select Option for Categories
@@ -582,6 +597,8 @@ export default function ItemList() {
                 >
                     Edit
                 </Dropdown.Link>
+                {checkRole(user, ["Super Admin"]) && (
+                <>
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();
@@ -590,6 +607,8 @@ export default function ItemList() {
                 >
                     Delete
                 </Dropdown.Link>
+                </>
+                )}
             </Dropdown.Content>
         </Dropdown>
     );
@@ -716,30 +735,37 @@ export default function ItemList() {
                                             ))}
                                         </select>
                                     </div>
-                                    <CiExport
-                                        onClick={() =>
-                                            exportToCSV(
-                                                items,
-                                                "items_export.csv"
-                                            )
-                                        }
-                                        className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer flex-shrink-0"
-                                    />
-                                    <CiImport
-                                        className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer flex-shrink-0"
-                                        onClick={triggerFileInput}
-                                    />
-                                    <input
-                                        id="importFile"
-                                        type="file"
-                                        accept=".csv"
-                                        className="hidden"
-                                        onChange={(e) =>
-                                            importCSV(e, handleImport)
-                                        }
-                                    />
-                                </div>
+                                    {checkRole(user, ["Super Admin"]) && (
+                                        <>
+                                            <CiExport
+                                                onClick={() =>
+                                                    exportToCSV(
+                                                        items,
+                                                        "items_export.csv"
+                                                    )
+                                                }
+                                                className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer flex-shrink-0"
+                                            />
+                                            <CiImport
+                                                className="text-2xl stroke-[1] text-gray-600 dark:text-gray-300 cursor-pointer flex-shrink-0"
+                                                onClick={triggerFileInput}
+                                            />
+                                            <input
+                                                id="importFile"
+                                                type="file"
+                                                accept=".csv"
+                                                className="hidden"
+                                                onChange={(e) =>
+                                                    importCSV(e, handleImport)
+                                                }
+                                            />
+                                        </>
+                                        )}                                   
+                                    </div>
+
                                 <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
+                                {checkRole(user, ["Super Admin"]) && (
+                                        <>
                                     <DeleteIcon
                                         className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
                                             selectedItems.length < 2
@@ -749,6 +775,8 @@ export default function ItemList() {
                                         onClick={() => confirmDelete()}
                                         disabled={selectedItems.length < 2}
                                     />
+                                    </>
+                                    )}
                                     <AddCircleIcon
                                         className="text-gray-600 dark:text-gray-300 cursor-pointer"
                                         onClick={() =>
@@ -913,7 +941,7 @@ export default function ItemList() {
                                 />
                             </div>
 
-                            <div className="mt-4">
+                            <div className="mt-2.5">
                                 <InputLabel
                                     htmlFor="suppliers"
                                     value="Supplier"

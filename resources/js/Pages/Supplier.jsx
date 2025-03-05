@@ -1,5 +1,6 @@
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, usePage } from "@inertiajs/react";
 import { useState, useEffect, useMemo } from "react";
+import { checkRole } from "@/Utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import Dropdown from "@/Components/Dropdown";
@@ -17,6 +18,10 @@ import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
 
 export default function Supplier() {
+
+    // Extract user authentication information
+    const { user } = usePage().props.auth;
+
     //Drawer Management
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -263,7 +268,7 @@ export default function Supplier() {
             <Dropdown.Trigger>
                 <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
             </Dropdown.Trigger>
-            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-108px] bg-gray-100 dark:bg-gray-700">
+            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-95px] bg-gray-100 dark:bg-gray-700">
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();
@@ -272,14 +277,16 @@ export default function Supplier() {
                 >
                     Edit
                 </Dropdown.Link>
-                <Dropdown.Link
-                    onClick={(e) => {
-                        e.preventDefault();
-                        confirmDelete(row.id);
-                    }}
-                >
-                    Delete
-                </Dropdown.Link>
+                {checkRole(user, ["Super Admin"]) && (
+                    <Dropdown.Link
+                        onClick={(e) => {
+                            e.preventDefault();
+                            confirmDelete(row.id);
+                        }}
+                    >
+                        Delete
+                    </Dropdown.Link>
+                )}
             </Dropdown.Content>
         </Dropdown>
     );
@@ -304,15 +311,17 @@ export default function Supplier() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                             <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
-                                <DeleteIcon
-                                    className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
-                                        selectedSuppliers.length < 2
-                                            ? "opacity-50 pointer-events-none"
-                                            : ""
-                                    }`}
-                                    onClick={() => confirmDelete()}
-                                    disabled={selectedSuppliers.length < 2}
-                                />
+                                {checkRole(user, ["Super Admin"]) && (
+                                    <DeleteIcon
+                                        className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
+                                            selectedSuppliers.length < 2
+                                                ? "opacity-50 pointer-events-none"
+                                                : ""
+                                        }`}
+                                        onClick={() => confirmDelete()}
+                                        disabled={selectedSuppliers.length < 2}
+                                    />
+                                )}
                                 <AddCircleIcon
                                     className="text-gray-600 dark:text-gray-300 cursor-pointer"
                                     onClick={() => toggleDrawer(true, false)}

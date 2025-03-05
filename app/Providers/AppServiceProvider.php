@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Vite;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
+use App\Http\Middleware\RoleMiddleware;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,8 +19,12 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(Kernel $kernel): void
     {
-        Vite::prefetch(concurrency: 3);
+        // Optionally, if you want to register RoleMiddleware globally:
+        // $kernel->appendMiddlewareToGroup('web', RoleMiddleware::class);
+
+        // You can add other middleware or configurations here if needed
     }
 }
+

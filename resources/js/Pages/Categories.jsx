@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePage, Head } from "@inertiajs/react";
+import { checkRole } from "@/Utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import TextInput from "@/Components/TextInput";
 import SecondaryButton from "@/Components/SecondaryButton";
@@ -16,7 +17,7 @@ import axios from "axios";
 
 export default function Categories({ categories }) {
     // State Management
-
+    const { user } = usePage().props.auth;
     const { reload } = usePage();
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -272,14 +273,16 @@ export default function Categories({ categories }) {
                         >
                             Edit
                         </Dropdown.Link>
-                        <Dropdown.Link
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleDeleteClick(category);
-                            }}
-                        >
-                            Delete
-                        </Dropdown.Link>
+                        {checkRole(user, ["Super Admin"]) && (
+                            <Dropdown.Link
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleDeleteClick(category);
+                                }}
+                            >
+                                Delete
+                            </Dropdown.Link>
+                        )}
                     </Dropdown.Content>
                 </Dropdown>
             </div>
@@ -332,19 +335,21 @@ export default function Categories({ categories }) {
                                     All Categories
                                 </div>
                                 <div className="w-full flex justify-end px-4 mt-4 text-gray-900 dark:text-gray-100">
-                                    <DeleteIcon
-                                        className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
-                                            rows.filter((row) => row.checkbox)
-                                                .length < 2
-                                                ? "opacity-50 cursor-not-allowed"
-                                                : ""
-                                        }`}
-                                        onClick={handleBulkDeleteClick}
-                                        disabled={
-                                            rows.filter((row) => row.checkbox)
-                                                .length < 2
-                                        }
-                                    />
+                                    {checkRole(user, ["Super Admin"]) && (
+                                        <DeleteIcon
+                                            className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
+                                                rows.filter((row) => row.checkbox)
+                                                    .length < 2
+                                                    ? "opacity-50 cursor-not-allowed"
+                                                    : ""
+                                            }`}
+                                            onClick={handleBulkDeleteClick}
+                                            disabled={
+                                                rows.filter((row) => row.checkbox)
+                                                    .length < 2
+                                            }
+                                        />
+                                    )}
                                 </div>
                                 <div className="w-full px-4 text-gray-900 dark:text-gray-100">
                                     <Table
