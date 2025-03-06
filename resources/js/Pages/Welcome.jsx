@@ -1,6 +1,6 @@
 import { Head, Link } from "@inertiajs/react";
 import "../../css/custom.css";
-import DarkModeToggle from "@/Components/LightDarkToggle";
+import DarkModeToggle from "@/Components/SimpleLightDarkToggle";
 
 export default function Welcome({ auth }) {
     return (

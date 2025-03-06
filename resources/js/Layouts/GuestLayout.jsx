@@ -1,20 +1,31 @@
 import { Link } from "@inertiajs/react";
-import LightDarkToggle from "@/Components/LightDarkToggle";
+import ThemeToggle from "@/Components/ThemeToggle";
 
 export default function GuestLayout({ children }) {
-
- 
-
     return (
         <div className="relative flex min-h-screen flex-col items-center bg-gray-200 pt-6 sm:justify-center sm:pt-0 dark:bg-gray-900 overflow-hidden">
-        
-            <img className="guest-bg-image" src="/img/bg.jpeg" alt="Background" />
+            <img
+                className="guest-bg-image"
+                src="/img/bg.jpeg"
+                alt="Background"
+            />
 
-          
             <div className="absolute top-[-5px] left-4 flex items-center space-x-4 z-10 dark:opacity-40">
-                <img className="h-[120px] w-auto mr-[-20px]" src="/img/MAGALLANES_LOGO.png" alt="Magallanes Logo" />
-                <img className="h-[100px] w-auto" src="/img/CSUCC_LOGO.png" alt="CSUCC Logo" />
-                <img className="h-[100px] w-auto" src="/img/CEIT_LOGO.png" alt="CEIT Logo" />
+                <img
+                    className="h-[120px] w-auto mr-[-20px]"
+                    src="/img/MAGALLANES_LOGO.png"
+                    alt="Magallanes Logo"
+                />
+                <img
+                    className="h-[100px] w-auto"
+                    src="/img/CSUCC_LOGO.png"
+                    alt="CSUCC Logo"
+                />
+                <img
+                    className="h-[100px] w-auto"
+                    src="/img/CEIT_LOGO.png"
+                    alt="CEIT Logo"
+                />
             </div>
 
             <div className="relative z-10">
@@ -29,7 +40,7 @@ export default function GuestLayout({ children }) {
                 {children}
             </div>
 
-            <LightDarkToggle />
+            <ThemeToggle />
         </div>
     );
 }

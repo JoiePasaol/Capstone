@@ -262,7 +262,7 @@ const UserManagement = () => {
     const paginatedRows = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         return filteredUsers
-            .filter(user => user.id !== currentUser.id)
+            .filter((user) => user.id !== currentUser.id)
             .slice(startIndex, startIndex + itemsPerPage)
             .map((user, index) => {
                 const row = {
@@ -339,51 +339,45 @@ const UserManagement = () => {
             }
         >
             <Head title="User Management" />
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="px-6 py-4 overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
-                        {users.length > 0 && (
-                            <div className="w-full flex justify-between">
-                                <div className="flex-1">
-                                    <input
-                                        type="text"
-                                        placeholder="Search..."
-                                        value={searchTerm}
-                                        className="dark:text-white border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
-                                        onChange={(e) =>
-                                            setSearchTerm(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div className="flex gap-2 items-center">
-                                    <DeleteIcon
-                                        className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
-                                            selectedUsers.length < 2
-                                                ? "opacity-50 cursor-not-allowed"
-                                                : ""
-                                        }`}
-                                        onClick={handleBulkDeleteClick}
-                                        disabled={selectedUsers.length < 2}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="text-gray-900 dark:text-gray-100">
-                            <Table
-                                headers={headers}
-                                rows={paginatedRows}
-                                actions={actions}
+            <div className="px-4 py-4  overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40">
+                {users.length > 0 && (
+                    <div className="w-full flex justify-between mb-3">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                className="dark:text-white border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={handlePageChange}
-                        />
+                        <div className="flex gap-2 items-center">
+                            <DeleteIcon
+                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
+                                    selectedUsers.length < 2
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : ""
+                                }`}
+                                onClick={handleBulkDeleteClick}
+                                disabled={selectedUsers.length < 2}
+                            />
+                        </div>
                     </div>
+                )}
+
+                <div className="text-gray-900 dark:text-gray-100">
+                    <Table
+                        headers={headers}
+                        rows={paginatedRows}
+                        actions={actions}
+                    />
                 </div>
+
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                />
             </div>
 
             {/* Drawer for User */}
@@ -446,26 +440,26 @@ const UserManagement = () => {
                         </div>
 
                         {checkRole(currentUser, ["Super Admin"]) && (
-                        <div className="mt-4">
-                            <InputLabel
-                                htmlFor="department"
-                                value="Department"
-                            />
-                            <SelectOption
-                                id="department"
-                                options={departmentOptions}
-                                className="mt-2 block w-full h-10 rounded-sm"
-                                value={selectedUser.department}
-                                onChange={(e) =>
-                                    setSelectedUser({
-                                        ...selectedUser,
-                                        department: e.target.value,
-                                    })
-                                }
-                            />
-                            <InputError className="mt-2" />
-                        </div>
-                         )}
+                            <div className="mt-4">
+                                <InputLabel
+                                    htmlFor="department"
+                                    value="Department"
+                                />
+                                <SelectOption
+                                    id="department"
+                                    options={departmentOptions}
+                                    className="mt-2 block w-full h-10 rounded-sm"
+                                    value={selectedUser.department}
+                                    onChange={(e) =>
+                                        setSelectedUser({
+                                            ...selectedUser,
+                                            department: e.target.value,
+                                        })
+                                    }
+                                />
+                                <InputError className="mt-2" />
+                            </div>
+                        )}
 
                         {checkRole(currentUser, ["Super Admin"]) && (
                             <div className="mt-4">

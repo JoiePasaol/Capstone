@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "../../css/toggle.css"
 
-export default function LightDarkToggle() {
+export default function ThemeToggle() {
     const [darkMode, setDarkMode] = useState(
         localStorage.getItem("theme") === "dark" ||
             (!localStorage.getItem("theme") &&

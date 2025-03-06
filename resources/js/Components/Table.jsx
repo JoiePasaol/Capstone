@@ -1,7 +1,7 @@
 const Table = ({ headers, rows, actions }) => {
     return (
         <div className="overflow-x-auto">
-            <table className="mt-4 min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-700">
+            <table className="min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-700 ">
                 <thead>
                     <tr className="bg-blue-500 dark:bg-gray-700 text-white">
                         {headers.map((header, index) => (

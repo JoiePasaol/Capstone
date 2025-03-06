@@ -300,10 +300,9 @@ export default function Supplier() {
             }
         >
             <Head title="Supplier" />
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="px-6 py-4 overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
-                        <div className="flex gap-2 items-center justify-between ">
+          
+                    <div className="px-4 py-4  overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40">
+                        <div className="flex mb-3 gap-2 items-center justify-between ">
                             <input
                                 type="text"
                                 placeholder="Search..."
@@ -341,8 +340,7 @@ export default function Supplier() {
                             onPageChange={handlePageChange}
                         />
                     </div>
-                </div>
-            </div>
+           
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}

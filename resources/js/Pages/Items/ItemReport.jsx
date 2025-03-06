@@ -150,12 +150,11 @@ export default function ItemReport() {
         >
             <Head title="Item Report" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="px-6 py-4  overflow-visible bg-white ring-1 ring-black/20 sm:rounded-lg dark:bg-gray-800">
-                        <div className=" text-gray-900 dark:text-gray-100">
+          
+                <div className="px-4 py-4 bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40  relative ">
+                        <div className=" text-gray-900 dark:text-gray-100 ">
                             {/* Date Range Picker */}
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-3  flex-wrap gap-2">
                                 <div className="flex items-center gap-3">
                                     <select
                                         value={selectedYear}
@@ -213,7 +212,7 @@ export default function ItemReport() {
                                         ))}
                                     </select>
 
-                                    <div className="relative z-50">
+                                    <div className="relative">
                                         <select
                                             onClick={() =>
                                                 setShowPicker(!showPicker)
@@ -233,7 +232,7 @@ export default function ItemReport() {
                                             </option>
                                         </select>
                                         {showPicker && (
-                                            <div className="absolute z-50">
+                                            <div className="absolute z-50 top-10 right-0">
                                                 <DatePicker
                                                     selectsRange
                                                     startDate={startDate}
@@ -328,8 +327,6 @@ export default function ItemReport() {
                             )}
                         </div>
                     </div>
-                </div>
-            </div>
         </AuthenticatedLayout>
     );
 }

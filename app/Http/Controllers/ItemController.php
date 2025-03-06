@@ -342,19 +342,19 @@ public function import(Request $request)
 public function getTotalItemsCount(Request $request)
 {
     try {
-        $user = $request->user(); // Get the authenticated user
+        $user = $request->user(); 
 
-        // Start query
+    
         $query = Item::query();
 
-        // If user is a Basic User, they should only see their own items
+   
         if ($user->role === 'Basic') {
             $query->where('user_id', $user->id);
         } else {
-            // Exclude the authenticated user's items for non-Basic Users
+           
             $query->where('user_id', '!=', $user->id);
 
-            // If user is an Admin, filter by department
+          
             if ($user->role === 'Admin') {
                 $query->where('department', $user->department);
             }
@@ -368,6 +368,8 @@ public function getTotalItemsCount(Request $request)
         return response()->json(['error' => 'Server error'], 500);
     }
 }
+
+
 
 
 

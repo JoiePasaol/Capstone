@@ -301,12 +301,10 @@ export default function Categories({ categories }) {
             }
         >
             <Head title="Categories" />
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-custom overflow-hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-[350px,1fr] lg:grid-cols-[350px,1fr] overflow-hidden">
                         <div className="py-4 px-3">
                             <div className="h-60 bg-white ring-1 ring-gray-400 dark:ring-gray-400 sm:rounded-lg dark:bg-gray-800">
-                                <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl  font-bold text-blue-500  dark:text-gray-300">
+                                <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl font-bold text-blue-500 dark:text-gray-300">
                                     Add New Category
                                 </div>
                                 <div className="w-full p-4">
@@ -317,14 +315,13 @@ export default function Categories({ categories }) {
                                         onChange={(e) =>
                                             setCategory(e.target.value)
                                         }
-                                      
                                     />
                                     <SecondaryButton
-                                        className="h-10 mt-4 w-full  rounded-sm"
+                                        className="h-10 mt-4 w-full rounded-sm"
                                         onClick={handleAddCategory}
                                         disabled={processing}
                                     >
-                                    {processing ? "Saving..." : "Save"}
+                                        {processing ? "Saving..." : "Save"}
                                     </SecondaryButton>
                                 </div>
                             </div>
@@ -334,7 +331,7 @@ export default function Categories({ categories }) {
                                 <div className="border-b border-gray-400 dark:border-gray-600 p-4 text-xl font-bold text-blue-500 dark:text-gray-300">
                                     All Categories
                                 </div>
-                                <div className="w-full flex justify-end px-4 mt-4 text-gray-900 dark:text-gray-100">
+                                <div className="w-full flex justify-end px-4 mt-4 mb-3 text-gray-900 dark:text-gray-100">
                                     {checkRole(user, ["Super Admin"]) && (
                                         <DeleteIcon
                                             className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
@@ -373,9 +370,7 @@ export default function Categories({ categories }) {
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
+    
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}

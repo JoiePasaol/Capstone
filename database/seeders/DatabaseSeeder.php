@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
         ]);
     
         // Seed users table with random data
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 30; $i++) {
             DB::table('users')->insert([
                 'firstname' => $faker->firstName,
                 'lastname' => $faker->lastName,
@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
         }
     
         // Seed password_reset_tokens table
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 30; $i++) {
             DB::table('password_reset_tokens')->insert([
                 'email' => $faker->unique()->safeEmail,
                 'token' => Str::random(60),
@@ -60,10 +60,10 @@ class DatabaseSeeder extends Seeder
         }
     
         // Seed sessions table
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 30; $i++) {
             DB::table('sessions')->insert([
                 'id' => Str::random(40),
-                'user_id' => $faker->randomElement(range(1, 100)), // Assuming you have at least 100 users
+                'user_id' => $faker->randomElement(range(1, 30)),
                 'ip_address' => $faker->ipv4,
                 'user_agent' => $faker->userAgent,
                 'payload' => $faker->text,

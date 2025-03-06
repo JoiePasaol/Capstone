@@ -17,7 +17,7 @@ export default function Dashboard({ successMessage }) {
     const [pendingUsers, setPendingUsers] = useState(0);
     const [approvedUsers, setApprovedUsers] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
-    const [totalAmount, setTotalAmount] = useState(0);
+    // const [totalAmount, setTotalAmount] = useState(0);
     const [totalCategories, setTotalCategories] = useState(0);
     const [totalSuppliers, setTotalSuppliers] = useState(0);
     const { user } = usePage().props.auth;
@@ -63,7 +63,7 @@ export default function Dashboard({ successMessage }) {
                     <div
                         className="slide-in flex items-center p-3 bg-[#008558] text-white rounded-md shadow-md"
                         style={{
-                            marginTop: "60px",
+                            marginBottom: "60px",
                         }}
                     >
                         <IoIosCheckmarkCircle
@@ -74,7 +74,7 @@ export default function Dashboard({ successMessage }) {
                 ),
                 {
                     duration: 3000,
-                    position: "top-right",
+                    position: "bottom-right",
                 }
             );
         }
@@ -90,9 +90,7 @@ export default function Dashboard({ successMessage }) {
         >
             <Head title="Dashboard" />
             <Toaster />
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {checkRole(user, ["Super Admin", "Admin"]) && (
                             <>
                                 <DashboardCard
@@ -177,8 +175,7 @@ export default function Dashboard({ successMessage }) {
                             <LineChart />
                         </div> */}
                     </div>
-                </div>
-            </div>
+           
         </AuthenticatedLayout>
     );
 }

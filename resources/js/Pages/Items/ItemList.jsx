@@ -624,10 +624,8 @@ export default function ItemList() {
             <Head title="Item List" />
 
             {/* Main Content */}
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="px-6 py-4 overflow-visible bg-white ring-1 ring-black/20 sm:rounded-lg dark:bg-gray-800">
-                        <div className="w-full flex justify-between items-center gap-4 flex-wrap">
+            <div className="px-4 py-4 bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40 relative">
+                        <div className="w-full mb-3  flex justify-between items-center gap-4 flex-wrap">
                             {/* Search and Date Range Picker */}
                             <div className="flex gap-2 items-center ">
                                 <input
@@ -662,7 +660,7 @@ export default function ItemList() {
                                 </select>
 
                                 {/* Date Range Picker Input */}
-                                <div className="relative z-50">
+                                <div className="relative">
                                     <select
                                         onClick={() =>
                                             setDateRangeShowPicker(
@@ -686,7 +684,7 @@ export default function ItemList() {
                                     </select>
                                     {/* Date Picker Dropdown */}
                                     {showDateRangePicker && (
-                                        <div className="absolute z-50">
+                                        <div className="absolute z-50 top-10 right-0">
                                             <DatePicker
                                                 selectsRange
                                                 startDate={startDate}
@@ -715,7 +713,7 @@ export default function ItemList() {
                             </div>
 
                             {/* Export, Import, Add, and Delete Icons */}
-                            <div className="flex flex-wrap gap-2 items-center">
+                            <div className="flex flex-wrap items-center">
                                 <div className="pr-2 flex gap-2 items-center">
                                     <div className="font-semibold text-gray-600 dark:text-gray-300">
                                         Rows per page:
@@ -801,8 +799,7 @@ export default function ItemList() {
                             onPageChange={handlePageChange}
                         />
                     </div>
-                </div>
-            </div>
+
 
             {/* Drawer for Item */}
             <Drawer

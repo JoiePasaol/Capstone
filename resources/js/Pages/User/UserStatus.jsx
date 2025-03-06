@@ -127,7 +127,6 @@ export default function UserStatus() {
         };
     });
 
-     
     return (
         <AuthenticatedLayout
             header={
@@ -138,23 +137,21 @@ export default function UserStatus() {
         >
             <Head title="User Status" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800">
-                        <div className="p-6 text-gray-900 dark:text-gray-100">
-                            {users.length > 0 ? (
-                                <Table headers={headers} rows={rows} />
-                            ) : (
-                                <div className="flex items-center justify-center h-48">
-                                    <p className="text-xl font-semibold text-gray-500 dark:text-gray-400">
-                                        No Pending User!
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+        
+            <div className="px-4 py-4 overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40">
+                    <div className="p-2 text-gray-900 dark:text-gray-100">
+                        {users.length > 0 ? (
+                            <Table headers={headers} rows={rows} />
+                        ) : (
+                            <div className="flex items-center justify-center h-48">
+                                <p className="text-xl font-semibold text-gray-500 dark:text-gray-400">
+                                    No Pending User!
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
+           
             <SuccessDialog
                 isOpen={isSuccessDialogOpen}
                 onClose={() => setIsSuccessDialogOpen(false)}
