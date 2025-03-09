@@ -21,7 +21,7 @@ export default function SimpleLightDarkToggle() {
     return (
         <button
             onClick={() => setDarkMode(!isDarkMode)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-none"
+            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-none"
         >
             {isDarkMode ? (
                 <Moon className="w-5 h-5 text-white" />

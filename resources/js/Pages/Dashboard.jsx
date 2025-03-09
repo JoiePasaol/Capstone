@@ -40,7 +40,7 @@ export default function Dashboard({ successMessage }) {
                     axios.get("/api/categories/total-count"),
                     axios.get("/api/suppliers/total-count"),
                 ]);
-            
+
                 setPendingUsers(pendingResponse.data.pending_users);
                 setApprovedUsers(approvedResponse.data.approved_users);
                 setTotalItems(itemsResponse.data.total_items);
@@ -90,73 +90,77 @@ export default function Dashboard({ successMessage }) {
         >
             <Head title="Dashboard" />
             <Toaster />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {checkRole(user, ["Super Admin", "Admin"]) && (
-                            <>
-                                <DashboardCard
-                                    title="User Pending"
-                                    value={pendingUsers}
-                                    icon={
-                                        <PeopleAltIcon
-                                            className="absolute right-[-40px] bottom-[-40px]"
-                                            style={{ fontSize: "230px" }}
-                                        />
-                                    }
-                                    bgColor="bg-red-500"
-                                />
-
-                                <DashboardCard
-                                    title="Total Users"
-                                    value={approvedUsers}
-                                    icon={
-                                        <PeopleAltIcon
-                                            className="absolute right-[-40px] bottom-[-40px]"
-                                            style={{ fontSize: "230px" }}
-                                        />
-                                    }
-                                    bgColor="bg-green-500"
-                                />
-                            </>
-                        )}
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {checkRole(user, ["Super Admin", "Admin"]) && (
+                    <>
                         <DashboardCard
-                            title="Total Categories"    
-                            value={totalCategories}
-                            icon={
-                                <CategoryIcon
-                                    className="absolute right-[-50px] bottom-[-40px]"
-                                    style={{ fontSize: "205px" }}
-                                />
-                            }
-                            bgColor="bg-teal-500"
-                        />
-
-                        <DashboardCard
-                            title="Total Suppliers"
-                            value={totalSuppliers}
+                            title="User Pending"
+                            value={pendingUsers}
                             icon={
                                 <PeopleAltIcon
                                     className="absolute right-[-40px] bottom-[-40px]"
                                     style={{ fontSize: "230px" }}
                                 />
                             }
-                            bgColor="bg-purple-500"
+                            bgColor="bg-red-500"
+                            link={route("user-status")}
                         />
 
                         <DashboardCard
-                            title="Total Items"
-                            value={totalItems}
+                            title="Total Users"
+                            value={approvedUsers}
                             icon={
-                                <InventoryIcon
+                                <PeopleAltIcon
                                     className="absolute right-[-40px] bottom-[-40px]"
-                                    style={{ fontSize: "205px" }}
+                                    style={{ fontSize: "230px" }}
                                 />
                             }
-                            bgColor="bg-blue-500"
-                            link={route("item-list")}
+                            bgColor="bg-green-500"
+                            link={route("user-management")}
                         />
+                    </>
+                )}
 
-                        {/* <DashboardCard
+                <DashboardCard
+                    title="Total Categories"
+                    value={totalCategories}
+                    icon={
+                        <CategoryIcon
+                            className="absolute right-[-50px] bottom-[-40px]"
+                            style={{ fontSize: "205px" }}
+                        />
+                    }
+                    bgColor="bg-teal-500"
+                    link={route("categories")}
+                />
+
+                <DashboardCard
+                    title="Total Suppliers"
+                    value={totalSuppliers}
+                    icon={
+                        <PeopleAltIcon
+                            className="absolute right-[-40px] bottom-[-40px]"
+                            style={{ fontSize: "230px" }}
+                        />
+                    }
+                    bgColor="bg-purple-500"
+                    link={route("supplier")}
+                />
+
+                <DashboardCard
+                    title="Total Items"
+                    value={totalItems}
+                    icon={
+                        <InventoryIcon
+                            className="absolute right-[-40px] bottom-[-40px]"
+                            style={{ fontSize: "205px" }}
+                        />
+                    }
+                    bgColor="bg-blue-500"
+                    link={route("item-list")}
+                />
+
+                {/* <DashboardCard
                             title="Total Amount"
                             value={`₱${totalAmount.toLocaleString()}`}
                             icon={
@@ -174,8 +178,7 @@ export default function Dashboard({ successMessage }) {
                             </h2>
                             <LineChart />
                         </div> */}
-                    </div>
-           
+            </div>
         </AuthenticatedLayout>
     );
 }

@@ -1,6 +1,13 @@
 import { format } from "date-fns";
 
-const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMonth) => {
+const handlePrint = (
+    startDate,
+    endDate,
+    filteredItems,
+    selectedYear,
+    selectedMonth,
+    selectedDepartment
+) => {
     const printFrame = document.createElement("iframe");
     printFrame.style.position = "absolute";
     printFrame.style.width = "0";
@@ -8,30 +15,29 @@ const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMo
     printFrame.style.border = "none";
     document.body.appendChild(printFrame);
 
-    let dateLabel = "N/A";
+    let dateType = "";
+    let dateValue = "";
 
+    // Date label construction
     if (startDate && endDate) {
-        // Show full date range
-        dateLabel = `DATE RANGE: ${format(startDate, "MM/dd/yyyy")} - ${format(endDate, "MM/dd/yyyy")}`;
-    } else if (selectedMonth && !selectedYear) {
-        // If only the month is selected, use the current year
-        const currentYear = new Date().getFullYear();
-        dateLabel = `DATE: ${currentYear}, ${format(new Date(currentYear, selectedMonth - 1), "MMMM")}`;
-    } else if (selectedYear && selectedMonth) {
-        // If both year and month are selected
-        dateLabel = `DATE: ${selectedYear}, ${format(new Date(selectedYear, selectedMonth - 1), "MMMM")}`;
-    } else if (selectedYear) {
-        // If only the year is selected
-        dateLabel = `YEAR: ${selectedYear}`;
+        dateType = "DATE RANGE:";
+        dateValue = `${format(startDate, "MM/dd/yyyy")} - ${format(endDate, "MM/dd/yyyy")}`;
+    } else if (selectedYear || selectedMonth) {
+        const year = selectedYear || new Date().getFullYear();
+        
+        if (selectedMonth) {
+            dateType = "DATE:";
+            dateValue = `${year}, ${format(new Date(year, selectedMonth - 1), "MMMM")}`;
+        } else if (selectedYear) {
+            dateType = "YEAR:";
+            dateValue = selectedYear;
+        }
     }
-    
-    
 
     const totalSum = filteredItems.reduce(
         (sum, item) => sum + (Number(item.amount) * Number(item.quantity) || 0),
         0
     );
-    
 
     const doc = printFrame.contentDocument || printFrame.contentWindow.document;
     doc.open();
@@ -66,7 +72,7 @@ const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMo
                 }
                 .org-info {
                     display: grid;
-                    grid-template-columns: 60px 1fr; /* Two columns with equal width */
+                    grid-template-columns: 1fr 1fr; 
                     padding: 5px 10px;
                     gap: 5px;
                 }
@@ -142,17 +148,22 @@ const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMo
             </style>
         </head>
         <body>
-            <div class="main-container">
-                <div class="header">INVENTORY REPORT</div>
-                
-                <div class="org-info">
-                <div class="org-label">LGU:</div>
-                <div>MAGALLANES, AGUSAN DEL NORTE</div>
-                <div class="org-label">FUND:</div>
-                <div>GENERAL FUND</div>
-              
+
+        <div class="main-container">
+        <div class="header">INVENTORY REPORT</div>
+        
+        ${(selectedDepartment || dateType) ? `
+        <div class="org-info">
+            <div class="org-label">
+                LGU: MAGALLANES, AGUSAN DEL NORTE<br />
+                FUND: GENERAL FUND
             </div>
-            <div class="date-label">${dateLabel}</div>
+            <div class="org-label">
+                ${selectedDepartment ? `DEPARTMENT: ${selectedDepartment}<br />` : ''}
+                ${dateType ? `${dateType} ${dateValue}` : ''}
+            </div>
+        </div>
+        ` : ''}
 
             <table>
             <thead>
@@ -178,7 +189,9 @@ const handlePrint = (startDate, endDate, filteredItems, selectedYear, selectedMo
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         })}</td>
-                        <td>₱${(Number(item.amount) * Number(item.quantity)).toLocaleString("en-US", {
+                        <td>₱${(
+                            Number(item.amount) * Number(item.quantity)
+                        ).toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         })}</td>

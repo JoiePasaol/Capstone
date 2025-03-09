@@ -220,8 +220,8 @@ const UserManagement = () => {
     //Dropdown Options
 
     const departmentOptions = [
-        { value: "HR", label: "HR" },
-        { value: "IT", label: "IT" },
+        { value: "H.R", label: "H.R" },
+        { value: "I.T", label: "I.T" },
     ];
 
     const roleOptions = [
@@ -304,7 +304,7 @@ const UserManagement = () => {
                     <Dropdown.Trigger>
                         <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
                     </Dropdown.Trigger>
-                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px] bg-gray-100 dark:bg-gray-700">
+                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-82px] bg-gray-100 dark:bg-gray-700">
                         <Dropdown.Link
                             onClick={(e) => {
                                 e.preventDefault();

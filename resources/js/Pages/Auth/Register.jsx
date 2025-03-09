@@ -17,8 +17,8 @@ export default function Register() {
     });
 
     const options = [
-        { value: "IT", label: "IT" },
-        { value: "HR", label: "HR" },
+        { value: "I.T", label: "I.T" },
+        { value: "H.R", label: "H.R" },
     ];
 
     const submit = (e) => {
@@ -26,7 +26,8 @@ export default function Register() {
 
         post(route("register"), {
             onFinish: () => reset("password", "password_confirmation"),
-            onSuccess: () => window.location.href = route('verification.notice'),
+            onSuccess: () =>
+                (window.location.href = route("verification.notice")),
         });
     };
 
@@ -35,34 +36,41 @@ export default function Register() {
             <Head title="Register" />
 
             <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="first name" value="First Name" />
+                <div className="flex space-x-4">
+                    <div className="flex-1">
+                        <InputLabel htmlFor="firstname" value="First Name" />
 
-                    <TextInput
-                        value={data.firstname}
-                        className="mt-1 block w-full"
-                        isFocused={true}
-                        onChange={(e) => setData("firstname", e.target.value)}
-                    />
+                        <TextInput
+                            value={data.firstname}
+                            className="mt-1 block w-full"
+                            isFocused={true}
+                            onChange={(e) =>
+                                setData("firstname", e.target.value)
+                            }
+                        />
 
-                    <InputError message={errors.firstname} className="mt-2" />
-                </div>
+                        <InputError
+                            message={errors.firstname}
+                            className="mt-2"
+                        />
+                    </div>
 
-                <div>
-                    <InputLabel
-                        className="mt-4 mb-1"
-                        htmlFor="last name"
-                        value="Lastname"
-                    />
+                    <div className="flex-1">
+                        <InputLabel htmlFor="lastname" value="Last Name" />
 
-                    <TextInput
-                        value={data.lastname}
-                        className="mt-1block w-full"
-                        isFocused={true}
-                        onChange={(e) => setData("lastname", e.target.value)}
-                    />
+                        <TextInput
+                            value={data.lastname}
+                            className="mt-1 block w-full"
+                            onChange={(e) =>
+                                setData("lastname", e.target.value)
+                            }
+                        />
 
-                    <InputError message={errors.lastname} className="mt-2" />
+                        <InputError
+                            message={errors.lastname}
+                            className="mt-2"
+                        />
+                    </div>
                 </div>
 
                 <div className="mt-4">

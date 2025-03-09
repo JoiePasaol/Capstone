@@ -80,7 +80,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div>
                             <button
                                 onClick={() => toggleDropdown("users")}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
                                     isActive([
                                         "user-status",
                                         "user-management",
@@ -171,7 +171,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     {checkRole(user, ["Basic"]) ? (
                         <button
                             onClick={() => toggleDropdown("items")}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
                                 isActive([
                                     "item-list",
                                     "item-report",
@@ -184,7 +184,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             <div className="flex items-center">
                                 <Package className="w-5 h-5 min-w-[20px]" />
                                 <span
-                                    className={`ml-3 transition-opacity duration-300 ${
+                                    className={`ml-3 transition-opacity duration-300   ${
                                         isSidebarOpen
                                             ? "opacity-100"
                                             : "opacity-0 w-0"
@@ -209,7 +209,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         checkRole(user, ["Super Admin", "Admin"]) && (
                             <button
                                 onClick={() => toggleDropdown("items")}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
                                     isActive([
                                         "item-list",
                                         "item-report",
@@ -219,10 +219,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                         : ""
                                 }`}
                             >
-                                <div className="flex items-center">
+                                <div className="flex items-center ">
                                     <Package className="w-5 h-5 min-w-[20px]" />
                                     <span
-                                        className={`ml-3 transition-opacity ${
+                                        className={`ml-3 transition-opacity  ${
                                             isSidebarOpen
                                                 ? "opacity-100"
                                                 : "opacity-0 w-0"
@@ -271,7 +271,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     >
                                         Item Report
                                     </Link>
-                                    <Link
+                                    {/* <Link
                                         href={route("item-borrow")}
                                         className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
                                             isActive("item-borrow")
@@ -280,7 +280,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
                                     >
                                         Item Borrow
-                                    </Link>
+                                    </Link> */}
                                 </>
                             )}
                         </div>
@@ -290,7 +290,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div className="p-4">
                             <Link
                                 href={route("profile.edit")}
-                                className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
+                                className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700"
                             >
                                 <User className="w-5 h-5 min-w-[20px]" />
                                 {isSidebarOpen && (
@@ -308,7 +308,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 href={route("logout")}
                                 method="post"
                                 as="button"
-                                className="w-full flex items-center px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50"
+                                className="w-full flex items-center px-4 py-3 rounded-lg text-red-600 hover:bg-red-200 dark:hover:bg-red-900/30"
                             >
                                 <LogOut className="w-5 h-5 min-w-[20px]" />
                                 <span
@@ -335,7 +335,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     <div className="flex items-center justify-between h-16 px-4">
                         <button
                             onClick={() => setSidebarOpen(!isSidebarOpen)}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
                         >
                             <Sidebar className="w-6 h-6 text-gray-500" />
                         </button>

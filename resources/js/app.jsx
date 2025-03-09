@@ -5,10 +5,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 
-const appName = 'IIS';
-
 createInertiaApp({
-    title: (title) => ` ${appName} - ${title}`,
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.jsx`,
@@ -23,4 +20,3 @@ createInertiaApp({
         color: '#4B5563',
     },
 });
-

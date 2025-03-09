@@ -17,7 +17,7 @@ use Inertia\Inertia;
 
 // Public Routes
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
+    return Inertia::render('Login', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
@@ -106,19 +106,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/items-report', function (Request $request) {
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
-
+        $department = $request->query('department');
+    
+        $query = Item::query();
+    
         if ($startDate && $endDate) {
             $startDate = Carbon::parse($startDate)->startOfDay();
             $endDate = Carbon::parse($endDate)->endOfDay();
-
-            $items = Item::whereBetween('created_at', [$startDate, $endDate])
-                ->select('items as item', 'description', 'estimated_life', 'quantity', 'price as amount', 'created_at')
-                ->get();
-        } else {
-            $items = Item::select('items as item', 'description', 'estimated_life', 'quantity', 'price as amount', 'created_at')->get();
+            $query->whereBetween('created_at', [$startDate, $endDate]);
         }
-
-        return response()->json($items);
+    
+        if ($department) {
+            $query->where('department', $department);
+        }
+    
+        return $query->select(
+            'items as item', 
+            'description', 
+            'estimated_life', 
+            'quantity', 
+            'price as amount', 
+            'department', 
+            'created_at'
+        )->get();
     });
     
 

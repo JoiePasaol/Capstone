@@ -18,15 +18,20 @@ export default function UserStatus() {
     const fetchUsers = async () => {
         try {
             const response = await axios.get("/api/users?status=pending");
-
+    
+            // Sort by created_at descending
+            const sortedData = response.data.sort((a, b) => 
+                new Date(b.created_at) - new Date(a.created_at)
+            );
+    
             // If the current user is a Super Admin, show all users
             const filteredUsers =
                 currentUser.role === "Super Admin"
-                    ? response.data
-                    : response.data.filter(
+                    ? sortedData // Use sorted data
+                    : sortedData.filter(
                           (user) => user.department === currentUser.department
                       );
-
+    
             setUsers(filteredUsers);
         } catch (error) {
             console.error("Error fetching users:", error);

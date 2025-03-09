@@ -42,18 +42,17 @@ class ItemController extends Controller
             'quantity' => 'required|integer',
             'price' => 'required|numeric',
             'suppliers' => 'required|string',
-            'ics' => 'nullable|string',
-            'pr' => 'nullable|string',
+            'ics' => 'nullable|regex:/^[0-9-]+$/',
+            'pr' => 'nullable|regex:/^[0-9-]+$/',
             'pr_date' => 'nullable|date',
-            'po' => 'nullable|string',
+            'po' => 'nullable|regex:/^[0-9-]+$/',
             'po_date' => 'nullable|date',
-            'vc' => 'nullable|string',
+            'vc' => 'nullable|regex:/^[0-9-]+$/',
             'vc_date' => 'nullable|date',
-            'ch' => 'nullable|string',
+            'ch' => 'nullable|regex:/^[0-9-]+$/',
             'ch_date' => 'nullable|date',
-            'or' => 'nullable|string',
-            'or_date' => 'nullable|date',
-   
+            'or' => 'nullable|regex:/^[0-9-]+$/',
+            'or_date' => 'nullable|date',   
         ]);
     
         $user = Auth::user();
@@ -342,25 +341,23 @@ public function import(Request $request)
 public function getTotalItemsCount(Request $request)
 {
     try {
-        $user = $request->user(); 
+        $user = $request->user();
 
-    
-        $query = Item::query();
-
-   
-        if ($user->role === 'Basic') {
-            $query->where('user_id', $user->id);
+        // If the user is a Super Admin, count all items
+        if ($user->role === 'Super Admin') {
+            $count = Item::count();
         } else {
-           
-            $query->where('user_id', '!=', $user->id);
+            // Otherwise, apply filters based on user role
+            $query = Item::query();
 
-          
-            if ($user->role === 'Admin') {
+            if ($user->role === 'Basic') {
+                $query->where('user_id', $user->id);
+            } elseif ($user->role === 'Admin') {
                 $query->where('department', $user->department);
             }
-        }
 
-        $count = $query->count();
+            $count = $query->count();
+        }
 
         return response()->json(['total_items' => $count], 200);
     } catch (\Exception $e) {
@@ -368,6 +365,7 @@ public function getTotalItemsCount(Request $request)
         return response()->json(['error' => 'Server error'], 500);
     }
 }
+
 
 
 

@@ -26,6 +26,7 @@
         "@mui/icons-material": "^6.4.0",
         "@mui/material": "^6.4.0",
         "date-fns": "^4.1.0",
+        "framer-motion": "^12.4.10",
         "jspdf": "^3.0.0",
         "jspdf-autotable": "^5.0.2",
         "lodash": "^4.17.21",
