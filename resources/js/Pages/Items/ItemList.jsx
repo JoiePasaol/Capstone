@@ -559,7 +559,7 @@ export default function ItemList() {
             <Dropdown.Trigger>
                 <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
             </Dropdown.Trigger>
-            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-100px] bg-gray-100 dark:bg-gray-700">
+            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px] bg-gray-100 dark:bg-gray-700">
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();

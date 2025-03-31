@@ -22,30 +22,88 @@ import "../../../css/select.css";
 import axios from "axios";
 
 export default function ItemBorrow() {
-    
+    const { csrf } = usePage().props;
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
-
+    const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const [processing, setProcessing] = useState(false);
+    const [borrowedItems, setBorrowedItems] = useState([]);
     const [options, setOptions] = useState([]);
-    const [selectedOption, setSelectedOption] = useState(null);
+    const [selectedOptions, setSelectedOptions] = useState([]);
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [returnDate, setReturnDate] = useState(null);
-    const { data, setData, post, reset, errors } = useForm({
+    const { post, data, setData, errors, reset } = useForm({
         name: "",
-        item_id: "",
+        item_ids: [],
+        item_names: [],
         return_date: "",
-        status: "",
+        status: "Borrowed",
     });
 
-    const toggleDrawer = (open, isEdit = false) => {
-        console.log("Toggling Drawer:", open, "Edit Mode:", isEdit);
+    const ItemList = ({ items }) => {
+        const chunkSize = 3;
+        const chunks = [];
+
+        for (let i = 0; i < items.length; i += chunkSize) {
+            chunks.push(items.slice(i, i + chunkSize));
+        }
+
+        return (
+            <div className="flex flex-col gap-1">
+                {chunks.map((chunk, index) => (
+                    <div key={index} className="flex gap-2">
+                        {chunk.map((item, itemIndex) => (
+                            <span key={itemIndex}>
+                                {item}
+                                {itemIndex < chunk.length - 1 ? ", " : ""}
+                            </span>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    const toggleDrawer = (open, isEdit = false, row = null) => {
         setIsDrawerOpen(open);
         setIsEditMode(isEdit);
+
+        if (open && isEdit && row) {
+            const itemNames = row.item_names || [];
+            const itemIds = row.item_ids || [];
+
+            const selectedOpts = itemNames.map((name, index) => ({
+                value:
+                    itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
+                label: name,
+            }));
+
+            setSelectedOptions(selectedOpts);
+            setSelectedStatus(row.status);
+
+            setData({
+                name: row.name,
+                item_ids: itemIds,
+                item_names: itemNames,
+                return_date: row.return_date,
+                status: row.status,
+            });
+
+            if (row.return_date) {
+                setReturnDate(new Date(row.return_date));
+            }
+        } else if (!open) {
+            reset();
+            setSelectedOptions([]);
+            setSelectedStatus(null);
+            setReturnDate(null);
+        }
     };
 
     const handleInputChange = async (inputValue) => {
-        console.log("User input:", inputValue); // Debugging
+        console.log("User input:", inputValue);
 
         if (!inputValue) {
             setOptions([]);
@@ -56,8 +114,7 @@ export default function ItemBorrow() {
             const response = await axios.get(
                 `/search-items?query=${inputValue}`
             );
-
-            console.log("API response:", response.data); // Debugging
+            console.log("API response:", response.data);
 
             if (!Array.isArray(response.data)) {
                 console.error("API response is not an array:", response.data);
@@ -65,49 +122,106 @@ export default function ItemBorrow() {
                 return;
             }
 
-            const items = response.data.map((item) => ({
+            const newOptions = response.data.map((item) => ({
                 value: item.id,
-                label: item.items, // Ensure it correctly maps to `items`
+                label: item.items,
             }));
 
-            setOptions(items);
+            const combinedOptions = [...selectedOptions, ...newOptions];
+
+            const uniqueOptions = combinedOptions.filter(
+                (option, index, self) =>
+                    index === self.findIndex((o) => o.value === option.value)
+            );
+
+            setOptions(uniqueOptions);
         } catch (error) {
             console.error("Error fetching items:", error);
         }
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-    
-        if (!selectedOption) {
-            alert("Please select an item.");
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setProcessing(true);
+
+        if (selectedOptions.length === 0) {
+            alert("Please select at least one item.");
+            setProcessing(false);
             return;
         }
-    
-        post("/borrow", {
-            name: data.name,
-            item_id: selectedOption ? selectedOption.value : "",
-            item_name: selectedOption ? selectedOption.label : "", 
-            return_date: data.return_date,
-            status: selectedStatus || "borrowed",
-        }, {
-            onSuccess: () => {
-                alert("Borrow record saved successfully!");
+
+        try {
+            const endpoint = isEditMode ? `/borrow/${row.id}` : "/borrow";
+            const method = isEditMode ? "put" : "post";
+
+            const response = await axios[method](
+                endpoint,
+                {
+                    name: data.name,
+                    item_ids: selectedOptions.map((opt) => opt.value),
+                    item_names: selectedOptions.map((opt) => opt.label),
+                    return_date: data.return_date,
+                    status: data.status || "Borrowed",
+                    _token: csrf,
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                    },
+                }
+            );
+
+            if (response.data.success) {
                 reset();
-            },
-            onError: (err) => {
-                console.error("Error saving borrow record:", err);
-                alert("Failed to save. Please try again.");
-            },
-        });
+                setSelectedOptions([]);
+                setIsDrawerOpen(false);
+                setSuccessMessage(
+                    isEditMode
+                        ? "Item successfully updated!"
+                        : "Item successfully borrowed!"
+                );
+                setIsSuccessDialogOpen(true);
+
+                const refreshResponse = await axios.get("/borrows");
+                setBorrowedItems(refreshResponse.data);
+            } else {
+                throw new Error(response.data.message || "Failed to save");
+            }
+        } catch (error) {
+            console.error("Full error:", error);
+            if (error.response) {
+                console.error("Server response:", error.response.data);
+                alert(
+                    `Server error: ${
+                        error.response.data.message ||
+                        JSON.stringify(error.response.data)
+                    }`
+                );
+            } else {
+                alert("An unexpected error occurred. Please try again.");
+            }
+        } finally {
+            setProcessing(false);
+        }
     };
-    
+
+    useEffect(() => {
+        const fetchBorrowedItems = async () => {
+            try {
+                const response = await axios.get("/borrows");
+                setBorrowedItems(response.data);
+            } catch (error) {
+                console.error("Error fetching borrowed items:", error);
+            }
+        };
+
+        fetchBorrowedItems();
+    }, []);
 
     const headers = [
-        {
-            label: <Checkbox />,
-            key: "select-all",
-        },
+        { label: <Checkbox />, key: "select-all" },
         { label: "#", key: "index" },
         { label: "Name", key: "name" },
         { label: "Item", key: "item" },
@@ -117,70 +231,72 @@ export default function ItemBorrow() {
         { label: "Updated_at", key: "updated_at" },
     ];
 
-    const rows = [
-        {
+    const rows = borrowedItems.map((item, index) => {
+        const itemNames = Array.isArray(item.item_names)
+            ? item.item_names
+            : typeof item.item_names === "string"
+            ? JSON.parse(item.item_names)
+            : [];
+    
+        // Format dates to MM/DD/YYYY
+        const formatDate = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return isNaN(date.getTime()) ? dateString : format(date, 'MM/dd/yyyy');
+        };
+    
+        const displayRow = {
             select: <Checkbox />,
-            id: 1,
-            index: 1,
-            name: "John Doe",
-            item: "Item 1",
-            date_return: "2022-01-01",
-            status: "borrowed",
-            created_at: "2022-01-01",
-            updated_at: "2022-01-01",
-        },
-        {
-            select: <Checkbox />,
-            id: 2,
-            index: 2,
-            name: "Jane Doe",
-            item: "Item 2",
-            date_return: "2022-02-02",
-            status: "returned",
-            created_at: "2022-01-02",
-            updated_at: "2022-01-02",
-        },
-        {
-            select: <Checkbox />,
-            id: 3,
-            index: 3,
-            name: "Bob Doe",
-            item: "Item 3",
-            date_return: "2022-03-03",
-            status: "borrowed",
-            created_at: "2022-01-03",
-            updated_at: "2022-01-03",
-        },
-    ];
+            index: index + 1,
+            name: item.name,
+            item: <ItemList items={itemNames} />,
+            date_return: formatDate(item.return_date),
+            status: item.status,
+            created_at: formatDate(item.created_at),
+            updated_at: formatDate(item.updated_at),
+        };
+    
+        Object.defineProperty(displayRow, "_raw", {
+            value: {
+                item_names: itemNames,
+                item_ids: Array.isArray(item.item_ids)
+                    ? item.item_ids
+                    : JSON.parse(item.item_ids),
+                return_date: item.return_date, // Keep original format for editing
+            },
+            enumerable: false,
+        });
+    
+        return displayRow;
+    });
+    const actions = (row) => {
+        const rawData = row._raw || {};
 
-    const actions = () => (
-        <div className="flex justify-center">
-            <Dropdown>
-                <Dropdown.Trigger>
-                    <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
-                </Dropdown.Trigger>
-                <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px] bg-gray-700">
-                    <Dropdown.Link
-                        onClick={(e) => {
-                            e.preventDefault();
-                            toggleDrawer(true, true);
-                        }}
-                    >
-                        Edit
-                    </Dropdown.Link>
-                    <Dropdown.Link
-                    // onClick={(e) => {
-                    //     e.preventDefault();
-                    //     console.log("Delete clicked");
-                    //     // Handle delete functionality here
-                    // }}
-                    >
-                        Delete
-                    </Dropdown.Link>
-                </Dropdown.Content>
-            </Dropdown>
-        </div>
-    );
+        return (
+            <div className="flex justify-center">
+                <Dropdown>
+                    <Dropdown.Trigger>
+                        <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
+                    </Dropdown.Trigger>
+                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-80px] bg-gray-700">
+                        <Dropdown.Link
+                            onClick={(e) => {
+                                e.preventDefault();
+                                toggleDrawer(true, true, {
+                                    name: row.name,
+                                    status: row.status,
+                                    ...rawData,
+                                });
+                            }}
+                        >
+                            Edit
+                        </Dropdown.Link>
+                        <Dropdown.Link>Delete</Dropdown.Link>
+                    </Dropdown.Content>
+                </Dropdown>
+            </div>
+        );
+    };
 
     return (
         <AuthenticatedLayout
@@ -190,111 +306,56 @@ export default function ItemBorrow() {
                 </h2>
             }
         >
-            <Head title="Dashboard" />
+            <Head title="Item Borrow" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="px-6 py-4 overflow-visible bg-white ring-1 ring-black/20 sm:rounded-lg dark:bg-gray-800">
-                        <div className="w-full flex justify-between items-center">
-                            {/* Search and Date Range Picker */}
-                            <div className="flex gap-2 items-center">
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
-                                />
+            <div className="px-4 py-4 bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40 relative">
+                <div className="w-full mb-3 flex justify-between items-center gap-4 flex-wrap">
+                    <div className="flex gap-2 items-center">
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                        />
 
-                                {/* Date Range Picker Input */}
-                                <div className="relative z-50">
-                                    <select
-                                        // onClick={() =>
-                                        //     setShowDateRangePicker(!showPicker)
-                                        // }
-                                        className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer  w-60"
-                                    >
-                                        {" "}
-                                        <option hidden value="">
-                                            {/* {startDate && endDate
-                                                ? `${format(
-                                                      startDate,
-                                                      "MM/dd/yyyy"
-                                                  )} - ${format(
-                                                      endDate,
-                                                      "MM/dd/yyyy"
-                                                  )}`
-                                                : "Select date range"} */}
-                                        </option>
-                                    </select>
-                                    {/* Date Picker Dropdown */}
-                                    {/* {showDateRangePicker && (
-                                        <div className="absolute z-50">
-                                            <DatePicker
-                                                selectsRange
-                                                startDate={startDate}
-                                                endDate={endDate}
-                                                onChange={(dates) => {
-                                                    const [start, end] = dates;
-                                                    setStartDate(start);
-                                                    setEndDate(end);
-                                                }}
-                                                inline
-                                                calendarClassName="dark:bg-gray-800 pb-7"
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    setStartDate(null);
-                                                    setEndDate(null);
-                                                    setFilteredItems(items);
-                                                }}
-                                                className="absolute bottom-4 right-2 px-3 py-1 text-sm bg-[#216ba5] text-white rounded-md shadow-md transition duration-300 hover:bg-blue-500"
-                                            >
-                                                Reset Filter
-                                            </button>
-                                        </div>
-                                    )} */}
-                                </div>
-                            </div>
-
-                            {/*  Add, and Delete Icons */}
-                            <div className="flex">
-                                <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
-                                    <DeleteIcon
-                                    // className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
-                                    //     selectedItems.length < 2
-                                    //         ? "opacity-50 pointer-events-none"
-                                    //         : ""
-                                    // }`}
-                                    // onClick={() => confirmDelete()}
-                                    // disabled={selectedItems.length < 2}
-                                    />
-                                    <AddCircleIcon
-                                        className="text-gray-600 dark:text-gray-300 cursor-pointer"
-                                        onClick={() => {
-                                            console.log(
-                                                "AddCircleIcon clicked"
-                                            ); // Debugging
-                                            toggleDrawer(true);
-                                        }}
-                                    />
-                                </div>
-                            </div>
+                        <div className="relative z-50">
+                            <select className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60">
+                                <option hidden value=""></option>
+                            </select>
                         </div>
-                        <div className="text-gray-900 dark:text-gray-100">
-                            <Table
-                                headers={headers}
-                                rows={rows}
-                                actions={actions}
+                    </div>
+
+                    <div className="flex">
+                        <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
+                            <DeleteIcon />
+                            <AddCircleIcon
+                                className="text-gray-600 dark:text-gray-300 cursor-pointer"
+                                onClick={() => {
+                                    console.log("AddCircleIcon clicked");
+                                    toggleDrawer(true);
+                                }}
                             />
                         </div>
                     </div>
                 </div>
+
+                <div className="text-gray-900 dark:text-gray-100">
+                    <Table headers={headers} rows={rows} actions={actions} />
+                </div>
+
+                <SuccessDialog
+                    isOpen={isSuccessDialogOpen}
+                    message={successMessage}
+                    onClose={() => setIsSuccessDialogOpen(false)}
+                />
             </div>
+
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
                 title={isEditMode ? "Edit Item borrow" : "Add Item borrow"}
             >
                 <form onSubmit={handleSubmit}>
+                    <input type="hidden" name="_token" value={csrf} />
                     <div className="mt-4">
                         <InputLabel htmlFor="name" value="Name" />
                         <TextInput
@@ -308,42 +369,79 @@ export default function ItemBorrow() {
 
                     <div className="mt-4">
                         <InputLabel htmlFor="Item" value="Item" />
-                        <Select
-                             id="Item"
-                             className="mt-2"
-                             placeholder="Search item..."
-                             noOptionsMessage={() => "No items found"}
-                             isClearable
-                             isSearchable
-                             value={selectedOption}
-                             onChange={(option) => {
-                                 setSelectedOption(option);
-                                 setData({
-                                     ...data,
-                                     item_id: option ? option.value : "",
-                                     item_name: option ? option.label : "", 
-                                 });
-                             }}
-                             onInputChange={(newValue) => {
-                                 if (newValue) {
-                                     handleInputChange(newValue);
-                                 }
-                             }}
-                             options={options}
-                            classNames={{
-                                control: ({ isFocused }) =>
-                                    isFocused
-                                        ? "custom-select-container custom-select-container--focused"
-                                        : "custom-select-container",
-                                valueContainer: () => "custom-select-value",
-                                singleValue: () => "custom-select-value",
-                                menu: () => "custom-select-menu",
-                                option: () => "custom-select-option",
-                                placeholder: () => "custom-select-placeholder",
-                                input: () => "custom-select-input",
-                            }}
-                        />
+                        <div className="relative">
+                            <Select
+                                id="Item"
+                                className="mt-2"
+                                placeholder="Search items..."
+                                noOptionsMessage={() => "No items found"}
+                                isClearable
+                                isSearchable
+                                isMulti
+                                value={selectedOptions}
+                                onChange={(options) => {
+                                    const uniqueOptions = options
+                                        ? options.filter(
+                                              (option, index, self) =>
+                                                  index ===
+                                                  self.findIndex(
+                                                      (o) =>
+                                                          o.value ===
+                                                          option.value
+                                                  )
+                                          )
+                                        : [];
 
+                                    setSelectedOptions(uniqueOptions);
+                                    setData({
+                                        ...data,
+                                        item_ids: uniqueOptions.map(
+                                            (opt) => opt.value
+                                        ),
+                                        item_names: uniqueOptions.map(
+                                            (opt) => opt.label
+                                        ),
+                                    });
+                                }}
+                                onInputChange={(newValue) => {
+                                    if (newValue) {
+                                        handleInputChange(newValue);
+                                    }
+                                }}
+                                options={options}
+                                components={{
+                                    MultiValueContainer: ({
+                                        children,
+                                        ...props
+                                    }) => (
+                                        <div className="flex flex-wrap gap-2">
+                                            {children}
+                                        </div>
+                                    ),
+                                }}
+                                classNames={{
+                                    control: ({ isFocused }) =>
+                                        isFocused
+                                            ? "custom-select-container custom-select-container--focused"
+                                            : "custom-select-container",
+                                    valueContainer: () =>
+                                        "custom-select-value py-1 pl-2 min-h-[40px]",
+                                    multiValue: () =>
+                                        "text-sm bg-gray-200 dark:bg-gray-700 rounded px-2 py-1",
+                                    multiValueLabel: () =>
+                                        "text-gray-800 dark:text-gray-200",
+                                    multiValueRemove: () =>
+                                        "text-gray-500 hover:text-red-500 dark:hover:text-red-400 ml-1",
+                                    singleValue: () => "custom-select-value",
+                                    menu: () => "custom-select-menu",
+                                    option: () => "custom-select-option",
+                                    placeholder: () =>
+                                        "custom-select-placeholder",
+                                    input: () => "custom-select-input",
+                                }}
+                                closeMenuOnSelect={false}
+                            />
+                        </div>
                         <InputError message={errors.item_id} className="mt-2" />
                     </div>
                     <div className="mt-4 w-full">
@@ -353,31 +451,22 @@ export default function ItemBorrow() {
                                 className="px-3 w-full h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer flex items-center"
                                 onClick={() => setShowPicker(!showPicker)}
                             >
-                                {data.return_date
-                                    ? format(
-                                          new Date(data.return_date),
-                                          "MM/dd/yyyy"
-                                      )
+                                {returnDate
+                                    ? format(returnDate, "MM/dd/yyyy")
                                     : "Select date"}
                             </div>
                             {showPicker && (
                                 <div className="absolute z-50">
                                     <DatePicker
-                                        selected={
-                                            data.return_date
-                                                ? new Date(data.return_date)
-                                                : null
-                                        }
+                                        selected={returnDate}
                                         onChange={(date) => {
-                                            const formattedDate = format(
-                                                date,
-                                                "MM/dd/yyyy"
-                                            ); // ✅ Format MM/DD/YYYY
+                                            setReturnDate(date);
                                             setData(
                                                 "return_date",
-                                                formattedDate
+                                                format(date, "MM/dd/yyyy")
                                             );
                                         }}
+                                        dateFormat="MM/dd/yyyy"
                                         inline
                                         calendarClassName="dark:bg-gray-800 pb-7"
                                     />
@@ -387,37 +476,39 @@ export default function ItemBorrow() {
                         <InputError message={errors.Date} className="mt-2" />
                     </div>
 
-                    <div className="mt-4">
-                        <InputLabel htmlFor="status" value="Status" />
-                        <SelectOption
-                            id="status"
-                            className="mt-2 block w-full h-10 rounded-sm text-sm"
-                            value={data.status || "borrowed"}
-                            onChange={(e) => setData("status", e.target.value)} // ✅ Update useForm
-                            options={[
-                                { value: "borrowed", label: "Borrowed" },
-                                { value: "overdue", label: "Overdue" },
-                                { value: "returned", label: "Returned" },
-                            ]}
-                        />
-                        <InputError message={errors.status} className="mt-2" />
-                    </div>
+                    {isEditMode && (
+                        <div className="mt-4">
+                            <InputLabel htmlFor="status" value="Status" />
+                            <SelectOption
+                                id="status"
+                                className="mt-2 block w-full h-10 rounded-sm text-sm"
+                                value={data.status || "Borrowed"}
+                                onChange={(e) =>
+                                    setData("status", e.target.value)
+                                }
+                                options={[
+                                    { value: "Borrowed", label: "Borrowed" },
+                                    { value: "overdue", label: "Overdue" },
+                                    { value: "returned", label: "Returned" },
+                                ]}
+                            />
+                            <InputError
+                                message={errors.status}
+                                className="mt-2"
+                            />
+                        </div>
+                    )}
                     <div className="mt-5">
                         <SecondaryButton
                             type="submit"
                             className="w-full h-10 rounded-sm"
-                            // disabled={processing}
+                            disabled={processing}
                         >
-                            Save {/* {processing ? "Saving..." : "Save"} */}
+                            {processing ? "Saving..." : "Save"}
                         </SecondaryButton>
                     </div>
                 </form>
             </Drawer>
-            {/* <SuccessDialog
-                isOpen={isSuccessDialogOpen}
-                onClose={() => setIsSuccessDialogOpen(false)}
-                message={successMessage}
-            /> */}
         </AuthenticatedLayout>
     );
 }

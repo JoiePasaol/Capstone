@@ -145,8 +145,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/suppliers/bulk-destroy', [SupplierController::class, 'bulkDestroy'])->name('suppliers.bulkDestroy');
     Route::get('/api/suppliers/total-count', [SupplierController::class, 'getTotalSuppliersCount']);
 
+    Route::get('/borrows', [BorrowController::class, 'index']);
     Route::get('/search-items', [BorrowController::class, 'searchItems']);
     Route::post('/borrow', [BorrowController::class, 'store']);
+    Route::put('/borrow/{id}', [BorrowController::class, 'update']);
+    
 
     // Profile Routes
     Route::prefix('profile')->group(function () {

@@ -261,6 +261,16 @@ export default function AuthenticatedLayout({ header, children }) {
 
                             {user.role === "Super Admin" && (
                                 <>
+                                  <Link
+                                        href={route("item-borrow")}
+                                        className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                            isActive("item-borrow")
+                                                ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                                : ""
+                                        } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                                    >
+                                        Item Borrow
+                                    </Link>
                                     <Link
                                         href={route("item-report")}
                                         className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
@@ -271,16 +281,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     >
                                         Item Report
                                     </Link>
-                                    {/* <Link
-                                        href={route("item-borrow")}
-                                        className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                            isActive("item-borrow")
-                                                ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                : ""
-                                        } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                    >
-                                        Item Borrow
-                                    </Link> */}
+                                  
                                 </>
                             )}
                         </div>

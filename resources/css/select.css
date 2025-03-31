@@ -1,15 +1,11 @@
 /* Main select container */
-.dark .custom-select-input{
-    color: #fff !important;
-}
-
-
-
 .custom-select-container {
     border: 1px solid #d1d5db !important;
     background-color: #ffffff !important;
     border-radius: 2px !important;
-    height: 40px !important;
+    min-height: 40px !important;
+    height: auto !important;
+    padding: 0.25rem 0.5rem !important;
     transition: border-color 0.2s ease-in-out;
 }
 
@@ -19,14 +15,8 @@
     background-color: #111827 !important;
 }
 
-/* Focused state - NO box shadow */
+/* Focused state */
 .custom-select-container--focused {
-    border-color: #6A6EEC !important;
-    box-shadow: none !important;
-}
-
-/* Dark mode focused */
-.dark .custom-select-container--focused {
     border-color: #6A6EEC !important;
     box-shadow: none !important;
 }
@@ -34,19 +24,65 @@
 /* Value container */
 .custom-select-value {
     color: #000 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    align-items: center !important;
+    padding: 0.25rem 0 !important;
 }
 
-/* Dark mode value */
 .dark .custom-select-value {
+    color: #fff !important;
+}
+
+/* Multi-value items */
+.custom-multi-value {
+    background-color: #e5e7eb !important;
+    border-radius: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 2px 6px !important;
+    margin: 0 !important;
+}
+
+.dark .custom-multi-value {
+    background-color: #374151 !important;
+}
+
+/* Multi-value label */
+.custom-multi-value-label {
+    color: #111827 !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+.dark .custom-multi-value-label {
+    color: #f3f4f6 !important;
+}
+
+/* Input field */
+.custom-select-input {
+    color: #000 !important;
+    padding-left: 0.25rem !important;
+    min-width: 100px !important;
+    flex-grow: 1 !important;
+}
+
+.dark .custom-select-input {
     color: #fff !important;
 }
 
 /* Placeholder */
 .custom-select-placeholder {
     color: #374151 !important;
+    padding-left: 0.25rem !important;
 }
 
-/* Dark mode placeholder */
 .dark .custom-select-placeholder {
     color: #6b7280 !important;
 }
@@ -56,42 +92,108 @@
     padding: 0 !important;
     border: 1px solid #8d8d8d !important;
     background-color: #ffffff !important;
+    margin-top: 4px !important;
 }
 
-/* Dark mode dropdown menu */
 .dark .custom-select-menu {
     background-color: #111827 !important;
+    border-color: #4b5563 !important;
 }
 
 /* Options */
-/* Override react-select's default selected option background */
-.custom-select-option,
-.custom-select-option:active,
-.custom-select-option.is-selected {
+.custom-select-option {
+    padding: 8px 12px !important;
     background-color: transparent !important;
     color: inherit !important;
     font-weight: normal !important;
 }
 
-/* Override hover effect */
 .custom-select-option:hover {
-    background-color: #f3f4f6 !important; /* Light gray hover */
+    background-color: #f3f4f6 !important;
 }
 
-/* Dark mode adjustments */
-.dark .custom-select-option,
-.dark .custom-select-option:active,
-.dark .custom-select-option.is-selected {
-    background-color: transparent !important;
+.custom-select-option.is-selected {
+    background-color: #e5e7eb !important;
+    color: inherit !important;
+}
+
+.dark .custom-select-option {
     color: #fff !important;
 }
 
 .dark .custom-select-option:hover {
-    background-color: #374151 !important; /* Dark gray hover */
+    background-color: #374151 !important;
 }
 
-/* Ensure no focus effect on click */
-.custom-select-option:focus,
-.dark .custom-select-option:focus {
+.dark .custom-select-option.is-selected {
+    background-color: #4b5563 !important;
+}
+
+/* Remove button */
+.custom-multi-value-remove {
+    color: #6b7280 !important;
+    padding: 2px !important;
+    cursor: pointer !important;
+}
+
+.custom-multi-value-remove:hover {
+    color: #ef4444 !important;
     background-color: transparent !important;
+}
+
+.dark .custom-multi-value-remove {
+    color: #9ca3af !important;
+}
+
+.dark .custom-multi-value-remove:hover {
+    color: #f87171 !important;
+}
+
+/* Indicators */
+.custom-select-indicator {
+    color: #6b7280 !important;
+    padding: 8px !important;
+}
+
+.custom-select-indicator:hover {
+    color: #4b5563 !important;
+}
+
+.dark .custom-select-indicator {
+    color: #9ca3af !important;
+}
+
+.dark .custom-select-indicator:hover {
+    color: #d1d5db !important;
+}
+
+/* Loading state */
+.custom-select-loading {
+    color: #6b7280 !important;
+}
+
+.dark .custom-select-loading {
+    color: #9ca3af !important;
+}
+
+/* No options message */
+.custom-select-no-options {
+    color: #6b7280 !important;
+    padding: 8px 12px !important;
+}
+
+.dark .custom-select-no-options {
+    color: #9ca3af !important;
+}
+
+/* Group heading */
+.custom-select-group-heading {
+    color: #6b7280 !important;
+    font-size: 0.75rem !important;
+    padding: 8px 12px !important;
+    text-transform: uppercase !important;
+}
+
+.dark .custom-select-group-heading {
+    color: #9ca3af !important;
 }
