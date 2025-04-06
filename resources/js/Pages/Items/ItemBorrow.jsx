@@ -69,30 +69,40 @@ export default function ItemBorrow() {
     const toggleDrawer = (open, isEdit = false, row = null) => {
         setIsDrawerOpen(open);
         setIsEditMode(isEdit);
-
+    
         if (open && isEdit && row) {
-            const itemNames = row.item_names || [];
-            const itemIds = row.item_ids || [];
-
+            const itemNames = Array.isArray(row.item_names) 
+                ? row.item_names 
+                : typeof row.item_names === 'string' 
+                    ? JSON.parse(row.item_names) 
+                    : [];
+                    
+            const itemIds = Array.isArray(row.item_ids) 
+                ? row.item_ids 
+                : typeof row.item_ids === 'string' 
+                    ? JSON.parse(row.item_ids) 
+                    : [];
+    
             const selectedOpts = itemNames.map((name, index) => ({
-                value:
-                    itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
+                value: itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
                 label: name,
             }));
-
+    
             setSelectedOptions(selectedOpts);
             setSelectedStatus(row.status);
-
+    
             setData({
+                id: row.id, // Make sure to include the ID
                 name: row.name,
                 item_ids: itemIds,
                 item_names: itemNames,
                 return_date: row.return_date,
                 status: row.status,
             });
-
+    
             if (row.return_date) {
-                setReturnDate(new Date(row.return_date));
+                const date = new Date(row.return_date);
+                setReturnDate(isNaN(date.getTime()) ? null : date);
             }
         } else if (!open) {
             reset();
@@ -143,36 +153,43 @@ export default function ItemBorrow() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
-
+    
         if (selectedOptions.length === 0) {
             alert("Please select at least one item.");
             setProcessing(false);
             return;
         }
-
+    
+        const formattedReturnDate = returnDate
+            ? format(returnDate, "MM/dd/yyyy")
+            : "";
+    
+        const formData = {
+            name: data.name,
+            item_ids: selectedOptions.map((opt) => opt.value),
+            item_names: selectedOptions.map((opt) => opt.label),
+            return_date: formattedReturnDate,
+            status: data.status || "Borrowed",
+            _token: csrf,
+        };
+    
         try {
-            const endpoint = isEditMode ? `/borrow/${row.id}` : "/borrow";
+            // Ensure we have the ID in edit mode
+            if (isEditMode && !data.id) {
+                throw new Error("Missing ID for update operation");
+            }
+    
+            const endpoint = isEditMode ? `/borrow/${data.id}` : "/borrow";
             const method = isEditMode ? "put" : "post";
-
-            const response = await axios[method](
-                endpoint,
-                {
-                    name: data.name,
-                    item_ids: selectedOptions.map((opt) => opt.value),
-                    item_names: selectedOptions.map((opt) => opt.label),
-                    return_date: data.return_date,
-                    status: data.status || "Borrowed",
-                    _token: csrf,
+    
+            const response = await axios[method](endpoint, formData, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "X-CSRF-TOKEN": csrf,
                 },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                        "X-CSRF-TOKEN": csrf,
-                    },
-                }
-            );
-
+            });
+    
             if (response.data.success) {
                 reset();
                 setSelectedOptions([]);
@@ -183,7 +200,7 @@ export default function ItemBorrow() {
                         : "Item successfully borrowed!"
                 );
                 setIsSuccessDialogOpen(true);
-
+    
                 const refreshResponse = await axios.get("/borrows");
                 setBorrowedItems(refreshResponse.data);
             } else {
@@ -200,7 +217,7 @@ export default function ItemBorrow() {
                     }`
                 );
             } else {
-                alert("An unexpected error occurred. Please try again.");
+                alert(`Error: ${error.message}`);
             }
         } finally {
             setProcessing(false);
@@ -234,11 +251,10 @@ export default function ItemBorrow() {
     const rows = borrowedItems.map((item, index) => {
         const itemNames = Array.isArray(item.item_names)
             ? item.item_names
-            : typeof item.item_names === "string"
+            : typeof item.item_names === 'string'
             ? JSON.parse(item.item_names)
             : [];
-    
-        // Format dates to MM/DD/YYYY
+        
         const formatDate = (dateString) => {
             if (!dateString) return '';
             const date = new Date(dateString);
@@ -246,6 +262,7 @@ export default function ItemBorrow() {
         };
     
         const displayRow = {
+            id: item.id, // Include the ID in the display row
             select: <Checkbox />,
             index: index + 1,
             name: item.name,
@@ -258,11 +275,12 @@ export default function ItemBorrow() {
     
         Object.defineProperty(displayRow, "_raw", {
             value: {
+                id: item.id, // Include the ID in raw data
                 item_names: itemNames,
                 item_ids: Array.isArray(item.item_ids)
                     ? item.item_ids
                     : JSON.parse(item.item_ids),
-                return_date: item.return_date, // Keep original format for editing
+                return_date: item.return_date,
             },
             enumerable: false,
         });
@@ -271,7 +289,7 @@ export default function ItemBorrow() {
     });
     const actions = (row) => {
         const rawData = row._raw || {};
-
+    
         return (
             <div className="flex justify-center">
                 <Dropdown>
@@ -283,6 +301,7 @@ export default function ItemBorrow() {
                             onClick={(e) => {
                                 e.preventDefault();
                                 toggleDrawer(true, true, {
+                                    id: row.id, // Ensure ID is included
                                     name: row.name,
                                     status: row.status,
                                     ...rawData,
@@ -461,6 +480,7 @@ export default function ItemBorrow() {
                                         selected={returnDate}
                                         onChange={(date) => {
                                             setReturnDate(date);
+                                            // Update the form data with properly formatted date
                                             setData(
                                                 "return_date",
                                                 format(date, "MM/dd/yyyy")

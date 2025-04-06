@@ -44,20 +44,18 @@ class BorrowController extends Controller
 
     public function store(Request $request)
     {
-        \Log::info('Store request received', $request->all());
-        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'item_ids' => 'required|array',
             'item_ids.*' => 'exists:items,id',
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
-            'return_date' => 'required|date_format:m/d/Y',
+            'return_date' => 'required|date', // Changed to 'date'
             'status' => 'sometimes|string|max:50|in:Borrowed,overdue,returned',
         ]);
     
         try {
-            $returnDate = Carbon::createFromFormat('m/d/Y', $validated['return_date'])->format('Y-m-d');
+            $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
     
             $borrow = Borrow::create([
                 'name' => $validated['name'],
@@ -90,26 +88,36 @@ class BorrowController extends Controller
             'item_ids.*' => 'exists:items,id',
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
-            'return_date' => 'required|date_format:m/d/Y',
+            'return_date' => 'required|date', // Changed from 'date_format:m/d/Y' to 'date'
             'status' => 'required|string|max:50|in:Borrowed,overdue,returned',
         ]);
     
-        $borrow = Borrow::findOrFail($id);
-        
-        $returnDate = Carbon::createFromFormat('m/d/Y', $validated['return_date'])->format('Y-m-d');
-        
-        $borrow->update([
-            'name' => $validated['name'],
-            'item_ids' => $validated['item_ids'],
-            'item_names' => $validated['item_names'],
-            'return_date' => $returnDate,
-            'status' => $validated['status'],
-        ]);
+        try {
+            $borrow = Borrow::findOrFail($id);
+            
+            // Parse the date regardless of format
+            $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
+            
+            $borrow->update([
+                'name' => $validated['name'],
+                'item_ids' => $validated['item_ids'],
+                'item_names' => $validated['item_names'],
+                'return_date' => $returnDate,
+                'status' => $validated['status'],
+            ]);
     
-        return response()->json([
-            'success' => true,
-            'message' => 'Borrow record updated successfully.',
-            'data' => $borrow
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Borrow record updated successfully.',
+                'data' => $borrow
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating borrow record: '.$e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update record. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

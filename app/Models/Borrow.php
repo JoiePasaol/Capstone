@@ -10,43 +10,40 @@ class Borrow extends Model
     use HasFactory;
 
     protected $fillable = [
+        'id', // Add this if not present
         'name',
-        'item_ids',   
-        'item_names',  
+        'item_ids',
+        'item_names',
         'return_date',
         'status'
     ];
  
 
 
-    protected $casts = [
-        'item_ids' => 'array',
-        'item_names' => 'array',
-    ];
+  // app/Models/Borrow.php
 
-    // Add mutators to ensure clean storage
-    public function setItemIdsAttribute($value)
-    {
-        $this->attributes['item_ids'] = is_array($value) 
-            ? implode(',', $value) 
-            : str_replace(['"', '[', ']', '\\'], '', $value);
-    }
+protected $casts = [
+    'item_ids' => 'array',
+    'item_names' => 'array',
+];
 
-    public function setItemNamesAttribute($value)
-    {
-        $this->attributes['item_names'] = is_array($value) 
-            ? implode(',', $value) 
-            : str_replace(['"', '[', ']', '\\'], '', $value);
-    }
+public function setItemIdsAttribute($value)
+{
+    $this->attributes['item_ids'] = json_encode((array) $value);
+}
 
-    // Accessors remain to convert back to arrays
-    public function getItemIdsAttribute($value)
-    {
-        return explode(',', $value);
-    }
+public function setItemNamesAttribute($value)
+{
+    $this->attributes['item_names'] = json_encode((array) $value);
+}
 
-    public function getItemNamesAttribute($value)
-    {
-        return explode(',', $value);
-    }
+public function getItemIdsAttribute($value)
+{
+    return json_decode($value, true) ?: [];
+}
+
+public function getItemNamesAttribute($value)
+{
+    return json_decode($value, true) ?: [];
+}
 }
