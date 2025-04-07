@@ -17,14 +17,17 @@ use Inertia\Inertia;
 
 // Public Routes
 Route::get('/', function () {
-    return Inertia::render('Login', [
+    return redirect('/login');
+});
+
+Route::get('/login', function () {
+    return Inertia::render('login', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
 });
-
 // Email Verification Routes
 Route::get('/email/verify', function () {
     return Inertia::render('Auth/VerifyEmail');
@@ -145,12 +148,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/suppliers/bulk-destroy', [SupplierController::class, 'bulkDestroy'])->name('suppliers.bulkDestroy');
     Route::get('/api/suppliers/total-count', [SupplierController::class, 'getTotalSuppliersCount']);
 
+    
+
     Route::get('/borrows', [BorrowController::class, 'index']);
     Route::get('/search-items', [BorrowController::class, 'searchItems']);
     Route::post('/borrow', [BorrowController::class, 'store']);
     Route::put('/borrow/{id}', [BorrowController::class, 'update']);
-    
-
+        Route::delete('/borrow/{id}', [BorrowController::class, 'destroy'])->name('borrows.destroy');
+        Route::post('/borrow/bulk-destroy', [BorrowController::class, 'bulkDestroy'])
+        ->name('borrows.bulkDestroy');
     // Profile Routes
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');

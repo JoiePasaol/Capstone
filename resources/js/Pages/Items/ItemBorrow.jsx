@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Head, useForm, usePage } from "@inertiajs/react";
 import { format } from "date-fns";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -18,22 +18,41 @@ import Checkbox from "@/Components/Checkbox";
 import Dropdown from "@/Components/Dropdown";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SuccessDialog from "@/Components/SuccessDialog";
+import Pagination from "@/Components/Pagination";
+import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import "../../../css/select.css";
 import axios from "axios";
 
 export default function ItemBorrow() {
-    const { csrf } = usePage().props;
+    const { csrf, auth } = usePage().props;
+    const { user } = auth;
+
+    // Drawer state
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
+
+    // Dialog state
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+    const [confirmMessage, setConfirmMessage] = useState("");
     const [processing, setProcessing] = useState(false);
+
+    // Data state
     const [borrowedItems, setBorrowedItems] = useState([]);
     const [options, setOptions] = useState([]);
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [returnDate, setReturnDate] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredBorrowedItems, setFilteredBorrowedItems] = useState([]);
+    const [selectedBorrowedItems, setSelectedBorrowedItems] = useState([]);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+
+    const itemsPerPage = 10;
+
     const { post, data, setData, errors, reset } = useForm({
         name: "",
         item_ids: [],
@@ -41,6 +60,7 @@ export default function ItemBorrow() {
         return_date: "",
         status: "Borrowed",
     });
+
 
     const ItemList = ({ items }) => {
         const chunkSize = 3;
@@ -66,40 +86,59 @@ export default function ItemBorrow() {
         );
     };
 
+    const fetchBorrowedItems = async () => {
+        try {
+            const response = await axios.get("/borrows");
+            // Sort by created_at in descending order (newest first)
+            const sortedItems = response.data.sort((a, b) => 
+                new Date(b.created_at) - new Date(a.created_at)
+            );
+            setBorrowedItems(sortedItems);
+        } catch (error) {
+            console.error("Error fetching borrowed items:", error);
+            setSuccessMessage("Failed to load borrowed items. Please try again.");
+            setIsSuccessDialogOpen(true);
+        }
+    };
+
+    useEffect(() => {
+        fetchBorrowedItems();
+    }, []);
+
     const toggleDrawer = (open, isEdit = false, row = null) => {
         setIsDrawerOpen(open);
         setIsEditMode(isEdit);
-    
+
         if (open && isEdit && row) {
-            const itemNames = Array.isArray(row.item_names) 
-                ? row.item_names 
-                : typeof row.item_names === 'string' 
-                    ? JSON.parse(row.item_names) 
+            const itemNames = Array.isArray(row.item_names)
+                ? row.item_names
+                : typeof row.item_names === 'string'
+                    ? JSON.parse(row.item_names)
                     : [];
-                    
-            const itemIds = Array.isArray(row.item_ids) 
-                ? row.item_ids 
-                : typeof row.item_ids === 'string' 
-                    ? JSON.parse(row.item_ids) 
+
+            const itemIds = Array.isArray(row.item_ids)
+                ? row.item_ids
+                : typeof row.item_ids === 'string'
+                    ? JSON.parse(row.item_ids)
                     : [];
-    
+
             const selectedOpts = itemNames.map((name, index) => ({
                 value: itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
                 label: name,
             }));
-    
+
             setSelectedOptions(selectedOpts);
             setSelectedStatus(row.status);
-    
+
             setData({
-                id: row.id, // Make sure to include the ID
+                id: row.id,
                 name: row.name,
                 item_ids: itemIds,
                 item_names: itemNames,
                 return_date: row.return_date,
                 status: row.status,
             });
-    
+
             if (row.return_date) {
                 const date = new Date(row.return_date);
                 setReturnDate(isNaN(date.getTime()) ? null : date);
@@ -113,8 +152,6 @@ export default function ItemBorrow() {
     };
 
     const handleInputChange = async (inputValue) => {
-        console.log("User input:", inputValue);
-
         if (!inputValue) {
             setOptions([]);
             return;
@@ -124,7 +161,6 @@ export default function ItemBorrow() {
             const response = await axios.get(
                 `/search-items?query=${inputValue}`
             );
-            console.log("API response:", response.data);
 
             if (!Array.isArray(response.data)) {
                 console.error("API response is not an array:", response.data);
@@ -138,7 +174,6 @@ export default function ItemBorrow() {
             }));
 
             const combinedOptions = [...selectedOptions, ...newOptions];
-
             const uniqueOptions = combinedOptions.filter(
                 (option, index, self) =>
                     index === self.findIndex((o) => o.value === option.value)
@@ -174,7 +209,6 @@ export default function ItemBorrow() {
         };
     
         try {
-            // Ensure we have the ID in edit mode
             if (isEditMode && !data.id) {
                 throw new Error("Missing ID for update operation");
             }
@@ -200,9 +234,9 @@ export default function ItemBorrow() {
                         : "Item successfully borrowed!"
                 );
                 setIsSuccessDialogOpen(true);
-    
-                const refreshResponse = await axios.get("/borrows");
-                setBorrowedItems(refreshResponse.data);
+                
+                // Fetch items again to ensure proper sorting
+                await fetchBorrowedItems();
             } else {
                 throw new Error(response.data.message || "Failed to save");
             }
@@ -211,9 +245,8 @@ export default function ItemBorrow() {
             if (error.response) {
                 console.error("Server response:", error.response.data);
                 alert(
-                    `Server error: ${
-                        error.response.data.message ||
-                        JSON.stringify(error.response.data)
+                    `Server error: ${error.response.data.message ||
+                    JSON.stringify(error.response.data)
                     }`
                 );
             } else {
@@ -225,20 +258,116 @@ export default function ItemBorrow() {
     };
 
     useEffect(() => {
-        const fetchBorrowedItems = async () => {
-            try {
-                const response = await axios.get("/borrows");
-                setBorrowedItems(response.data);
-            } catch (error) {
-                console.error("Error fetching borrowed items:", error);
-            }
-        };
+        if (!Array.isArray(borrowedItems) || borrowedItems.length === 0) return;
+    
+        const searchLower = searchTerm.toLowerCase();
+        const filtered = borrowedItems
+            .filter((item) => item && item.name)
+            .filter(
+                (item) =>
+                    item.name.toLowerCase().includes(searchLower) ||
+                    (Array.isArray(item.item_names)
+                        ? item.item_names.some(name => name.toLowerCase().includes(searchLower))
+                        : false)
+            )
+            // Additional sort as safeguard (though already sorted from API)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+        setFilteredBorrowedItems(filtered);
+        setCurrentPage(1);
+    }, [searchTerm, borrowedItems]);
 
-        fetchBorrowedItems();
-    }, []);
+    const totalPages = Math.ceil(filteredBorrowedItems.length / itemsPerPage);
+    const paginatedBorrowedItems = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return filteredBorrowedItems.slice(startIndex, endIndex);
+    }, [filteredBorrowedItems, currentPage, itemsPerPage]);
+
+    const handleSelectAll = () => {
+        if (selectedBorrowedItems.length === filteredBorrowedItems.length) {
+            setSelectedBorrowedItems([]);
+        } else {
+            setSelectedBorrowedItems(
+                filteredBorrowedItems.map((item) => item.id)
+            );
+        }
+    };
+
+    const handleCheckboxChange = (item) => {
+        setSelectedBorrowedItems((prev) =>
+            prev.includes(item.id)
+                ? prev.filter((id) => id !== item.id)
+                : [...prev, item.id]
+        );
+    };
+
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+    };
+
+    const confirmDelete = (id = null) => {
+        const count = id ? 1 : selectedBorrowedItems.length;
+
+        if (count === 0) return;
+
+        setConfirmMessage(
+            count === 1
+                ? "Are you sure you want to delete this borrowed item?"
+                : `Are you sure you want to delete these ${count} borrowed items?`
+        );
+
+        setDeleteTarget(id ? [id] : [...selectedBorrowedItems]);
+        setIsConfirmDialogOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget || deleteTarget.length === 0) return;
+    
+        try {
+            const response = await axios.post(route('borrows.bulkDestroy'), {
+                ids: deleteTarget
+            });
+    
+            if (response.data.success) {
+                await fetchBorrowedItems();
+                setSelectedBorrowedItems([]);
+                setDeleteTarget(null);
+                setIsConfirmDialogOpen(false);
+    
+                setSuccessMessage(
+                    deleteTarget.length === 1
+                        ? "Borrowed item successfully deleted!"
+                        : `${deleteTarget.length} borrowed items successfully deleted!`
+                );
+                setIsSuccessDialogOpen(true);
+            } else {
+                throw new Error(response.data.message || "Failed to delete items");
+            }
+        } catch (error) {
+            console.error("Error deleting items:", error);
+            setSuccessMessage(
+                error.response?.data?.message || 
+                "Failed to delete items. Please try again."
+            );
+            setIsSuccessDialogOpen(true);
+        }
+    };
+
+    const isSelectAllChecked =
+        selectedBorrowedItems.length === filteredBorrowedItems.length &&
+        filteredBorrowedItems.length > 0;
 
     const headers = [
-        { label: <Checkbox />, key: "select-all" },
+        {
+            label: (
+                <Checkbox
+                    checked={isSelectAllChecked}
+                    onChange={handleSelectAll}
+                />
+            ),
+            key: "select-all"
+        },
         { label: "#", key: "index" },
         { label: "Name", key: "name" },
         { label: "Item", key: "item" },
@@ -248,23 +377,28 @@ export default function ItemBorrow() {
         { label: "Updated_at", key: "updated_at" },
     ];
 
-    const rows = borrowedItems.map((item, index) => {
+    const rows = paginatedBorrowedItems.map((item, index) => {
         const itemNames = Array.isArray(item.item_names)
             ? item.item_names
             : typeof item.item_names === 'string'
-            ? JSON.parse(item.item_names)
-            : [];
-        
+                ? JSON.parse(item.item_names)
+                : [];
+
         const formatDate = (dateString) => {
             if (!dateString) return '';
             const date = new Date(dateString);
             return isNaN(date.getTime()) ? dateString : format(date, 'MM/dd/yyyy');
         };
-    
+
         const displayRow = {
-            id: item.id, // Include the ID in the display row
-            select: <Checkbox />,
-            index: index + 1,
+            id: item.id,
+            select: (
+                <Checkbox
+                    checked={selectedBorrowedItems.includes(item.id)}
+                    onChange={() => handleCheckboxChange(item)}
+                />
+            ),
+            index: index + 1 + (currentPage - 1) * itemsPerPage,
             name: item.name,
             item: <ItemList items={itemNames} />,
             date_return: formatDate(item.return_date),
@@ -272,10 +406,10 @@ export default function ItemBorrow() {
             created_at: formatDate(item.created_at),
             updated_at: formatDate(item.updated_at),
         };
-    
+
         Object.defineProperty(displayRow, "_raw", {
             value: {
-                id: item.id, // Include the ID in raw data
+                id: item.id,
                 item_names: itemNames,
                 item_ids: Array.isArray(item.item_ids)
                     ? item.item_ids
@@ -284,24 +418,25 @@ export default function ItemBorrow() {
             },
             enumerable: false,
         });
-    
+
         return displayRow;
     });
+
     const actions = (row) => {
         const rawData = row._raw || {};
-    
+
         return (
             <div className="flex justify-center">
                 <Dropdown>
                     <Dropdown.Trigger>
                         <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
                     </Dropdown.Trigger>
-                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-80px] bg-gray-700">
+                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-80px] bg-gray-100 dark:bg-gray-700">
                         <Dropdown.Link
                             onClick={(e) => {
                                 e.preventDefault();
                                 toggleDrawer(true, true, {
-                                    id: row.id, // Ensure ID is included
+                                    id: row.id,
                                     name: row.name,
                                     status: row.status,
                                     ...rawData,
@@ -310,7 +445,15 @@ export default function ItemBorrow() {
                         >
                             Edit
                         </Dropdown.Link>
-                        <Dropdown.Link>Delete</Dropdown.Link>
+                        <Dropdown.Link
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                confirmDelete(row.id);
+                            }}
+                        >
+                            Delete
+                        </Dropdown.Link>
                     </Dropdown.Content>
                 </Dropdown>
             </div>
@@ -334,24 +477,26 @@ export default function ItemBorrow() {
                             type="text"
                             placeholder="Search..."
                             className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
-
-                        <div className="relative z-50">
-                            <select className="border border-black/20 dark:border-white py-1 rounded-md text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer w-60">
-                                <option hidden value=""></option>
-                            </select>
-                        </div>
                     </div>
 
                     <div className="flex">
                         <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
-                            <DeleteIcon />
+                            <DeleteIcon
+                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${selectedBorrowedItems.length === 0
+                                        ? "opacity-50 pointer-events-none"
+                                        : ""
+                                    }`}
+                                onClick={() => {
+                                    if (selectedBorrowedItems.length > 0) {
+                                        confirmDelete();
+                                    }
+                                }}
+                            />
                             <AddCircleIcon
                                 className="text-gray-600 dark:text-gray-300 cursor-pointer"
-                                onClick={() => {
-                                    console.log("AddCircleIcon clicked");
-                                    toggleDrawer(true);
-                                }}
+                                onClick={() => toggleDrawer(true)}
                             />
                         </div>
                     </div>
@@ -361,10 +506,27 @@ export default function ItemBorrow() {
                     <Table headers={headers} rows={rows} actions={actions} />
                 </div>
 
+                {filteredBorrowedItems.length > itemsPerPage && (
+                    <div className="mt-4 flex justify-center">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
+                    </div>
+                )}
+
                 <SuccessDialog
                     isOpen={isSuccessDialogOpen}
                     message={successMessage}
                     onClose={() => setIsSuccessDialogOpen(false)}
+                />
+
+                <ConfirmationDialog
+                    isOpen={isConfirmDialogOpen}
+                    onConfirm={handleConfirmDelete}
+                    onCancel={() => setIsConfirmDialogOpen(false)}
+                    title={confirmMessage}
                 />
             </div>
 
@@ -401,14 +563,14 @@ export default function ItemBorrow() {
                                 onChange={(options) => {
                                     const uniqueOptions = options
                                         ? options.filter(
-                                              (option, index, self) =>
-                                                  index ===
-                                                  self.findIndex(
-                                                      (o) =>
-                                                          o.value ===
-                                                          option.value
-                                                  )
-                                          )
+                                            (option, index, self) =>
+                                                index ===
+                                                self.findIndex(
+                                                    (o) =>
+                                                        o.value ===
+                                                        option.value
+                                                )
+                                        )
                                         : [];
 
                                     setSelectedOptions(uniqueOptions);
@@ -480,7 +642,6 @@ export default function ItemBorrow() {
                                         selected={returnDate}
                                         onChange={(date) => {
                                             setReturnDate(date);
-                                            // Update the form data with properly formatted date
                                             setData(
                                                 "return_date",
                                                 format(date, "MM/dd/yyyy")

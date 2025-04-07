@@ -1,7 +1,7 @@
 import { Link } from "@inertiajs/react";
 import ThemeToggle from "@/Components/ThemeToggle";
-import { motion } from 'framer-motion';
-import { Facebook, Linkedin, Mail } from 'lucide-react';
+// import { motion } from 'framer-motion';
+// import { Facebook, Linkedin, Mail } from 'lucide-react';
 
 export default function GuestLayout({ children }) {
     return (

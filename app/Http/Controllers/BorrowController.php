@@ -11,7 +11,7 @@ class BorrowController extends Controller
 {
     public function index()
     {
-        $borrows = Borrow::all()->map(function ($borrow) {
+        $borrows = Borrow::orderBy('created_at', 'desc')->get()->map(function ($borrow) {
             return [
                 'id' => $borrow->id,
                 'name' => $borrow->name,
@@ -30,7 +30,6 @@ class BorrowController extends Controller
     
         return response()->json($borrows);
     }
-
     public function searchItems(Request $request)
     {
         $query = $request->input('query');
@@ -50,7 +49,7 @@ class BorrowController extends Controller
             'item_ids.*' => 'exists:items,id',
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
-            'return_date' => 'required|date', // Changed to 'date'
+            'return_date' => 'required|date',
             'status' => 'sometimes|string|max:50|in:Borrowed,overdue,returned',
         ]);
     
@@ -88,14 +87,13 @@ class BorrowController extends Controller
             'item_ids.*' => 'exists:items,id',
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
-            'return_date' => 'required|date', // Changed from 'date_format:m/d/Y' to 'date'
+            'return_date' => 'required|date',
             'status' => 'required|string|max:50|in:Borrowed,overdue,returned',
         ]);
     
         try {
             $borrow = Borrow::findOrFail($id);
             
-            // Parse the date regardless of format
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
             
             $borrow->update([
@@ -116,6 +114,55 @@ class BorrowController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update record. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $borrow = Borrow::findOrFail($id);
+            $borrow->delete();
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Borrow record deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting borrow record: '.$e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete record. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+    
+        if (empty($ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No items selected for deletion.'
+            ], 400);
+        }
+    
+        try {
+            $deletedCount = Borrow::whereIn('id', $ids)->delete();
+    
+            return response()->json([
+                'success' => true,
+                'message' => $deletedCount . ' items deleted successfully.',
+                'deleted_count' => $deletedCount
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Bulk delete error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete items.',
                 'error' => $e->getMessage()
             ], 500);
         }
