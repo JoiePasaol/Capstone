@@ -154,9 +154,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/search-items', [BorrowController::class, 'searchItems']);
     Route::post('/borrow', [BorrowController::class, 'store']);
     Route::put('/borrow/{id}', [BorrowController::class, 'update']);
-        Route::delete('/borrow/{id}', [BorrowController::class, 'destroy'])->name('borrows.destroy');
-        Route::post('/borrow/bulk-destroy', [BorrowController::class, 'bulkDestroy'])
-        ->name('borrows.bulkDestroy');
+    Route::delete('/borrow/{id}', [BorrowController::class, 'destroy'])->name('borrows.destroy');
+    Route::post('/borrow/bulk-destroy', [BorrowController::class, 'bulkDestroy'])->name('borrows.bulkDestroy');
+    Route::get('/api/borrowed-items/total-count', [BorrowController::class, 'countBorrowed']);
+    Route::get('/api/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue']);
+
+
     // Profile Routes
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');

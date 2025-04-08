@@ -12,7 +12,7 @@ export default function GuestLayout({ children }) {
                 alt="Background"
             />
 
-            <div className="absolute top-[-5px] left-4 flex items-center space-x-4 z-10 dark:opacity-40">
+            {/* <div className="absolute top-[-5px] left-4 flex items-center space-x-4 z-10 dark:opacity-40">
                 <img
                     className="h-[120px] w-auto mr-[-20px]"
                     src="/img/MAGALLANES_LOGO.png"
@@ -28,12 +28,12 @@ export default function GuestLayout({ children }) {
                     src="/img/CEIT_LOGO.png"
                     alt="CEIT Logo"
                 />
-            </div>
+            </div> */}
 
             <div className="relative z-10">
                 <Link href="/">
                     <div className="h-12 w-auto lg:h-16 flex items-center justify-center text-5xl lg:text-6xl text-stroke font-extrabold">
-                        IIS
+                        LGU
                     </div>
                 </Link>
             </div>

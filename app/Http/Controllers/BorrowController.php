@@ -50,7 +50,7 @@ class BorrowController extends Controller
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
             'return_date' => 'required|date',
-            'status' => 'sometimes|string|max:50|in:Borrowed,overdue,returned',
+            'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
         ]);
     
         try {
@@ -88,7 +88,7 @@ class BorrowController extends Controller
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
             'return_date' => 'required|date',
-            'status' => 'required|string|max:50|in:Borrowed,overdue,returned',
+            'status' => 'required|string|max:50|in:Borrowed,Overdue,Returned',
         ]);
     
         try {
@@ -167,4 +167,43 @@ class BorrowController extends Controller
             ], 500);
         }
     }
+
+    
+    public function countBorrowed()
+{
+    try {
+        $count = Borrow::where('status', 'Borrowed')->count();
+
+        return response()->json([
+            'success' => true,
+            'total_borrowed' => $count  // Changed from 'borrowed_count' to match frontend expectation
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching borrowed items count: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch borrowed items count.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+public function countOverdue()
+{
+    try {
+        $count = Borrow::where('status', 'Overdue')->count();
+
+        return response()->json([
+            'success' => true,
+            'total_overdue' => $count  // Changed from 'overdue_count' to be consistent
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching overdue items count: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch overdue items count.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }

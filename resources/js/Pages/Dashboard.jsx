@@ -14,39 +14,47 @@ import axios from "axios";
 import { checkRole } from "@/utils/CheckRole";
 
 export default function Dashboard({ successMessage }) {
-    const [pendingUsers, setPendingUsers] = useState(0);
-    const [approvedUsers, setApprovedUsers] = useState(0);
+    // const [pendingUsers, setPendingUsers] = useState(0);
+    // const [approvedUsers, setApprovedUsers] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
     // const [totalAmount, setTotalAmount] = useState(0);
     const [totalCategories, setTotalCategories] = useState(0);
     const [totalSuppliers, setTotalSuppliers] = useState(0);
+    const [totalBorrowed, setTotalBorrowed] = useState(0);
+    const [totalOverdue, setTotalOverdue] = useState(0);
     const { user } = usePage().props.auth;
 
     useEffect(() => {
         const fetchCounts = async () => {
             try {
                 const [
-                    pendingResponse,
-                    approvedResponse,
+                    // pendingResponse,
+                    // approvedResponse,
                     itemsResponse,
                     // amountResponse,
                     categoriesResponse,
                     supplierResponse,
+                    borrowedResponse,
+                    overdueResponse,
                 ] = await Promise.all([
-                    axios.get("/api/users/pending-count"),
-                    axios.get("/api/users/approved-count"),
+                    // axios.get("/api/users/pending-count"),
+                    // axios.get("/api/users/approved-count"),
                     axios.get("/api/items/total-count"),
                     // axios.get("/api/items/total-amount"),
                     axios.get("/api/categories/total-count"),
                     axios.get("/api/suppliers/total-count"),
+                    axios.get("/api/borrowed-items/total-count"),
+                    axios.get("/api/borrowed-items/total-overdue"),
                 ]);
 
-                setPendingUsers(pendingResponse.data.pending_users);
-                setApprovedUsers(approvedResponse.data.approved_users);
+                // setPendingUsers(pendingResponse.data.pending_users);
+                // setApprovedUsers(approvedResponse.data.approved_users);
                 setTotalItems(itemsResponse.data.total_items);
                 // setTotalAmount(amountResponse.data.total_amount);
                 setTotalCategories(categoriesResponse.data.total_categories);
                 setTotalSuppliers(supplierResponse.data.total_suppliers);
+                setTotalBorrowed(borrowedResponse.data.total_borrowed);
+                setTotalOverdue(overdueResponse.data.total_overdue);
             } catch (error) {
                 console.error("Error fetching counts:", error);
             }
@@ -91,36 +99,6 @@ export default function Dashboard({ successMessage }) {
             <Head title="Dashboard" />
             <Toaster />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {checkRole(user, ["Super Admin", "Admin"]) && (
-                    <>
-                        <DashboardCard
-                            title="User Pending"
-                            value={pendingUsers}
-                            icon={
-                                <PeopleAltIcon
-                                    className="absolute right-[-40px] bottom-[-40px]"
-                                    style={{ fontSize: "230px" }}
-                                />
-                            }
-                            bgColor="bg-red-500"
-                            link={route("user-status")}
-                        />
-
-                        <DashboardCard
-                            title="Total Users"
-                            value={approvedUsers}
-                            icon={
-                                <PeopleAltIcon
-                                    className="absolute right-[-40px] bottom-[-40px]"
-                                    style={{ fontSize: "230px" }}
-                                />
-                            }
-                            bgColor="bg-green-500"
-                            link={route("user-management")}
-                        />
-                    </>
-                )}
-
                 <DashboardCard
                     title="Total Categories"
                     value={totalCategories}
@@ -159,6 +137,36 @@ export default function Dashboard({ successMessage }) {
                     bgColor="bg-blue-500"
                     link={route("item-list")}
                 />
+
+                {/* {checkRole(user, ["Super Admin", "Admin"]) && ( */}
+                <>
+                    <DashboardCard
+                        title="Total Borrowed Item"
+                        value={totalBorrowed}
+                        icon={
+                            <InventoryIcon
+                            className="absolute right-[-40px] bottom-[-40px]"
+                            style={{ fontSize: "205px" }}
+                        />
+                        }
+                        bgColor="bg-green-500"
+                        link={route("user-management")}
+                    />
+
+                    <DashboardCard
+                        title="Total Overdue Item"
+                        value={totalOverdue}
+                        icon={
+                            <InventoryIcon
+                            className="absolute right-[-40px] bottom-[-40px]"
+                            style={{ fontSize: "205px" }}
+                        />
+                        }
+                        bgColor="bg-red-500"
+                        link={route("user-status")}
+                    />
+                </>
+                {/* )} */}
 
                 {/* <DashboardCard
                             title="Total Amount"

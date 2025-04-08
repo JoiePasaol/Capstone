@@ -47,9 +47,9 @@ export default function ItemBorrow() {
     const [returnDate, setReturnDate] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filteredBorrowedItems, setFilteredBorrowedItems] = useState([]);
     const [selectedBorrowedItems, setSelectedBorrowedItems] = useState([]);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [statusFilter, setStatusFilter] = useState("All");
 
     const itemsPerPage = 10;
 
@@ -85,6 +85,24 @@ export default function ItemBorrow() {
             </div>
         );
     };
+    const filteredBorrowedItems = useMemo(() => {
+        if (!Array.isArray(borrowedItems) || borrowedItems.length === 0) return [];
+        
+        const searchLower = searchTerm.toLowerCase();
+        return borrowedItems
+            .filter((item) => item && item.name)
+            .filter(
+                (item) =>
+                    item.name.toLowerCase().includes(searchLower) ||
+                    (Array.isArray(item.item_names)
+                        ? item.item_names.some(name => name.toLowerCase().includes(searchLower))
+                        : false)
+            )
+            .filter((item) => 
+                statusFilter === "All" || item.status === statusFilter
+            )
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }, [borrowedItems, searchTerm, statusFilter]);
 
     const fetchBorrowedItems = async () => {
         try {
@@ -257,25 +275,7 @@ export default function ItemBorrow() {
         }
     };
 
-    useEffect(() => {
-        if (!Array.isArray(borrowedItems) || borrowedItems.length === 0) return;
-    
-        const searchLower = searchTerm.toLowerCase();
-        const filtered = borrowedItems
-            .filter((item) => item && item.name)
-            .filter(
-                (item) =>
-                    item.name.toLowerCase().includes(searchLower) ||
-                    (Array.isArray(item.item_names)
-                        ? item.item_names.some(name => name.toLowerCase().includes(searchLower))
-                        : false)
-            )
-            // Additional sort as safeguard (though already sorted from API)
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
-        setFilteredBorrowedItems(filtered);
-        setCurrentPage(1);
-    }, [searchTerm, borrowedItems]);
+   
 
     const totalPages = Math.ceil(filteredBorrowedItems.length / itemsPerPage);
     const paginatedBorrowedItems = useMemo(() => {
@@ -330,8 +330,13 @@ export default function ItemBorrow() {
             });
     
             if (response.data.success) {
-                await fetchBorrowedItems();
-                setSelectedBorrowedItems([]);
+                // Update all related states
+                setBorrowedItems(prevItems => 
+                    prevItems.filter(item => !deleteTarget.includes(item.id))
+                );
+                setSelectedBorrowedItems(prev => 
+                    prev.filter(id => !deleteTarget.includes(id))
+                );
                 setDeleteTarget(null);
                 setIsConfirmDialogOpen(false);
     
@@ -422,6 +427,12 @@ export default function ItemBorrow() {
         return displayRow;
     });
 
+    const statusOptions = [
+        { value: "Borrowed", label: "Borrowed" },
+        { value: "Overdue", label: "Overdue" },
+        { value: "Returned", label: "Returned" },
+    ];
+
     const actions = (row) => {
         const rawData = row._raw || {};
 
@@ -476,9 +487,30 @@ export default function ItemBorrow() {
                         <input
                             type="text"
                             placeholder="Search..."
-                            className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-md px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                            className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
+                         <select
+                            className="border border-black/20 dark:border-white py-1 rounded-sm text-md text-gray-600 dark:text-gray-300 bg-transparent cursor-pointer"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                             <option
+                                        className="text-md dark:bg-gray-800 "
+                                        value="All"
+                                    >
+                                        All Status
+                                    </option>
+                          {statusOptions.map((option, index) => (
+                                        <option
+                                            key={index}
+                                            value={option.value}
+                                            className="dark:bg-gray-800 dark:text-gray-300"
+                                        >
+                                            {option.label}
+                                        </option>
+                                    ))}
+                        </select>
                     </div>
 
                     <div className="flex">
@@ -669,8 +701,8 @@ export default function ItemBorrow() {
                                 }
                                 options={[
                                     { value: "Borrowed", label: "Borrowed" },
-                                    { value: "overdue", label: "Overdue" },
-                                    { value: "returned", label: "Returned" },
+                                    { value: "Overdue", label: "Overdue" },
+                                    { value: "Returned", label: "Returned" },
                                 ]}
                             />
                             <InputError

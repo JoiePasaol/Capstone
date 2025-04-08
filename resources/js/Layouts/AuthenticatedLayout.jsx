@@ -54,7 +54,7 @@ export default function AuthenticatedLayout({ header, children }) {
             >
                 {/* Logo */}
                 <div className="flex items-center justify-center h-16 px-4 border-b dark:border-gray-700 text-4xl font-bold text-stroke">
-                    IIS
+                    LGU
                 </div>
 
                 {/* Navigation Links */}
@@ -78,7 +78,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     {/* Users Dropdown */}
                     {checkRole(user, ["Super Admin", "Admin"]) && (
                         <div>
-                            <button
+                            {/* <button
                                 onClick={() => toggleDropdown("users")}
                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
                                     isActive([
@@ -106,9 +106,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                             : ""
                                     }`}
                                 />
-                            </button>
+                            </button> */}
 
-                            {activeDropdown === "users" && isSidebarOpen && (
+                            {/* {activeDropdown === "users" && isSidebarOpen && (
                                 <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
                                     <Link
                                         href={route("user-status")}
@@ -132,7 +132,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         User Management
                                     </Link>
                                 </div>
-                            )}
+                            )} */}
                         </div>
                     )}
                     {/* Categories */}
