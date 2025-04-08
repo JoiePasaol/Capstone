@@ -150,7 +150,7 @@ export default function Dashboard({ successMessage }) {
                         />
                         }
                         bgColor="bg-green-500"
-                        link={route("user-management")}
+                        link={route("item-borrow")}
                     />
 
                     <DashboardCard
@@ -163,7 +163,7 @@ export default function Dashboard({ successMessage }) {
                         />
                         }
                         bgColor="bg-red-500"
-                        link={route("user-status")}
+                        link={route("item-borrow")}
                     />
                 </>
                 {/* )} */}
