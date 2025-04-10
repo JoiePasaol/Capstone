@@ -1,7 +1,9 @@
+import { format, parseISO } from 'date-fns';
+
 const Table = ({ headers, rows, actions }) => {
     return (
         <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-700 ">
+            <table className="min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-700">
                 <thead>
                     <tr className="bg-blue-500 dark:bg-gray-700 text-white">
                         {headers.map((header, index) => (
@@ -13,7 +15,6 @@ const Table = ({ headers, rows, actions }) => {
                                 {header.label}
                             </th>
                         ))}
-
                         {actions && (
                             <th className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left whitespace-nowrap">
                                 Action

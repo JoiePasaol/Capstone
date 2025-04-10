@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Head, useForm, usePage } from "@inertiajs/react";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from 'date-fns';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -402,6 +402,14 @@ export default function ItemBorrow() {
         { label: "Updated_at", key: "updated_at" },
     ];
 
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = parseISO(dateString);
+        return isValid(date) ? format(date, 'MM/dd/yyyy hh:mm:ss a') : 'N/A';
+    };
+
+    
+
     const rows = paginatedBorrowedItems.map((item, index) => {
         const itemNames = Array.isArray(item.item_names)
             ? item.item_names
@@ -409,11 +417,7 @@ export default function ItemBorrow() {
                 ? JSON.parse(item.item_names)
                 : [];
 
-        const formatDate = (dateString) => {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return isNaN(date.getTime()) ? dateString : format(date, 'MM/dd/yyyy');
-        };
+  
 
         const displayRow = {
             id: item.id,
@@ -428,8 +432,12 @@ export default function ItemBorrow() {
             item: <ItemList items={itemNames} />,
             date_return: formatDate(item.return_date),
             status: item.status,
-            created_at: formatDate(item.created_at),
-            updated_at: formatDate(item.updated_at),
+            created_at: item.created_at
+            ? formatDate(item.created_at)
+            : "N/A",
+        updated_at: item.updated_at
+            ? formatDate(item.updated_at)
+            : "N/A",
         };
 
         Object.defineProperty(displayRow, "_raw", {
@@ -445,7 +453,7 @@ export default function ItemBorrow() {
         });
 
         return displayRow;
-    });
+    })
 
     const statusOptions = [
         { value: "Borrowed", label: "Borrowed" },
