@@ -229,8 +229,8 @@ export default function ItemBorrow() {
         e.preventDefault();
         setProcessing(true);
     
-        if (selectedOptions.length === 0) {
-            alert("Please select at least one item.");
+        if (!selectedOptions) {  // Changed from selectedOptions.length === 0
+            alert("Please select an item.");
             setProcessing(false);
             return;
         }
@@ -241,8 +241,8 @@ export default function ItemBorrow() {
     
         const formData = {
             name: data.name,
-            item_ids: selectedOptions.map((opt) => opt.value),
-            item_names: selectedOptions.map((opt) => opt.label),
+            item_ids: selectedOptions ? [selectedOptions.value] : [],  // Changed to handle single option
+            item_names: selectedOptions ? [selectedOptions.label] : [],  // Changed to handle single option
             return_date: formattedReturnDate,
             status: data.status || "Borrowed",
             _token: csrf,
@@ -266,7 +266,7 @@ export default function ItemBorrow() {
     
             if (response.data.success) {
                 reset();
-                setSelectedOptions([]);
+                setSelectedOptions(null);  // Changed to null instead of empty array
                 setIsDrawerOpen(false);
                 setSuccessMessage(
                     isEditMode
@@ -296,8 +296,6 @@ export default function ItemBorrow() {
             setProcessing(false);
         }
     };
-
-   
 
     const totalPages = Math.ceil(filteredBorrowedItems.length / itemsPerPage);
     const paginatedBorrowedItems = useMemo(() => {
@@ -605,77 +603,41 @@ export default function ItemBorrow() {
                     <div className="mt-4">
                         <InputLabel htmlFor="Item" value="Item" />
                         <div className="relative">
-                            <Select
-                                id="Item"
-                                className="mt-2"
-                                placeholder="Search items..."
-                                noOptionsMessage={() => "No items found"}
-                                isClearable
-                                isSearchable
-                                isMulti
-                                value={selectedOptions}
-                                onChange={(options) => {
-                                    const uniqueOptions = options
-                                        ? options.filter(
-                                            (option, index, self) =>
-                                                index ===
-                                                self.findIndex(
-                                                    (o) =>
-                                                        o.value ===
-                                                        option.value
-                                                )
-                                        )
-                                        : [];
-
-                                    setSelectedOptions(uniqueOptions);
-                                    setData({
-                                        ...data,
-                                        item_ids: uniqueOptions.map(
-                                            (opt) => opt.value
-                                        ),
-                                        item_names: uniqueOptions.map(
-                                            (opt) => opt.label
-                                        ),
-                                    });
-                                }}
-                                onInputChange={(newValue) => {
-                                    if (newValue) {
-                                        handleInputChange(newValue);
-                                    }
-                                }}
-                                options={options}
-                                components={{
-                                    MultiValueContainer: ({
-                                        children,
-                                        ...props
-                                    }) => (
-                                        <div className="flex flex-wrap gap-2">
-                                            {children}
-                                        </div>
-                                    ),
-                                }}
-                                classNames={{
-                                    control: ({ isFocused }) =>
-                                        isFocused
-                                            ? "custom-select-container custom-select-container--focused"
-                                            : "custom-select-container",
-                                    valueContainer: () =>
-                                        "custom-select-value py-1 pl-2 min-h-[40px]",
-                                    multiValue: () =>
-                                        "text-sm bg-gray-200 dark:bg-gray-700 rounded px-2 py-1",
-                                    multiValueLabel: () =>
-                                        "text-gray-800 dark:text-gray-200",
-                                    multiValueRemove: () =>
-                                        "text-gray-500 hover:text-red-500 dark:hover:text-red-400 ml-1",
-                                    singleValue: () => "custom-select-value",
-                                    menu: () => "custom-select-menu",
-                                    option: () => "custom-select-option",
-                                    placeholder: () =>
-                                        "custom-select-placeholder",
-                                    input: () => "custom-select-input",
-                                }}
-                                closeMenuOnSelect={false}
-                            />
+                        <Select
+    id="Item"
+    className="mt-2"
+    placeholder="Search items..."
+    noOptionsMessage={() => "No items found"}
+    isClearable
+    isSearchable
+    value={selectedOptions}
+    onChange={(option) => {
+        setSelectedOptions(option);
+        setData({
+            ...data,
+            item_ids: option ? [option.value] : [],
+            item_names: option ? [option.label] : [],
+        });
+    }}
+    onInputChange={(newValue) => {
+        if (newValue) {
+            handleInputChange(newValue);
+        }
+    }}
+    options={options}
+    classNames={{
+        control: ({ isFocused }) =>
+            isFocused
+                ? "custom-select-container custom-select-container--focused"
+                : "custom-select-container",
+        valueContainer: () => "custom-select-value py-1 pl-2 min-h-[40px]",
+        singleValue: () => "custom-select-value",
+        menu: () => "custom-select-menu",
+        option: () => "custom-select-option",
+        placeholder: () => "custom-select-placeholder",
+        input: () => "custom-select-input",
+    }}
+/>
                         </div>
                         <InputError message={errors.item_id} className="mt-2" />
                     </div>

@@ -35,8 +35,8 @@ class BorrowController extends Controller
                     : json_decode($borrow->item_names, true),
                 'return_date' => $borrow->return_date ? Carbon::parse($borrow->return_date)->format('Y-m-d') : null,
                 'status' => $borrow->status,
-                'created_at' => $borrow->created_at,
-                'updated_at' => $borrow->updated_at
+                'created_at' => $borrow->created_at->toISOString(),
+                'updated_at' => $borrow->updated_at->toISOString()
             ];
         });
     
