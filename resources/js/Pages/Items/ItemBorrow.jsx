@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Head, useForm, usePage } from "@inertiajs/react";
 import { format, parseISO, isValid } from 'date-fns';
+import { debounce } from 'lodash';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -61,7 +62,6 @@ export default function ItemBorrow() {
         status: "Borrowed",
     });
 
-
     const ItemList = ({ items }) => {
         const chunkSize = 3;
         const chunks = [];
@@ -85,12 +85,13 @@ export default function ItemBorrow() {
             </div>
         );
     };
+
     const filteredBorrowedItems = useMemo(() => {
         if (!Array.isArray(borrowedItems) || borrowedItems.length === 0) return [];
-    
+
         const today = new Date();
         const searchLower = searchTerm.toLowerCase();
-    
+
         // Create a copy of the array before sorting to avoid mutating the original
         const result = [...borrowedItems]
             .map(item => {
@@ -111,26 +112,16 @@ export default function ItemBorrow() {
             .filter((item) =>
                 statusFilter === "All" || item.status === statusFilter
             )
-            .sort((a, b) => {
-                // Debug logging
-                console.log('Sorting:', {
-                    a: { id: a.id, created_at: a.created_at, date: new Date(a.created_at) },
-                    b: { id: b.id, created_at: b.created_at, date: new Date(b.created_at) },
-                    comparison: new Date(b.created_at) - new Date(a.created_at)
-                });
-                return new Date(b.created_at) - new Date(a.created_at);
-            });
-    
-        console.log('Sorted result:', result);
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
         return result;
     }, [borrowedItems, searchTerm, statusFilter]);
-    
 
     const fetchBorrowedItems = async () => {
         try {
             const response = await axios.get("/borrows");
             // Sort by created_at in descending order (newest first)
-            const sortedItems = response.data.sort((a, b) => 
+            const sortedItems = response.data.sort((a, b) =>
                 new Date(b.created_at) - new Date(a.created_at)
             );
             setBorrowedItems(sortedItems);
@@ -150,33 +141,38 @@ export default function ItemBorrow() {
         setIsEditMode(isEdit);
 
         if (open && isEdit && row) {
+            // Clear any existing options first
+            setOptions([]);
+
+            // Parse item data - handle both array and single item cases
             const itemNames = Array.isArray(row.item_names)
-                ? row.item_names
+                ? row.item_names[0] // Take first item if array
                 : typeof row.item_names === 'string'
-                    ? JSON.parse(row.item_names)
-                    : [];
+                    ? JSON.parse(row.item_names)[0] // Parse and take first if string
+                    : row.item_names || ''; // Fallback
 
             const itemIds = Array.isArray(row.item_ids)
-                ? row.item_ids
+                ? row.item_ids[0] // Take first item if array
                 : typeof row.item_ids === 'string'
-                    ? JSON.parse(row.item_ids)
-                    : [];
+                    ? JSON.parse(row.item_ids)[0] // Parse and take first if string
+                    : row.item_ids || ''; // Fallback
 
-            const selectedOpts = itemNames.map((name, index) => ({
-                value: itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
-                label: name,
-            }));
+            // Create single option object
+            const selectedOption = itemNames ? {
+                value: itemIds,
+                label: itemNames
+            } : null;
 
-            setSelectedOptions(selectedOpts);
+            setSelectedOptions(selectedOption);
             setSelectedStatus(row.status);
 
             setData({
                 id: row.id,
                 name: row.name,
-                item_ids: itemIds,
-                item_names: itemNames,
+                item_ids: [itemIds], // Keep as array for backend
+                item_names: [itemNames], // Keep as array for backend
                 return_date: row.return_date,
-                status: row.status,
+                status: row.status || 'Borrowed',
             });
 
             if (row.return_date) {
@@ -185,9 +181,10 @@ export default function ItemBorrow() {
             }
         } else if (!open) {
             reset();
-            setSelectedOptions([]);
+            setSelectedOptions(null);
             setSelectedStatus(null);
             setReturnDate(null);
+            setOptions([]); // Clear options when closing
         }
     };
 
@@ -198,9 +195,7 @@ export default function ItemBorrow() {
         }
 
         try {
-            const response = await axios.get(
-                `/search-items?query=${inputValue}`
-            );
+            const response = await axios.get(`/search-items?query=${inputValue}`);
 
             if (!Array.isArray(response.data)) {
                 console.error("API response is not an array:", response.data);
@@ -208,54 +203,65 @@ export default function ItemBorrow() {
                 return;
             }
 
+            // Don't combine with selectedOptions - just use fresh results
             const newOptions = response.data.map((item) => ({
                 value: item.id,
                 label: item.items,
             }));
 
-            const combinedOptions = [...selectedOptions, ...newOptions];
-            const uniqueOptions = combinedOptions.filter(
-                (option, index, self) =>
-                    index === self.findIndex((o) => o.value === option.value)
-            );
-
-            setOptions(uniqueOptions);
+            setOptions(newOptions);
         } catch (error) {
             console.error("Error fetching items:", error);
+            setOptions([]);
         }
     };
+
+    const debouncedInputChange = useMemo(
+        () => debounce((inputValue) => {
+            handleInputChange(inputValue);
+        }, 300),
+        []
+    );
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            debouncedInputChange.cancel();
+        };
+    }, [debouncedInputChange]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
-    
-        if (!selectedOptions) {  // Changed from selectedOptions.length === 0
+
+        if (!selectedOptions) {
             alert("Please select an item.");
             setProcessing(false);
             return;
         }
-    
+
         const formattedReturnDate = returnDate
-            ? format(returnDate, "MM/dd/yyyy")
-            : "";
-    
+            ? format(returnDate, "yyyy-MM-dd") // Match backend format
+            : null;
+
+        // Prepare form data - wrap single item in arrays for backend
         const formData = {
             name: data.name,
-            item_ids: selectedOptions ? [selectedOptions.value] : [],  // Changed to handle single option
-            item_names: selectedOptions ? [selectedOptions.label] : [],  // Changed to handle single option
+            item_ids: [selectedOptions.value], // Array with single item
+            item_names: [selectedOptions.label], // Array with single item
             return_date: formattedReturnDate,
             status: data.status || "Borrowed",
             _token: csrf,
         };
-    
+
         try {
             if (isEditMode && !data.id) {
                 throw new Error("Missing ID for update operation");
             }
-    
+
             const endpoint = isEditMode ? `/borrow/${data.id}` : "/borrow";
             const method = isEditMode ? "put" : "post";
-    
+
             const response = await axios[method](endpoint, formData, {
                 headers: {
                     "Content-Type": "application/json",
@@ -263,10 +269,10 @@ export default function ItemBorrow() {
                     "X-CSRF-TOKEN": csrf,
                 },
             });
-    
+
             if (response.data.success) {
                 reset();
-                setSelectedOptions(null);  // Changed to null instead of empty array
+                setSelectedOptions(null);
                 setIsDrawerOpen(false);
                 setSuccessMessage(
                     isEditMode
@@ -274,21 +280,14 @@ export default function ItemBorrow() {
                         : "Item successfully borrowed!"
                 );
                 setIsSuccessDialogOpen(true);
-                
-                // Fetch items again to ensure proper sorting
                 await fetchBorrowedItems();
             } else {
                 throw new Error(response.data.message || "Failed to save");
             }
         } catch (error) {
-            console.error("Full error:", error);
+            console.error("Error:", error);
             if (error.response) {
-                console.error("Server response:", error.response.data);
-                alert(
-                    `Server error: ${error.response.data.message ||
-                    JSON.stringify(error.response.data)
-                    }`
-                );
+                alert(`Error: ${error.response.data.message || error.response.statusText}`);
             } else {
                 alert(`Error: ${error.message}`);
             }
@@ -343,23 +342,23 @@ export default function ItemBorrow() {
 
     const handleConfirmDelete = async () => {
         if (!deleteTarget || deleteTarget.length === 0) return;
-    
+
         try {
             const response = await axios.post(route('borrows.bulkDestroy'), {
                 ids: deleteTarget
             });
-    
+
             if (response.data.success) {
                 // Update all related states
-                setBorrowedItems(prevItems => 
+                setBorrowedItems(prevItems =>
                     prevItems.filter(item => !deleteTarget.includes(item.id))
                 );
-                setSelectedBorrowedItems(prev => 
+                setSelectedBorrowedItems(prev =>
                     prev.filter(id => !deleteTarget.includes(id))
                 );
                 setDeleteTarget(null);
                 setIsConfirmDialogOpen(false);
-    
+
                 setSuccessMessage(
                     deleteTarget.length === 1
                         ? "Borrowed item successfully deleted!"
@@ -372,7 +371,7 @@ export default function ItemBorrow() {
         } catch (error) {
             console.error("Error deleting items:", error);
             setSuccessMessage(
-                error.response?.data?.message || 
+                error.response?.data?.message ||
                 "Failed to delete items. Please try again."
             );
             setIsSuccessDialogOpen(true);
@@ -408,16 +407,12 @@ export default function ItemBorrow() {
         return isValid(date) ? format(date, 'MM/dd/yyyy hh:mm:ss a') : 'N/A';
     };
 
-    
-
     const rows = paginatedBorrowedItems.map((item, index) => {
         const itemNames = Array.isArray(item.item_names)
             ? item.item_names
             : typeof item.item_names === 'string'
                 ? JSON.parse(item.item_names)
                 : [];
-
-  
 
         const displayRow = {
             id: item.id,
@@ -433,11 +428,11 @@ export default function ItemBorrow() {
             date_return: formatDate(item.return_date),
             status: item.status,
             created_at: item.created_at
-            ? formatDate(item.created_at)
-            : "N/A",
-        updated_at: item.updated_at
-            ? formatDate(item.updated_at)
-            : "N/A",
+                ? formatDate(item.created_at)
+                : "N/A",
+            updated_at: item.updated_at
+                ? formatDate(item.updated_at)
+                : "N/A",
         };
 
         Object.defineProperty(displayRow, "_raw", {
@@ -453,7 +448,7 @@ export default function ItemBorrow() {
         });
 
         return displayRow;
-    })
+    });
 
     const statusOptions = [
         { value: "Borrowed", label: "Borrowed" },
@@ -518,26 +513,26 @@ export default function ItemBorrow() {
                             className="dark:text-white border border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                         <select
+                        <select
                             className="border border-black/20 dark:border-white py-1 rounded-sm text-md text-gray-600 dark:text-gray-300 bg-transparent cursor-pointer"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                         >
-                             <option
-                                        className="text-md dark:bg-gray-800 "
-                                        value="All"
-                                    >
-                                        All Status
-                                    </option>
-                          {statusOptions.map((option, index) => (
-                                        <option
-                                            key={index}
-                                            value={option.value}
-                                            className="dark:bg-gray-800 dark:text-gray-300"
-                                        >
-                                            {option.label}
-                                        </option>
-                                    ))}
+                            <option
+                                className="text-md dark:bg-gray-800 "
+                                value="All"
+                            >
+                                All Status
+                            </option>
+                            {statusOptions.map((option, index) => (
+                                <option
+                                    key={index}
+                                    value={option.value}
+                                    className="dark:bg-gray-800 dark:text-gray-300"
+                                >
+                                    {option.label}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
@@ -545,8 +540,8 @@ export default function ItemBorrow() {
                         <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
                             <DeleteIcon
                                 className={`text-gray-600 dark:text-gray-300 cursor-pointer ${selectedBorrowedItems.length === 0
-                                        ? "opacity-50 pointer-events-none"
-                                        : ""
+                                    ? "opacity-50 pointer-events-none"
+                                    : ""
                                     }`}
                                 onClick={() => {
                                     if (selectedBorrowedItems.length > 0) {
@@ -611,41 +606,39 @@ export default function ItemBorrow() {
                     <div className="mt-4">
                         <InputLabel htmlFor="Item" value="Item" />
                         <div className="relative">
-                        <Select
-    id="Item"
-    className="mt-2"
-    placeholder="Search items..."
-    noOptionsMessage={() => "No items found"}
-    isClearable
-    isSearchable
-    value={selectedOptions}
-    onChange={(option) => {
-        setSelectedOptions(option);
-        setData({
-            ...data,
-            item_ids: option ? [option.value] : [],
-            item_names: option ? [option.label] : [],
-        });
-    }}
-    onInputChange={(newValue) => {
-        if (newValue) {
-            handleInputChange(newValue);
-        }
-    }}
-    options={options}
-    classNames={{
-        control: ({ isFocused }) =>
-            isFocused
-                ? "custom-select-container custom-select-container--focused"
-                : "custom-select-container",
-        valueContainer: () => "custom-select-value py-1 pl-2 min-h-[40px]",
-        singleValue: () => "custom-select-value",
-        menu: () => "custom-select-menu",
-        option: () => "custom-select-option",
-        placeholder: () => "custom-select-placeholder",
-        input: () => "custom-select-input",
-    }}
-/>
+                            <Select
+                                id="Item"
+                                className="mt-2"
+                                placeholder="Search items..."
+                                noOptionsMessage={() => "No items found"}
+                                isClearable
+                                isSearchable
+                                isMulti={false}
+                                value={selectedOptions}
+                                onChange={(option) => {
+                                    setSelectedOptions(option);
+                                    setData({
+                                        ...data,
+                                        item_ids: option ? [option.value] : [],
+                                        item_names: option ? [option.label] : [],
+                                    });
+                                }}
+                                onInputChange={debouncedInputChange}
+                                options={options}
+                                filterOption={null}
+                                classNames={{
+                                    control: ({ isFocused }) =>
+                                        isFocused
+                                            ? "custom-select-container custom-select-container--focused"
+                                            : "custom-select-container",
+                                    valueContainer: () => "custom-select-value py-1 pl-2 min-h-[40px]",
+                                    singleValue: () => "custom-select-value",
+                                    menu: () => "custom-select-menu",
+                                    option: () => "custom-select-option",
+                                    placeholder: () => "custom-select-placeholder",
+                                    input: () => "custom-select-input",
+                                }}
+                            />
                         </div>
                         <InputError message={errors.item_id} className="mt-2" />
                     </div>
