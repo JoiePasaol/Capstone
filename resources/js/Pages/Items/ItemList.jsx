@@ -782,6 +782,7 @@ export default function ItemList() {
             ),
             key: "select-all",
         },
+        { label: "#", key: "index" },
         { label: "Image", key: "image" },
         { label: "Category", key: "categories" },
         { label: "Item", key: "items" },

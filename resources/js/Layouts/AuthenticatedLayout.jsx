@@ -8,7 +8,6 @@ import {
     ChevronDown,
     LogOut,
     ArrowLeftRight,
-    FileSignature
 } from "lucide-react";
 import SimpleLightDarkToggle from "@/Components/SimpleLightDarkToggle";
 import { Link, usePage } from "@inertiajs/react";
@@ -44,8 +43,10 @@ export default function AuthenticatedLayout({ header, children }) {
     }, [url]);
 
     useEffect(() => {
-        if (isActive(["item-list", "item-report", "item-borrow", "signatory"])) {
+        if (isActive(["item-list", "item-report", "item-borrow"])) {
             setActiveDropdown("items");
+        } else if (isActive(["transferred-items", "signatory"])) {
+            setActiveDropdown("transfer");
         }
     }, [url]);
 
@@ -78,58 +79,6 @@ export default function AuthenticatedLayout({ header, children }) {
                         </span>
                     </Link>
 
-                    {/* Users Dropdown */}
-                    {checkRole(user, ["Super Admin", "Admin"]) && (
-                        <div>
-                            <button
-                                onClick={() => toggleDropdown("users")}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                    isActive(["user-status", "user-management"]) || activeDropdown === "users"
-                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                        : ""
-                                }`}
-                            >
-                                <div className="flex items-center">
-                                    <Users className="w-5 h-5 min-w-[20px]" />
-                                    <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
-                                        Users
-                                    </span>
-                                </div>
-                                {isSidebarOpen && (
-                                    <ChevronDown
-                                        className={`w-4 h-4 transition-transform ${
-                                            activeDropdown === "users" ? "rotate-180" : ""
-                                        }`}
-                                    />
-                                )}
-                            </button>
-
-                            {activeDropdown === "users" && isSidebarOpen && (
-                                <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
-                                    <Link
-                                        href={route("user-status")}
-                                        className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                            isActive("user-status")
-                                                ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                : ""
-                                        } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                    >
-                                        User Pending
-                                    </Link>
-                                    <Link
-                                        href={route("user-management")}
-                                        className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                            isActive("user-management")
-                                                ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                : ""
-                                        } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                    >
-                                        User Management
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                     {/* Categories */}
                     <Link
@@ -156,7 +105,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         }`}
                     >
                         <Truck className="w-5 h-5 min-w-[20px]" />
-                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
+                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>@
                             Suppliers
                         </span>
                     </Link>
@@ -167,7 +116,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             <button
                                 onClick={() => toggleDropdown("items")}
                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                    isActive(["item-list", "item-report", "item-borrow", "transferred-items", "signatory"]) || activeDropdown === "items"
+                                    isActive(["item-list", "item-report", "item-borrow"]) || activeDropdown === "items"
                                         ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
                                         : ""
                                 }`}
@@ -212,26 +161,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             >
                                                 Item Borrow
                                             </Link>
-                                            <Link
-                                                href={route("transferred-items")}
-                                                className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                                    isActive("transferred-items")
-                                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                        : ""
-                                                } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                            >
-                                                Transferred Items
-                                            </Link>
-                                            <Link
-                                                href={route("signatory")}
-                                                className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                                    isActive("signatory")
-                                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                        : ""
-                                                } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                            >
-                                                Signatory
-                                            </Link>
+                                           
                                             <Link
                                                 href={route("item-report")}
                                                 className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
@@ -248,6 +178,57 @@ export default function AuthenticatedLayout({ header, children }) {
                             )}
                         </div>
                     )}
+
+                    {/* Transfer Dropdown */}
+                    <div>
+                        <button
+                            onClick={() => toggleDropdown("transfer")}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                isActive(["transferred-items", "signatory"]) || activeDropdown === "transfer"
+                                    ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                    : ""
+                            }`}
+                        >
+                            <div className="flex items-center">
+                                <ArrowLeftRight className="w-5 h-5 min-w-[20px]" />
+                                <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
+                                    Transfer
+                                </span>
+                            </div>
+                            {isSidebarOpen && (
+                                <ChevronDown
+                                    className={`w-4 h-4 transition-transform ${
+                                        activeDropdown === "transfer" ? "rotate-180" : ""
+                                    }`}
+                                />
+                            )}
+                        </button>
+
+                        {activeDropdown === "transfer" && isSidebarOpen && (
+                            <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
+                                <Link
+                                    href={route("transferred-items")}
+                                    className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                        isActive("transferred-items")
+                                            ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                            : ""
+                                    } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                                >
+                                    Transferred Items
+                                </Link>
+                                <Link
+                                    href={route("signatory")}
+                                    className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                        isActive("signatory")
+                                            ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                            : ""
+                                    } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                                >
+                                    Signatory
+                                </Link>
+                            </div>
+                        )}
+                    </div>
                 </nav>
 
                 {/* Footer - Profile and Logout */}

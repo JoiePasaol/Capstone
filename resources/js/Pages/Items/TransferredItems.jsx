@@ -101,31 +101,26 @@ export default function TransferredItems({ items = [] }) {
         return (
             <div className="flex flex-col gap-1">
                 <div className="flex gap-2">
-                    <span className={`text-xs p-1 rounded ${
-                        approvalStatus?.recommended?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
-                    }`}>
+                    <span className={`text-xs p-1 rounded ${approvalStatus?.recommended?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
+                        }`}>
                         Rec: {approvalStatus?.recommended?.approved ? '✓' : 'Pending'}
                     </span>
-                    <span className={`text-xs p-1 rounded ${
-                        approvalStatus?.approved?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
-                    }`}>
+                    <span className={`text-xs p-1 rounded ${approvalStatus?.approved?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
+                        }`}>
                         App: {approvalStatus?.approved?.approved ? '✓' : 'Pending'}
                     </span>
                 </div>
                 <div className="flex gap-2">
-                    <span className={`text-xs p-1 rounded ${
-                        approvalStatus?.witnessed?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
-                    }`}>
+                    <span className={`text-xs p-1 rounded ${approvalStatus?.witnessed?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
+                        }`}>
                         Wit: {approvalStatus?.witnessed?.approved ? '✓' : 'Pending'}
                     </span>
-                    <span className={`text-xs p-1 rounded ${
-                        approvalStatus?.name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
-                    }`}>
+                    <span className={`text-xs p-1 rounded ${approvalStatus?.name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
+                        }`}>
                         Name: {approvalStatus?.name_designation?.approved ? '✓' : 'Pending'}
                     </span>
-                    <span className={`text-xs p-1 rounded ${
-                        approvalStatus?.office_name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
-                    }`}>
+                    <span className={`text-xs p-1 rounded ${approvalStatus?.office_name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
+                        }`}>
                         Office: {approvalStatus?.office_name_designation?.approved ? '✓' : 'Pending'}
                     </span>
                 </div>
@@ -334,21 +329,7 @@ export default function TransferredItems({ items = [] }) {
                         </button>
                     </div>
 
-                    {selectedItems.length > 0 && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4 flex items-center justify-between">
-                            <span className="text-sm text-blue-800 dark:text-blue-200">
-                                {selectedItems.length} item(s) selected
-                            </span>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleBulkDelete}
-                                    className="px-3 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-900/40"
-                                >
-                                    Delete Selected
-                                </button>
-                            </div>
-                        </div>
-                    )}
+
 
                     <div className="bg-white dark:bg-gray-800/40 ring-1 ring-black/10 rounded-lg shadow-sm">
                         <div className="p-4">
