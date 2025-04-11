@@ -59,7 +59,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 }`}
             >
                 {/* Logo */}
-                <div className="flex items-center justify-center h-16 px-4 border-b dark:border-gray-700 text-4xl font-bold text-stroke">
+                <div className="flex items-center justify-center h-16 px-4 border-b dark:border-gray-700 text-5xl font-bold text-stroke">
                     LGU
                 </div>
 
@@ -105,7 +105,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         }`}
                     >
                         <Truck className="w-5 h-5 min-w-[20px]" />
-                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>@
+                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
                             Suppliers
                         </span>
                     </Link>

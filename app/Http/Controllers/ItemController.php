@@ -477,53 +477,13 @@ public function import(Request $request)
     }
 }
 
-
-
-public function getTotalItemsCount(Request $request)
+public function getTotalItems()
 {
-    try {
-        $user = $request->user();
+    $totalItems = Item::count();
 
-        // If the user is a Super Admin, count all items
-        if ($user->role === 'Super Admin') {
-            $count = Item::count();
-        } else {
-            // Otherwise, apply filters based on user role
-            $query = Item::query();
-
-            if ($user->role === 'Basic') {
-                $query->where('user_id', $user->id);
-            } elseif ($user->role === 'Admin') {
-                $query->where('department', $user->department);
-            }
-
-            $count = $query->count();
-        }
-
-        return response()->json(['total_items' => $count], 200);
-    } catch (\Exception $e) {
-        \Log::error("Error fetching total items count: {$e->getMessage()}");
-        return response()->json(['error' => 'Server error'], 500);
-    }
+    return response()->json([
+        'totalItems' => $totalItems,
+    ]);
 }
-
-
-
-
-
-
-
-//     public function getTotalAmount()
-// {
-//     try {
-//         $totalAmount = Item::sum(\DB::raw('quantity * price'));
-//         return response()->json(['total_amount' => $totalAmount], 200);
-//     } catch (\Exception $e) {
-//         \Log::error("Error fetching total amount: {$e->getMessage()}");
-//         return response()->json(['error' => 'Server error'], 500);
-//     }
-// }
-
-
 
 }

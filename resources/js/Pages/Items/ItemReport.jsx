@@ -60,7 +60,8 @@ export default function ItemReport() {
             }
 
             try {
-                const response = await axios.get("/items-report", { params });
+               
+                const response = await axios.get(route('items.report'), { params });
                 
                 // Sort items by created_at in descending order
                 const sortedData = response.data.sort((a, b) => 
@@ -245,7 +246,7 @@ export default function ItemReport() {
                             <div className="relative">
                                 <select
                                     onClick={() => setShowPicker(!showPicker)}
-                                    className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-60"
+                                    className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer w-65"
                                 >
                                     <option hidden value="">
                                         {startDate && endDate

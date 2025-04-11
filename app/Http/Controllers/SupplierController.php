@@ -83,16 +83,12 @@ class SupplierController extends Controller
             return response()->json(['message' => count($ids) . ' suppliers deleted successfully.']);
         }
 
-        
-        public function getTotalSuppliersCount()
-    {
-        try {
-            $count = Supplier::count();
-            return response()->json(['total_suppliers' => $count], 200);
-        } catch (\Exception $e) {
-            \Log::error("Error fetching total suppliers count: {$e->getMessage()}");
-            return response()->json(['error' => 'Server error'], 500);
+        public function getTotalSuppliers()
+        {
+            $totalSuppliers = Supplier::count();
+            return response()->json(['total_suppliers' => $totalSuppliers]);
         }
-    }
+
+        
 
 }

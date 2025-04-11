@@ -134,7 +134,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         Route::post('/categories/bulkDestroy', [CategoryController::class, 'bulkDestroy'])->name('categories.bulkDestroy');
-        Route::get('/api/categories/total-count', [CategoryController::class, 'getTotalCategoriesCount']);
+        Route::get('/categories/total', [CategoryController::class, 'getTotalCategoriesCount']);
+
+
 
         // Signatory Routes
         Route::get('/signatories', [SignatoryController::class, 'index'])->name('signatories.index');
@@ -151,52 +153,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
         Route::put('items/{id}', [ItemController::class, 'update'])->name('items.update');
         Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
-
-        Route::get('/items-report', function (Request $request) {
-            $startDate = $request->query('start_date');
-            $endDate = $request->query('end_date');
-            $department = $request->query('department');
-
-            $query = Item::query();
-
+        Route::get('/items-report', [ItemController::class, 'report'])->name('items.report');
+        Route::get('/items/total', [ItemController::class, 'getTotalItems']);
     
 
-    Route::get('/borrows', [BorrowController::class, 'index']);
-    Route::get('/search-items', [BorrowController::class, 'searchItems']);
-    Route::post('/borrow', [BorrowController::class, 'store']);
-    Route::put('/borrow/{id}', [BorrowController::class, 'update']);
-    Route::delete('/borrow/{id}', [BorrowController::class, 'destroy'])->name('borrows.destroy');
-    Route::post('/borrow/bulk-destroy', [BorrowController::class, 'bulkDestroy'])->name('borrows.bulkDestroy');
-    Route::get('/api/borrowed-items/total-count', [BorrowController::class, 'countBorrowed']);
-    Route::get('/api/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue']);
+        Route::get('/borrows', [BorrowController::class, 'index']);
+        Route::get('/search-items', [BorrowController::class, 'searchItems']);
+        Route::post('/borrow', [BorrowController::class, 'store']);
+        Route::put('/borrow/{id}', [BorrowController::class, 'update']);
+        Route::delete('/borrow/{id}', [BorrowController::class, 'destroy'])->name('borrows.destroy');
+        Route::post('/borrow/bulk-destroy', [BorrowController::class, 'bulkDestroy'])->name('borrows.bulkDestroy');
+        Route::get('/api/borrowed-items/total-count', [BorrowController::class, 'countBorrowed']);
+        Route::get('/api/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue']);
 
-
-
-            if ($department) {
-                $query->where('department', $department);
-            }
-
-            return $query->select(
-                'items as item',
-                'description',
-                'estimated_life',
-                'quantity',
-                'price as amount',
-                'department',
-                'created_at'
-            )->get();
-        });
-
-        Route::get('/api/items/total-count', [ItemController::class, 'getTotalItemsCount']);
 
         // Supplier Routes
+        Route::get('/borrows', [BorrowController::class, 'index']); 
         Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
         Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
         Route::get('/suppliers/{id}', [SupplierController::class, 'edit'])->name('suppliers.edit');
         Route::put('/suppliers/{id}', [SupplierController::class, 'update'])->name('suppliers.update');
         Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
         Route::post('/suppliers/bulk-destroy', [SupplierController::class, 'bulkDestroy'])->name('suppliers.bulkDestroy');
-        Route::get('/api/suppliers/total-count', [SupplierController::class, 'getTotalSuppliersCount']);
+        Route::get('/suppliers/total', [SupplierController::class, 'getTotalSuppliersCount']);
+ 
+    
+
 
         Route::get('/search-items', [BorrowController::class, 'searchItems']);
         Route::post('/borrow', [BorrowController::class, 'store']);

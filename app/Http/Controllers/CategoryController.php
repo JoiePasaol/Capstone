@@ -91,17 +91,13 @@ class CategoryController extends Controller
             return response()->json(['error' => 'Server error'], 500);
         }
     }
-
     public function getTotalCategoriesCount()
-{
-    try {
-        $count = Category::count();
-        return response()->json(['total_categories' => $count], 200);
-    } catch (\Exception $e) {
-        \Log::error("Error fetching total categories count: {$e->getMessage()}");
-        return response()->json(['error' => 'Server error'], 500);
+    {
+        $totalCategories = Category::count();
+    
+        return response()->json([
+            'totalCategories' => $totalCategories,
+        ]);
     }
-}
-
     
 }
