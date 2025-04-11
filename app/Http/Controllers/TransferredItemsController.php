@@ -15,11 +15,13 @@ class TransferredItemsController extends Controller
 {
     public function index()
     {
-        $transferredItems = TransferredItems::with('originalItem')
-            ->orderBy('transferred_at', 'desc')
-            ->get()
-            ->map(function ($item) {
-                return [
+        $transferredItems = TransferredItems::with(['originalItem' => function($query) {
+            $query->select('id', 'remaining_quantity', 'property_no', 'classification_no');
+        }])
+        ->orderBy('transferred_at', 'desc')
+        ->get()
+        ->map(function ($item) {
+            return [
                     'id' => $item->id,
                     'original_item_id' => $item->original_item_id,
                     'quantity' => $item->quantity,
@@ -44,12 +46,12 @@ class TransferredItemsController extends Controller
                     'amount' => $item->amount,
                     'date_purchase' => $item->date_purchase?->format('Y-m-d'),
                     'transferred_at' => $item->transferred_at->format('Y-m-d H:i:s'),
-                    'original_item' => $item->originalItem ? [
-                        'id' => $item->originalItem->id,
-                        'quantity' => $item->originalItem->quantity,
-                        'property_no' => $item->originalItem->property_no,
-                        'classification_no' => $item->originalItem->classification_no,
-                    ] : null,
+'original_item' => $item->originalItem ? [
+                'id' => $item->originalItem->id,
+                'remaining_quantity' => $item->originalItem->remaining_quantity, // Add this
+                'property_no' => $item->originalItem->property_no,
+                'classification_no' => $item->originalItem->classification_no,
+            ] : null,
                 ];
             });
 

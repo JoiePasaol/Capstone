@@ -46,6 +46,7 @@ class ItemController extends Controller
             'description' => 'required|string',
             'estimated_life' => 'required|string',
             'quantity' => 'required|integer',
+            'remaining_quantity' => 'required|integer',
             'price' => 'required|numeric|min:0',
             'suppliers' => 'required|string', // Changed from 'supplier'
             'ics' => 'nullable|string',
@@ -90,6 +91,7 @@ class ItemController extends Controller
             'description' => $request->description,
             'estimated_life' => $request->estimated_life,
             'quantity' => $request->quantity,
+            'remaining_quantity' => $request->quantity,
             'price' => $request->price,
             'suppliers' => $request->suppliers,
             'ics' => $request->ics,
@@ -135,14 +137,15 @@ class ItemController extends Controller
 
             $originalItem = Item::findOrFail($validated['item_id']);
 
-            if ($validated['quantity_transferred'] > $originalItem->quantity) {
+            // Check against remaining_quantity instead of quantity
+            if ($validated['quantity_transferred'] > $originalItem->remaining_quantity) {
                 return response()->json([
-                    'message' => 'Cannot transfer more than available quantity'
+                    'message' => 'Cannot transfer more than available remaining quantity'
                 ], 422);
             }
 
-            // Update original item quantity
-            $originalItem->decrement('quantity', $validated['quantity_transferred']);
+            // Update remaining quantity instead of quantity
+            $originalItem->decrement('remaining_quantity', $validated['quantity_transferred']);
 
             // Create transferred item record
             $transferredItem = TransferredItems::create([
@@ -314,7 +317,10 @@ public function update(Request $request, $id)
     ]);
 
     $item = Item::findOrFail($id);
-
+    if (isset($validatedData['quantity'])) {
+        $quantityChange = $validatedData['quantity'] - $item->quantity;
+        $item->remaining_quantity += $quantityChange;
+    }
     if ($request->hasFile('image')) {
         if ($item->image && \Storage::disk('public')->exists($item->image)) {
             \Storage::disk('public')->delete($item->image);
@@ -506,24 +512,4 @@ public function getTotalItemsCount(Request $request)
         return response()->json(['error' => 'Server error'], 500);
     }
 }
-
-
-
-
-
-
-
-//     public function getTotalAmount()
-// {
-//     try {
-//         $totalAmount = Item::sum(\DB::raw('quantity * price'));
-//         return response()->json(['total_amount' => $totalAmount], 200);
-//     } catch (\Exception $e) {
-//         \Log::error("Error fetching total amount: {$e->getMessage()}");
-//         return response()->json(['error' => 'Server error'], 500);
-//     }
-// }
-
-
-
 }

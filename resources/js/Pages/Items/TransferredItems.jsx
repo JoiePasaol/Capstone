@@ -103,25 +103,25 @@ export default function TransferredItems({ items = [] }) {
                 <div className="flex gap-2">
                     <span className={`text-xs p-1 rounded ${approvalStatus?.recommended?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
                         }`}>
-                        Rec: {approvalStatus?.recommended?.approved ? '✓' : 'Pending'}
+                        GSO: {approvalStatus?.recommended?.approved ? '✓' : 'Pending'}
                     </span>
                     <span className={`text-xs p-1 rounded ${approvalStatus?.approved?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
                         }`}>
-                        App: {approvalStatus?.approved?.approved ? '✓' : 'Pending'}
+                        Mayor: {approvalStatus?.approved?.approved ? '✓' : 'Pending'}
                     </span>
                 </div>
                 <div className="flex gap-2">
                     <span className={`text-xs p-1 rounded ${approvalStatus?.witnessed?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
                         }`}>
-                        Wit: {approvalStatus?.witnessed?.approved ? '✓' : 'Pending'}
+                        Witness: {approvalStatus?.witnessed?.approved ? '✓' : 'Pending'}
                     </span>
                     <span className={`text-xs p-1 rounded ${approvalStatus?.name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
                         }`}>
-                        Name: {approvalStatus?.name_designation?.approved ? '✓' : 'Pending'}
+                        Office Head: {approvalStatus?.name_designation?.approved ? '✓' : 'Pending'}
                     </span>
                     <span className={`text-xs p-1 rounded ${approvalStatus?.office_name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'
                         }`}>
-                        Office: {approvalStatus?.office_name_designation?.approved ? '✓' : 'Pending'}
+                        Office Head: {approvalStatus?.office_name_designation?.approved ? '✓' : 'Pending'}
                     </span>
                 </div>
             </div>
@@ -279,7 +279,10 @@ export default function TransferredItems({ items = [] }) {
         designated_office: <span className="dark:text-white">{item.designated_office}</span>,
         office_name_designation: <span className="dark:text-white">{item.office_name_designation}</span>,
         quantity: <span className="dark:text-white">{item.quantity}</span>,
-        remaining_quantity: <span className="dark:text-white">{item.original_item?.quantity ?? 'N/A'}</span>,
+        // Change this line in the rows mapping
+remaining_quantity: <span className="dark:text-white">
+{item.original_item?.remaining_quantity ?? 'N/A'}
+</span>,
         property_no: <span className="dark:text-white">{item.property_no}</span>,
         classification_no: <span className="dark:text-white">{item.classification_no}</span>,
         amount: <span className="dark:text-white">₱ {item.amount.toLocaleString()}</span>,

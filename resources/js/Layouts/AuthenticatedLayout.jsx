@@ -105,7 +105,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         }`}
                     >
                         <Truck className="w-5 h-5 min-w-[20px]" />
-                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>@
+                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
                             Suppliers
                         </span>
                     </Link>
@@ -161,7 +161,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             >
                                                 Item Borrow
                                             </Link>
-                                           
+
                                             <Link
                                                 href={route("item-report")}
                                                 className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${

@@ -22,6 +22,7 @@ export default function Dashboard({ successMessage }) {
     const [totalSuppliers, setTotalSuppliers] = useState(0);
     const [totalBorrowed, setTotalBorrowed] = useState(0);
     const [totalOverdue, setTotalOverdue] = useState(0);
+    const [totalTransferred, setTotalTransferred] = useState(0);
     const { user } = usePage().props.auth;
 
     useEffect(() => {
@@ -45,6 +46,7 @@ export default function Dashboard({ successMessage }) {
                     axios.get("/api/suppliers/total-count"),
                     axios.get("/api/borrowed-items/total-count"),
                     axios.get("/api/borrowed-items/total-overdue"),
+                    axios.get("/api/transferred-items/total-transferred"),
                 ]);
 
                 // setPendingUsers(pendingResponse.data.pending_users);
@@ -164,6 +166,18 @@ export default function Dashboard({ successMessage }) {
                         }
                         bgColor="bg-red-500"
                         link={route("item-borrow")}
+                    />
+                                        <DashboardCard
+                        title="Total Transferred Item"
+                        value={totalTransferred}
+                        icon={
+                            <InventoryIcon
+                            className="absolute right-[-40px] bottom-[-40px]"
+                            style={{ fontSize: "205px" }}
+                        />
+                        }
+                        bgColor="bg-yellow-500"
+                        link={route("transferred-items")}
                     />
                 </>
                 {/* )} */}

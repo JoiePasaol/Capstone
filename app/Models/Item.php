@@ -21,6 +21,7 @@ class Item extends Model
         'quantity',
         'price',
         'suppliers',
+        'remaining_quantity',
         'ics',
         'pr',
         'pr_date',
