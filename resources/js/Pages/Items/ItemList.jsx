@@ -444,13 +444,6 @@ export default function ItemList() {
             ),
             key: "select-all",
         },
-        { label: "#", key: "index" },
-        ...(!basicUser
-            ? [
-                  { label: "Name", key: "name" },
-                  { label: "Department", key: "department" },
-              ]
-            : []),
         { label: "Image", key: "image" },
         { label: "Category", key: "categories" },
         { label: "Item", key: "items" },
@@ -489,8 +482,6 @@ export default function ItemList() {
                 />
             ),
             index: index + 1 + (currentPage - 1) * itemsPerPage,
-            name: item.name,
-            department: item.department ?? "N/A",
             image: item.image ? item.image.split("/").pop() : "N/A",
             categories: item.categories ?? "N/A",
             items: item.items ?? "N/A",

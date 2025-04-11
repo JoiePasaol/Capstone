@@ -332,8 +332,6 @@ export default function ItemBorrow() {
         }
     };
     
-    
-
     const totalPages = Math.ceil(filteredBorrowedItems.length / itemsPerPage);
     const paginatedBorrowedItems = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
