@@ -65,7 +65,7 @@ class BorrowController extends Controller
             'item_names.*' => 'string|max:255',
             'return_date' => 'required|date',
             'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
-            'quantity' => 'required|integer|min:1',  // Add validation for quantity
+            'quantity' => 'required|integer|min:1',  
         ]);
     
         try {

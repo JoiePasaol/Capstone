@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Head, useForm, usePage } from "@inertiajs/react";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -278,13 +278,16 @@ export default function ItemBorrow() {
     
         const formattedReturnDate = returnDate ? format(returnDate, "MM/dd/yyyy") : "";
     
+        // Ensure that quantity has a valid value, defaulting to 1 if not set
+        const quantity = selectedQuantity || 1;
+    
         const formData = {
             name: data.name,
             item_ids: selectedOptions ? [selectedOptions.value] : [],
             item_names: selectedOptions ? [selectedOptions.label] : [],
             return_date: formattedReturnDate,
             status: data.status || "Borrowed",
-            quantity: selectedQuantity, // Add the quantity to the form data
+            quantity: quantity,  // Ensure quantity is set
             _token: csrf,
         };
     
@@ -328,6 +331,7 @@ export default function ItemBorrow() {
             setProcessing(false);
         }
     };
+    
     
 
     const totalPages = Math.ceil(filteredBorrowedItems.length / itemsPerPage);
@@ -438,6 +442,12 @@ export default function ItemBorrow() {
         { label: "Updated_at", key: "updated_at" },
     ];
 
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = parseISO(dateString);
+        return isValid(date) ? format(date, 'MM/dd/yyyy hh:mm:ss a') : 'N/A';
+    };
+
     const rows = paginatedBorrowedItems.map((item, index) => {
         console.log("Item data:", item);  // Log the item to check its data structure
     
@@ -447,12 +457,7 @@ export default function ItemBorrow() {
             ? JSON.parse(item.item_names)
             : [];
     
-        const formatDate = (dateString) => {
-            if (!dateString) return "";
-            const date = new Date(dateString);
-            return isNaN(date.getTime()) ? dateString : format(date, "MM/dd/yyyy");
-        };
-    
+       
         // Check if quantity is correctly set
         const quantity = item.quantity != null && item.quantity !== undefined ? item.quantity : 'N/A';
         console.log("Quantity:", quantity); // Log quantity for each item
@@ -471,15 +476,19 @@ export default function ItemBorrow() {
             quantity: quantity,  // Use the valid quantity
             date_return: formatDate(item.return_date),
             status: item.status,
-            created_at: formatDate(item.created_at),
-            updated_at: formatDate(item.updated_at),
+            created_at: item.created_at
+                ? formatDate(item.created_at)
+                : "N/A",
+            updated_at: item.updated_at
+                ? formatDate(item.updated_at)
+                : "N/A",
         };
     
         Object.defineProperty(displayRow, "_raw", {
             value: {
                 id: item.id,
                 item_names: itemNames,
-                quantity: item.quantity,  // Ensure this is properly stored and accessed
+                quantity: item.quantity,  
                 item_ids: Array.isArray(item.item_ids) ? item.item_ids : JSON.parse(item.item_ids),
                 return_date: item.return_date,
             },
