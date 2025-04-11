@@ -36,7 +36,9 @@ export default function ItemList() {
     const { auth } = usePage().props;
     const currentUser = auth.user;
     const basicUser = currentUser?.role === "Basic";
-   
+
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [transferItemId, setTransferItemId] = useState(null);
 
     //Drawer Management
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -57,6 +59,7 @@ export default function ItemList() {
         estimated_life: "",
         quantity: "",
         price: "",
+        suppliers: "", // Changed from 'supplier'
         ics: "",
         pr: "",
         pr_date: "",
@@ -68,8 +71,10 @@ export default function ItemList() {
         ch_date: "",
         or: "",
         or_date: "",
+        date_purchase: "",
+        property_no: "",
+        classification_no: "",
     });
-
     //Item Management
     const [processing, setProcessing] = useState(false);
     const [categories, setCategories] = useState([]);
@@ -101,7 +106,335 @@ export default function ItemList() {
     };
 
     //Import Logic
+    const TransferDrawer = () => {
+        const [transferData, setTransferData] = useState({
+            transferTo: "",
+            nameDesignation: "",
+            positionIntended: "",
+            designatedOffice: "",
+            officeNameDesignation: "",
+            officePositionIntended: "",
+            quantityToTransfer: 1,
+            recommendedByName: "",
+            recommendedByTitle: "",
+            approvedByName: "",
+            approvedByTitle: "",
+            witnessedByName: "",
+            witnessedByTitle: ""
+        });
 
+        const [signatories, setSignatories] = useState([]);
+        const [maxQuantity, setMaxQuantity] = useState(1);
+
+        useEffect(() => {
+            const fetchSignatories = async () => {
+                try {
+                    const response = await axios.get(route('signatories.index'));
+                    setSignatories(response.data);
+                } catch (error) {
+                    console.error("Failed to fetch signatories:", error);
+                }
+            };
+
+            fetchSignatories();
+
+            if (transferItemId) {
+                const item = items.find(item => item.id === transferItemId);
+                if (item) {
+                    setMaxQuantity(item.quantity);
+                    setTransferData(prev => ({
+                        ...prev,
+                        quantityToTransfer: Math.min(prev.quantityToTransfer, item.quantity)
+                    }));
+                }
+            }
+        }, [transferItemId, items]);
+
+        const handleInputChange = (field, value) => {
+            setTransferData(prev => ({
+                ...prev,
+                [field]: value,
+                ...(field === 'nameDesignation' ? {
+                    positionIntended: signatories.find(s => s.name_designation === value)?.position_intended || ''
+                } : {}),
+                ...(field === 'officeNameDesignation' ? {
+                    officePositionIntended: signatories.find(s => s.name_designation === value)?.position_intended || ''
+                } : {}),
+                ...(field === 'recommendedByName' ? {
+                    recommendedByTitle: signatories.find(s => s.name_designation === value)?.position_intended || ''
+                } : {}),
+                ...(field === 'approvedByName' ? {
+                    approvedByTitle: signatories.find(s => s.name_designation === value)?.position_intended || ''
+                } : {}),
+                ...(field === 'witnessedByName' ? {
+                    witnessedByTitle: signatories.find(s => s.name_designation === value)?.position_intended || ''
+                } : {})
+            }));
+        };
+
+        const handleQuantityChange = (e) => {
+            const value = Math.min(Math.max(1, parseInt(e.target.value) || 1), maxQuantity);
+            setTransferData(prev => ({
+                ...prev,
+                quantityToTransfer: value
+            }));
+        };
+
+        const handleTransferSubmit = async (e) => {
+            e.preventDefault();
+
+            try {
+                setProcessing(true);
+                const response = await axios.post(route('items.transfer'), {
+                    item_id: transferItemId,
+                    quantity_transferred: transferData.quantityToTransfer,
+                    transferTo: transferData.transferTo,
+                    nameDesignation: transferData.nameDesignation,
+                    positionIntended: transferData.positionIntended,
+                    designatedOffice: transferData.designatedOffice,
+                    officeNameDesignation: transferData.officeNameDesignation,
+                    officePositionIntended: transferData.officePositionIntended,
+                    recommended_by_name: transferData.recommendedByName,
+                    recommended_by_title: transferData.recommendedByTitle,
+                    approved_by_name: transferData.approvedByName,
+                    approved_by_title: transferData.approvedByTitle,
+                    witnessed_by_name: transferData.witnessedByName,
+                    witnessed_by_title: transferData.witnessedByTitle
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                setSuccessMessage(response.data.message || "Item transferred successfully!");
+                setIsSuccessDialogOpen(true);
+                setIsTransferModalOpen(false);
+                fetchItems();
+            } catch (error) {
+                console.error("Transfer failed:", error);
+                let errorMessage = "Transfer failed. Please try again.";
+
+                if (error.response) {
+                    if (error.response.status === 422) {
+                        errorMessage = error.response.data.message || errorMessage;
+                    } else if (error.response.data && error.response.data.message) {
+                        errorMessage = error.response.data.message;
+                    }
+                }
+
+                setSuccessMessage(errorMessage);
+                setIsSuccessDialogOpen(true);
+            } finally {
+                setProcessing(false);
+            }
+        };
+
+        return (
+            <Drawer
+                isDrawerOpen={isTransferModalOpen}
+                toggleDrawer={() => setIsTransferModalOpen(false)}
+                title="Transfer Item"
+                width="550px"
+            >
+                <form onSubmit={handleTransferSubmit} className="space-y-4">
+                    {/* Quantity */}
+                    <div>
+                        <InputLabel value="Quantity to Transfer:" />
+                        <TextInput
+                            type="number"
+                            min="1"
+                            max={maxQuantity}
+                            value={transferData.quantityToTransfer}
+                            onChange={handleQuantityChange}
+                            className="mt-1 block w-full"
+                            required
+                        />
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Available: {maxQuantity}
+                        </div>
+                    </div>
+
+                    {/* Transfer To and Name/Designation */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel value="Transfer to:" />
+                            <TextInput
+                                className="mt-1 block w-full"
+                                value={transferData.transferTo}
+                                onChange={(e) => handleInputChange("transferTo", e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <InputLabel value="Name/Designation:" />
+                            <select
+                                className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-300"
+                                value={transferData.nameDesignation}
+                                onChange={(e) => handleInputChange("nameDesignation", e.target.value)}
+                                required
+                            >
+                                <option value="">Select Name/Designation</option>
+                                {signatories.map((signatory) => (
+                                    <option key={signatory.id} value={signatory.name_designation}>
+                                        {signatory.name_designation}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Position Intended */}
+                    <div>
+                        <InputLabel value="Position Intended:" />
+                        <TextInput
+                            className="mt-1 block w-full"
+                            value={transferData.positionIntended}
+                            readOnly
+                            required
+                        />
+                    </div>
+
+                    {/* Office Details */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel value="Designated Office:" />
+                            <TextInput
+                                className="mt-1 block w-full"
+                                value={transferData.designatedOffice}
+                                onChange={(e) => handleInputChange("designatedOffice", e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <InputLabel value="Office Name/Designation:" />
+                            <select
+                                className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-300"
+                                value={transferData.officeNameDesignation}
+                                onChange={(e) => handleInputChange("officeNameDesignation", e.target.value)}
+                                required
+                            >
+                                <option value="">Select Office Name/Designation</option>
+                                {signatories.map((signatory) => (
+                                    <option key={signatory.id} value={signatory.name_designation}>
+                                        {signatory.name_designation}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Office Position Intended */}
+                    <div>
+                        <InputLabel value="Office Position Intended:" />
+                        <TextInput
+                            className="mt-1 block w-full"
+                            value={transferData.officePositionIntended}
+                            readOnly
+                            required
+                        />
+                    </div>
+
+                    {/* Recommended By */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel value="Recommended By:" />
+                            <select
+                                className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-300"
+                                value={transferData.recommendedByName}
+                                onChange={(e) => handleInputChange("recommendedByName", e.target.value)}
+                                required
+                            >
+                                <option value="">Select Recommended By</option>
+                                {signatories.map((signatory) => (
+                                    <option key={signatory.id} value={signatory.name_designation}>
+                                        {signatory.name_designation}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <InputLabel value="Recommended By Title:" />
+                            <TextInput
+                                className="mt-1 block w-full"
+                                value={transferData.recommendedByTitle}
+                                readOnly
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Approved By */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel value="Approved By:" />
+                            <select
+                                className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-300"
+                                value={transferData.approvedByName}
+                                onChange={(e) => handleInputChange("approvedByName", e.target.value)}
+                                required
+                            >
+                                <option value="">Select Approved By</option>
+                                {signatories.map((signatory) => (
+                                    <option key={signatory.id} value={signatory.name_designation}>
+                                        {signatory.name_designation}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <InputLabel value="Approved By Title:" />
+                            <TextInput
+                                className="mt-1 block w-full"
+                                value={transferData.approvedByTitle}
+                                readOnly
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Witnessed By */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel value="Witnessed By:" />
+                            <select
+                                className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-300"
+                                value={transferData.witnessedByName}
+                                onChange={(e) => handleInputChange("witnessedByName", e.target.value)}
+                                required
+                            >
+                                <option value="">Select Witnessed By</option>
+                                {signatories.map((signatory) => (
+                                    <option key={signatory.id} value={signatory.name_designation}>
+                                        {signatory.name_designation}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <InputLabel value="Witnessed By Title:" />
+                            <TextInput
+                                className="mt-1 block w-full"
+                                value={transferData.witnessedByTitle}
+                                readOnly
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-6">
+                        <SecondaryButton
+                            type="submit"
+                            className="w-full h-10 rounded-sm"
+                            disabled={processing}
+                        >
+                            {processing ? "Transferring..." : "Transfer Item"}
+                        </SecondaryButton>
+                    </div>
+                </form>
+            </Drawer>
+        );
+    };
     const handleImport = async (data) => {
         console.log("Data being sent to backend:", data);
 
@@ -142,7 +475,7 @@ export default function ItemList() {
                     estimated_life: item.estimated_life || "",
                     quantity: item.quantity || "",
                     price: item.price || "",
-                    supplier: item.supplier || "",
+                    suppliers: item.suppliers || "", // Changed from 'supplier'
                     ics: item.ics || "",
                     pr: item.pr || "",
                     pr_date: item.pr_date || "",
@@ -154,6 +487,9 @@ export default function ItemList() {
                     ch_date: item.ch_date || "",
                     or: item.or || "",
                     or_date: item.or_date || "",
+                    date_purchase: item.date_purchase || "",
+                    property_no: item.property_no || "",
+                    classification_no: item.classification_no || "",
                     image: null,
                 });
 
@@ -169,17 +505,18 @@ export default function ItemList() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         setProcessing(true);
 
         const formData = new FormData();
+
+        // Append all fields
         formData.append("categories", data.categories || "");
         formData.append("description", data.description || "");
         formData.append("items", data.items || "");
         formData.append("estimated_life", data.estimated_life || "");
         formData.append("quantity", data.quantity || 0);
         formData.append("price", data.price || 0);
-        formData.append("supplier", data.supplier || "");
+        formData.append("suppliers", data.suppliers || ""); // Changed from 'supplier'
         formData.append("ics", data.ics || "");
         formData.append("pr", data.pr || "");
         formData.append("pr_date", data.pr_date || "");
@@ -191,53 +528,48 @@ export default function ItemList() {
         formData.append("ch_date", data.ch_date || "");
         formData.append("or", data.or || "");
         formData.append("or_date", data.or_date || "");
+        formData.append("property_no", data.property_no || "");
+        formData.append("classification_no", data.classification_no || "");
+        formData.append("date_purchase", data.date_purchase || "");
 
         if (data.image instanceof File) {
             formData.append("image", data.image);
         }
 
-        if (!data.id) {
-            post(route("items.store"), {
-                data: formData,
-                headers: { "Content-Type": "multipart/form-data" },
-                onSuccess: () => {
-                    toggleDrawer(false);
-                    reset();
-                    fetchItems();
-                    setSuccessMessage("Item successfully added!");
-                    setIsSuccessDialogOpen(true);
-                    setProcessing(false);
-                },
-                onError: () => {
-                    setProcessing(false);
-                },
-            });
-        } else {
-            formData.append("_method", "PUT");
-
-            axios
-                .post(route("items.update", { id: data.id }), formData, {
+        try {
+            if (!data.id) {
+                const response = await axios.post(route("items.store"), formData, {
                     headers: { "Content-Type": "multipart/form-data" },
-                })
-                .then((response) => {
-                    toggleDrawer(false);
-                    reset();
-                    setSelectedFileName("Select file");
-
-                    setItems((prevItems) =>
-                        prevItems.map((item) =>
-                            item.id === data.id ? response.data.item : item
-                        )
-                    );
-
-                    setSuccessMessage("Item successfully updated!");
-                    setIsSuccessDialogOpen(true);
-                    setProcessing(false);
-                })
-                .catch((error) => {
-                    console.error("Error updating item:", error);
-                    setProcessing(false);
                 });
+
+                // Handle success
+                toggleDrawer(false);
+                reset();
+                fetchItems();
+                setSuccessMessage("Item added successfully!");
+                setIsSuccessDialogOpen(true);
+            } else {
+                formData.append("_method", "PUT");
+                const response = await axios.post(route("items.update", { id: data.id }), formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+
+                // Handle success
+                toggleDrawer(false);
+                reset();
+                setSelectedFileName("Select file");
+                setItems(prevItems =>
+                    prevItems.map(item => item.id === data.id ? response.data.item : item)
+                );
+                setSuccessMessage("Item successfully updated!");
+                setIsSuccessDialogOpen(true);
+            }
+        } catch (error) {
+            console.error("Error saving item:", error);
+            setSuccessMessage(error.response?.data?.message || "Error saving item");
+            setIsSuccessDialogOpen(true);
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -256,8 +588,10 @@ export default function ItemList() {
     const fetchItems = async () => {
         try {
             const response = await axios.get(route("items.index"));
-            setItems(response.data.items);
-            setFilteredItems(response.data.items);
+            // Filter out items with quantity 0
+            const filtered = response.data.items.filter(item => item.quantity > 0);
+            setItems(filtered);
+            setFilteredItems(filtered);
         } catch (error) {
             console.error("Error fetching items:", error);
         }
@@ -279,8 +613,10 @@ export default function ItemList() {
 
                 setCategories(categoriesResponse.data.categories || []);
                 setSuppliers(suppliersResponse.data.suppliers || []);
-                setItems(itemsResponse.data.items || []);
-                setFilteredItems(itemsResponse.data.items || []);
+                // Filter out items with quantity 0
+                const filteredItems = itemsResponse.data.items.filter(item => item.quantity > 0);
+                setItems(filteredItems || []);
+                setFilteredItems(filteredItems || []);
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
@@ -339,14 +675,15 @@ export default function ItemList() {
                 item.items.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.suppliers.toLowerCase().includes(searchTerm.toLowerCase());
 
-            return matchesSearch && isInRange && matchesCategory;
+            // Keep the quantity > 0 check here as well
+            return item.quantity > 0 && matchesSearch && isInRange && matchesCategory;
         });
 
         setFilteredItems(filtered);
         setCurrentPage(1);
     }, [searchTerm, startDate, endDate, selectedCategory, items]);
 
-   
+
 
     //Deleting Items Logic
 
@@ -389,31 +726,32 @@ export default function ItemList() {
     };
 
      //Pagination Logic
-    
-     const userFilteredItems = basicUser
-     ? filteredItems.filter(item => item.user_id === currentUser.id) 
-     : checkRole(currentUser, ["Admin"]) 
-     ? filteredItems.filter(item => item.department === currentUser.department)
-     : filteredItems; 
- 
+
+     const userFilteredItems = (basicUser
+        ? filteredItems.filter(item => item.user_id === currentUser.id)
+        : checkRole(currentUser, ["Admin"])
+        ? filteredItems.filter(item => item.department === currentUser.department)
+        : filteredItems
+    ).filter(item => item.quantity > 0); // Add this filter
+
      const [itemsPerPage, setItemsPerPage] = useState(5);
      const totalPages = Math.ceil(userFilteredItems.length / itemsPerPage);
      const isSelectAllChecked = selectedItems.length === filteredItems.length;
- 
+
      const paginatedItems = useMemo(() => {
          const startIndex = (currentPage - 1) * itemsPerPage;
          return userFilteredItems.slice(startIndex, startIndex + itemsPerPage);
      }, [userFilteredItems, currentPage, itemsPerPage]);
- 
+
      const sortedPaginatedItems = [...paginatedItems].sort(
          (a, b) => new Date(b.created_at) - new Date(a.created_at)
      );
- 
+
      const handlePageChange = (newPage) => {
          if (newPage < 1 || newPage > totalPages) return;
          setCurrentPage(newPage);
      };
- 
+
      const handleCheckboxChange = (item) => {
          setSelectedItems((prev) =>
              prev.includes(item.id)
@@ -421,9 +759,9 @@ export default function ItemList() {
                  : [...prev, item.id]
          );
      };
- 
+
      //Select All Checkbox Handler
- 
+
      const handleSelectAll = () => {
          if (selectedItems.length === filteredItems.length) {
              setSelectedItems([]);
@@ -470,6 +808,9 @@ export default function ItemList() {
         { label: "CH_Date", key: "ch_date" },
         { label: "OR_#", key: "or" },
         { label: "OR_Date", key: "or_date" },
+        { label: "Property No.", key: "property_no" },
+        { label: "Classification No.", key: "classification_no" },
+        { label: "Date Purchase", key: "date_purchase" },
         { label: "Created_At", key: "created_at" },
         { label: "Updated_At", key: "updated_at" },
     ];
@@ -478,7 +819,9 @@ export default function ItemList() {
         let parsedPrDate = item.pr_date
             ? parse(item.pr_date, "yyyy-MM-dd", new Date())
             : null;
-
+            let parsedDatePurchase = item.date_purchase  // Add this line
+            ? parse(item.date_purchase, "yyyy-MM-dd", new Date())
+            : null;
         let row = {
             id: item.id,
             select: (
@@ -525,6 +868,11 @@ export default function ItemList() {
             or_date: item.or_date
                 ? format(parse(item.or_date, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
                 : "N/A",
+            property_no: item.property_no ?? "N/A",
+            classification_no: item.classification_no ?? "N/A",
+            date_purchase: parsedDatePurchase && !isNaN(parsedDatePurchase)
+                    ? format(parsedDatePurchase, "MM/dd/yyyy")
+                    : "N/A",
             created_at: item.created_at
                 ? new Date(item.created_at).toLocaleString()
                 : "N/A",
@@ -554,51 +902,59 @@ export default function ItemList() {
     }));
 
     //Action Buttons for Items
-    const actions = (row) => (
-        <Dropdown className="">
-            <Dropdown.Trigger>
-                <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
-            </Dropdown.Trigger>
-            <Dropdown.Content contentClasses="relative py-1 right-7 top-[-100px] bg-gray-100 dark:bg-gray-700">
-                <Dropdown.Link
-                    onClick={(e) => {
-                        e.preventDefault();
-                        let imageSrc =
-                            row.image !== "N/A"
-                                ? `/storage/images/${row.image}`
-                                : null;
+const actions = (row) => (
+    <Dropdown className="">
+        <Dropdown.Trigger>
+            <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
+        </Dropdown.Trigger>
+        <Dropdown.Content contentClasses="relative py-1 right-7 top-[-100px] bg-gray-100 dark:bg-gray-700">
+            <Dropdown.Link
+                onClick={(e) => {
+                    e.preventDefault();
+                    let imageSrc =
+                        row.image !== "N/A"
+                            ? `/storage/images/${row.image}`
+                            : null;
 
-                        console.log(
-                            "🚀 Image Debug - Full Image URL:",
-                            imageSrc
-                        );
+                    console.log(
+                        "🚀 Image Debug - Full Image URL:",
+                        imageSrc
+                    );
 
-                        setModalContent(
-                            <div className="flex justify-center items-center p-4">
-                                {imageSrc ? (
-                                    <img src={imageSrc} />
-                                ) : (
-                                    <span className="text-white text-xl">
-                                        No Image Available!
-                                    </span>
-                                )}
-                            </div>
-                        );
-                        setIsModalOpen(true);
-                    }}
-                >
-                    View
-                </Dropdown.Link>
-                <Dropdown.Link
-                    onClick={(e) => {
-                        e.preventDefault();
-                        fetchItem(row.id);
-                    }}
-                >
-                    Edit
-                </Dropdown.Link>
-                {checkRole(user, ["Super Admin"]) && (
-                <>
+                    setModalContent(
+                        <div className="flex justify-center items-center p-4">
+                            {imageSrc ? (
+                                <img src={imageSrc} />
+                            ) : (
+                                <span className="text-white text-xl">
+                                    No Image Available!
+                                </span>
+                            )}
+                        </div>
+                    );
+                    setIsModalOpen(true);
+                }}
+            >
+                View
+            </Dropdown.Link>
+            <Dropdown.Link
+                onClick={(e) => {
+                    e.preventDefault();
+                    fetchItem(row.id);
+                }}
+            >
+                Edit
+            </Dropdown.Link>
+            <Dropdown.Link
+    onClick={(e) => {
+        e.preventDefault();
+        setTransferItemId(row.id);
+        setIsTransferModalOpen(true);
+    }}
+>
+    Transfer Item
+</Dropdown.Link>
+            {checkRole(user, ["Super Admin"]) && (
                 <Dropdown.Link
                     onClick={(e) => {
                         e.preventDefault();
@@ -607,11 +963,10 @@ export default function ItemList() {
                 >
                     Delete
                 </Dropdown.Link>
-                </>
-                )}
-            </Dropdown.Content>
-        </Dropdown>
-    );
+            )}
+        </Dropdown.Content>
+    </Dropdown>
+);
 
     return (
         <AuthenticatedLayout
@@ -758,7 +1113,7 @@ export default function ItemList() {
                                                 }
                                             />
                                         </>
-                                        )}                                   
+                                        )}
                                     </div>
 
                                 <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
@@ -943,16 +1298,14 @@ export default function ItemList() {
                                     htmlFor="suppliers"
                                     value="Supplier"
                                 />
-                                <SelectOption
-                                    id="suppliers"
-                                    className="mt-2 block w-full h-10 rounded-sm text-sm"
-                                    placeholder="Select supplier"
-                                    options={supplierOptions}
-                                    value={data.suppliers || ""}
-                                    onChange={(e) =>
-                                        setData("suppliers", e.target.value)
-                                    }
-                                />
+<SelectOption
+    id="suppliers"
+    className="mt-2 block w-full h-10 rounded-sm text-sm"
+    placeholder="Select supplier"
+    options={supplierOptions}
+    value={data.suppliers || ""} // Changed from 'supplier'
+    onChange={(e) => setData("suppliers", e.target.value)}
+/>
                                 <InputError
                                     message={errors.suppliers}
                                     className="mt-2"
@@ -974,6 +1327,30 @@ export default function ItemList() {
                                     className="mt-2"
                                 />
                             </div>
+                                  {/* Add these new fields in the right column of your form */}
+<div className="mt-4">
+    <InputLabel htmlFor="property_no" value="Property No." />
+    <TextInput
+        id="property_no"
+        className="mt-2 block w-60 h-10 rounded-sm text-sm"
+        value={data.property_no}
+        onChange={(e) => setData("property_no", e.target.value)}
+    />
+    <InputError message={errors.property_no} className="mt-2" />
+</div>
+
+<div className="mt-4">
+    <InputLabel htmlFor="classification_no" value="Classification No." />
+    <TextInput
+        id="classification_no"
+        className="mt-2 block w-60 h-10 rounded-sm text-sm"
+        value={data.classification_no}
+        onChange={(e) => setData("classification_no", e.target.value)}
+    />
+    <InputError message={errors.classification_no} className="mt-2" />
+</div>
+
+
                         </div>
                         <div>
                             <div className="mt-2">
@@ -995,7 +1372,7 @@ export default function ItemList() {
                                 <InputLabel htmlFor="pr_date" value="PR Date" />
                                 <div className="relative">
                                     <select
-                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
                 rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
                                         onClick={() =>
                                             toggleDatePicker("pr_date")
@@ -1047,6 +1424,7 @@ export default function ItemList() {
                                     className="mt-2"
                                 />
                             </div>
+
                             <div className="mt-4">
                                 <InputLabel htmlFor="po#" value="P.O #" />
                                 <TextInput
@@ -1069,7 +1447,7 @@ export default function ItemList() {
                                 />
                                 <div className="relative">
                                     <select
-                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
                                          rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
                                         onClick={() =>
                                             toggleDatePicker("po_date")
@@ -1144,7 +1522,7 @@ export default function ItemList() {
                                 />
                                 <div className="relative">
                                     <select
-                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
                                          rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
                                         onClick={() =>
                                             toggleDatePicker("vc_date")
@@ -1215,7 +1593,7 @@ export default function ItemList() {
                                 <InputLabel htmlFor="ch_date" value="CH Date" />
                                 <div className="relative">
                                     <select
-                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
                                          rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
                                         onClick={() =>
                                             toggleDatePicker("ch_date")
@@ -1286,7 +1664,7 @@ export default function ItemList() {
                                 <InputLabel htmlFor="or_date" value="OR Date" />
                                 <div className="relative">
                                     <select
-                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 
+                                        className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
                                          rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
                                         onClick={() =>
                                             toggleDatePicker("or_date")
@@ -1338,6 +1716,36 @@ export default function ItemList() {
                                     className="mt-2"
                                 />
                             </div>
+                            <div className="mt-4 w-60">
+    <InputLabel htmlFor="date_purchase" value="Date Purchase" />
+    <div className="relative">
+        <select
+            className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
+            rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
+            onClick={() => toggleDatePicker("date_purchase")}
+        >
+            <option hidden value="">
+                {data.date_purchase
+                    ? format(parse(data.date_purchase, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
+                    : "Select date"}
+            </option>
+        </select>
+        {activeDatePicker === "date_purchase" && (
+            <div className="absolute z-50">
+                <DatePicker
+                    selected={data.date_purchase ? parse(data.date_purchase, "yyyy-MM-dd", new Date()) : null}
+                    onChange={(date) => {
+                        setData("date_purchase", format(date, "yyyy-MM-dd"));
+                        setActiveDatePicker(null);
+                    }}
+                    inline
+                    calendarClassName="dark:bg-gray-800 pb-7"
+                />
+            </div>
+        )}
+    </div>
+    <InputError message={errors.date_purchase} className="mt-2" />
+</div>
                         </div>
                     </div>
 
@@ -1361,7 +1769,7 @@ export default function ItemList() {
             >
                 {modalContent}
             </Modal>
-
+            <TransferDrawer />
             {/* Confirmation Dialog */}
             <ConfirmationDialog
                 isOpen={isConfirmDialogOpen}

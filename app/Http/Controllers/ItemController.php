@@ -1,11 +1,15 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\DB;
+use App\Models\TransferredItems;
+use App\Models\Signatory;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 
 
 class ItemController extends Controller
@@ -14,25 +18,27 @@ class ItemController extends Controller
     {
         $items = Item::with('user')->orderBy('created_at', 'desc')->get();
 
-    
-    
+
+
         $items->each(function($item) {
             if ($item->image) {
-             
+
                 $item->image = url('/storage/' . $item->image);
             }
         });
-    
+
         return response()->json([
             'items' => $items,
         ]);
     }
-    
+
 
     public function store(Request $request)
     {
-        \Log::info('Received Request Data:', $request->all()); 
-    
+        \Log::info('Received Request Data:', $request->all());
+        $request->merge([
+            'price' => $request->price ? (float) str_replace(',', '', $request->price) : null
+        ]);
         $request->validate([
             'image' => 'nullable|image|max:2048',
             'categories' => 'required|string',
@@ -40,37 +46,40 @@ class ItemController extends Controller
             'description' => 'required|string',
             'estimated_life' => 'required|string',
             'quantity' => 'required|integer',
-            'price' => 'required|numeric',
-            'suppliers' => 'required|string',
-            'ics' => 'nullable|regex:/^[0-9-]+$/',
-            'pr' => 'nullable|regex:/^[0-9-]+$/',
+            'price' => 'required|numeric|min:0',
+            'suppliers' => 'required|string', // Changed from 'supplier'
+            'ics' => 'nullable|string',
+            'pr' => 'nullable|string',
             'pr_date' => 'nullable|date',
-            'po' => 'nullable|regex:/^[0-9-]+$/',
+            'po' => 'nullable|string',
             'po_date' => 'nullable|date',
-            'vc' => 'nullable|regex:/^[0-9-]+$/',
+            'vc' => 'nullable|string',
             'vc_date' => 'nullable|date',
-            'ch' => 'nullable|regex:/^[0-9-]+$/',
+            'property_no' => 'nullable|string',
+            'classification_no' => 'nullable|string',
+            'date_purchase' => 'nullable|date',
+            'ch' => 'nullable|string',
             'ch_date' => 'nullable|date',
-            'or' => 'nullable|regex:/^[0-9-]+$/',
-            'or_date' => 'nullable|date',   
+            'or' => 'nullable|string',
+            'or_date' => 'nullable|date',
         ]);
-    
+
         $user = Auth::user();
         $fullName = trim($user->firstname . ' ' . $user->lastname);
-    
+
         $imagePath = null;
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
         }
-    
-     
+
+
         $prDate = $request->pr_date ? Carbon::parse($request->pr_date)->format('Y-m-d') : null;
         $poDate = $request->po_date ? Carbon::parse($request->po_date)->format('Y-m-d') : null;
         $vcDate = $request->vc_date ? Carbon::parse($request->vc_date)->format('Y-m-d') : null;
         $chDate = $request->ch_date ? Carbon::parse($request->ch_date)->format('Y-m-d') : null;
         $orDate = $request->or_date ? Carbon::parse($request->or_date)->format('Y-m-d') : null;
-
+        $datePurchase = $request->date_purchase ? Carbon::parse($request->date_purchase)->format('Y-m-d') : null;
         $item = Item::create([
             'user_id' => $user->id,
             'name' => $fullName,
@@ -84,38 +93,160 @@ class ItemController extends Controller
             'price' => $request->price,
             'suppliers' => $request->suppliers,
             'ics' => $request->ics,
-            'pr' => $request->pr, 
+            'pr' => $request->pr,
             'pr_date' => $prDate,
-            'po' => $request->po, 
-            'po_date' => $poDate, 
-            'vc' => $request->vc, 
-            'vc_date' => $vcDate, 
-            'ch' => $request->ch, 
-            'ch_date' => $chDate, 
+            'po' => $request->po,
+            'po_date' => $poDate,
+            'property_no' => $request->property_no,
+            'classification_no' => $request->classification_no,
+            'date_purchase' => $datePurchase,
+            'vc' => $request->vc,
+            'vc_date' => $vcDate,
+            'ch' => $request->ch,
+            'ch_date' => $chDate,
             'or' => $request->or,
             'or_date' => $orDate
         ]);
-    
+
         return redirect()->route('item-list')->with('success', 'Item added successfully.');
     }
-    
-    
-    
+
+
+    public function transfer(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $validated = $request->validate([
+                'item_id' => 'required|exists:items,id',
+                'quantity_transferred' => 'required|integer|min:1',
+                'transferTo' => 'required|string',
+                'nameDesignation' => 'required|string',
+                'positionIntended' => 'required|string',
+                'designatedOffice' => 'required|string',
+                'officeNameDesignation' => 'required|string',
+                'officePositionIntended' => 'required|string',
+                'recommended_by_name' => 'required|string',
+                'recommended_by_title' => 'required|string',
+                'approved_by_name' => 'required|string',
+                'approved_by_title' => 'required|string',
+                'witnessed_by_name' => 'required|string',
+                'witnessed_by_title' => 'required|string',
+            ]);
+
+            $originalItem = Item::findOrFail($validated['item_id']);
+
+            if ($validated['quantity_transferred'] > $originalItem->quantity) {
+                return response()->json([
+                    'message' => 'Cannot transfer more than available quantity'
+                ], 422);
+            }
+
+            // Update original item quantity
+            $originalItem->decrement('quantity', $validated['quantity_transferred']);
+
+            // Create transferred item record
+            $transferredItem = TransferredItems::create([
+                'original_item_id' => $originalItem->id,
+                'quantity' => $validated['quantity_transferred'],
+                'transfer_to' => $validated['transferTo'],
+                'name_designation' => $validated['nameDesignation'],
+                'position_intended' => $validated['positionIntended'],
+                'designated_office' => $validated['designatedOffice'],
+                'office_name_designation' => $validated['officeNameDesignation'],
+                'office_position_intended' => $validated['officePositionIntended'],
+                'recommended_by_name' => $validated['recommended_by_name'],
+                'recommended_by_title' => $validated['recommended_by_title'],
+                'approved_by_name' => $validated['approved_by_name'],
+                'approved_by_title' => $validated['approved_by_title'],
+                'witnessed_by_name' => $validated['witnessed_by_name'],
+                'witnessed_by_title' => $validated['witnessed_by_title'],
+                'category' => $originalItem->categories,
+                'description' => $originalItem->description,
+                'property_no' => $originalItem->property_no,
+                'classification_no' => $originalItem->classification_no,
+                'amount' => $originalItem->price,
+                'date_purchase' => $originalItem->date_purchase,
+                'transferred_at' => now(),
+            ]);
+
+            // ✅ Send emails to signatories
+            $this->sendTransferNotifications($transferredItem);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Item transferred successfully',
+                'original_item' => $originalItem,
+                'transferred_item' => $transferredItem,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Transfer failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Transfer failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ✅ Add this method below the transfer method in the same controller
+    protected function sendTransferNotifications($transferredItem)
+    {
+        $signatories = [
+            'recommended' => [
+                'signatory' => Signatory::where('name_designation', $transferredItem->recommended_by_name)->first(),
+                'email_field' => 'recommended_by_email'
+            ],
+            'approved' => [
+                'signatory' => Signatory::where('name_designation', $transferredItem->approved_by_name)->first(),
+                'email_field' => 'approved_by_email'
+            ],
+            'witnessed' => [
+                'signatory' => Signatory::where('name_designation', $transferredItem->witnessed_by_name)->first(),
+                'email_field' => 'witnessed_by_email'
+            ],
+            'name_designation' => [
+                'signatory' => Signatory::where('name_designation', $transferredItem->name_designation)->first(),
+                'email_field' => 'email'
+            ],
+            'office_name_designation' => [
+                'signatory' => Signatory::where('name_designation', $transferredItem->office_name_designation)->first(),
+                'email_field' => 'email'
+            ],
+        ];
+
+        foreach ($signatories as $type => $data) {
+            if ($data['signatory'] && $data['signatory']->email) {
+                $url = URL::signedRoute('transfer.approve', [
+                    'id' => $transferredItem->id,
+                    'signatory_type' => $type
+                ]);
+
+                \Mail::to($data['signatory']->email)->send(new \App\Mail\TransferApprovalRequest(
+                    $transferredItem,
+                    $type,
+                    $data['signatory'],
+                    $url
+                ));
+            }
+        }
+    }
+
     public function destroy($id)
     {
         $item = Item::findOrFail($id);
-    
+
         if ($item->image && \Storage::disk('public')->exists($item->image)) {
             \Storage::disk('public')->delete($item->image);
         }
-    
-   
+
+
         $item->delete();
-    
+
         return response()->json(['message' => 'Item deleted successfully.']);
     }
 
-  
+
 
     public function bulkDestroy(Request $request)
 {
@@ -152,6 +283,10 @@ public function edit($id)
 
 public function update(Request $request, $id)
 {
+        // Convert comma-formatted price to numeric before validation
+        $request->merge([
+            'price' => $request->price ? (float) str_replace(',', '', $request->price) : null
+        ]);
     $validatedData = $request->validate([
         'image' => 'nullable|image|max:2048',
         'categories' => 'nullable|string',
@@ -159,20 +294,23 @@ public function update(Request $request, $id)
         'items' => 'nullable|string',
         'estimated_life'=> 'nullable|string',
         'quantity' => 'nullable|integer',
-        'price' => 'nullable|numeric',
+        'price' => 'required|numeric|min:0',
         'suppliers' => 'nullable|string',
         'ics' => 'nullable|string',
         'pr' => 'nullable|string',
         'pr_date' => 'nullable|date',
         'po' => 'nullable|string',
         'po_date' => 'nullable|date',
+        'property_no' => 'nullable|string',
+        'classification_no' => 'nullable|string',
+        'date_purchase' => 'nullable|date',
         'vc' => 'nullable|string',
         'vc_date' => 'nullable|date',
         'ch' => 'nullable|string',
         'ch_date' => 'nullable|date',
         'or' => 'nullable|string',
         'or_date' => 'nullable|date',
-       
+
     ]);
 
     $item = Item::findOrFail($id);
@@ -184,7 +322,7 @@ public function update(Request $request, $id)
 
         $image = $request->file('image');
         $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
-        $item->image = $imagePath; 
+        $item->image = $imagePath;
     }
 
     $item->categories = $validatedData['categories'] ?? $item->categories;
@@ -199,6 +337,9 @@ public function update(Request $request, $id)
     $item->pr_date = $validatedData['pr_date'] ?? $item->pr_date;
     $item->po = $validatedData['po'] ?? $item->po;
     $item->po_date = $validatedData['po_date'] ?? $item->po_date;
+    $item->property_no = $validatedData['property_no'] ?? $item->property_no;
+    $item->classification_no = $validatedData['classification_no'] ?? $item->classification_no;
+    $item->date_purchase = $validatedData['date_purchase'] ?? $item->date_purchase;
     $item->vc = $validatedData['vc'] ?? $item->vc;
     $item->vc_date = $validatedData['vc_date'] ?? $item->vc_date;
     $item->ch = $validatedData['ch'] ?? $item->ch;
@@ -210,12 +351,12 @@ public function update(Request $request, $id)
 
     return response()->json([
         'message' => 'Item successfully updated!',
-        'item' => $item, 
+        'item' => $item,
     ]);
 }
 
-    
-    
+
+
 public function import(Request $request)
 {
     try {
@@ -231,7 +372,7 @@ public function import(Request $request)
         $requiredHeaders = [
             'name', 'department', 'categories', 'items', 'description', 'estimated_life',
             'quantity', 'price', 'suppliers', 'ics', 'pr', 'pr_date', 'po', 'po_date',
-            'vc', 'vc_date', 'ch', 'ch_date', 'or', 'or_date', 'created_at', 'updated_at'
+            'vc', 'vc_date', 'ch', 'ch_date', 'or','property_no','classification_no','date_purchase','or_date', 'created_at', 'updated_at'
         ];
 
         // ✅ Check for missing columns
@@ -383,6 +524,6 @@ public function getTotalItemsCount(Request $request)
 //     }
 // }
 
- 
-     
+
+
 }

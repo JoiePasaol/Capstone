@@ -20,8 +20,24 @@
         );
     }
 
-    
+    @media print {
+        @page {
+          size: A4;
+          margin: 1cm;
+        }
 
+        body {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+        }
+    .scrollbar-hide {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;  /* Chrome, Safari and Opera */
+      }
     .text-stroke {
         color: transparent;
         -webkit-text-stroke: 2px #0011ff;
@@ -35,7 +51,7 @@
         );
     }
 
- 
+
 
     .dark .react-datepicker__header {
         background-color: #1f2937 !important;
@@ -99,13 +115,13 @@
     }
 
     .ql-editor {
-      font-size: 16px; 
+      font-size: 16px;
       line-height: 1.5;
     }
 
 
     .ql-editor h1 {
-      font-size: 2rem !important; 
+      font-size: 2rem !important;
       font-weight: bold;
       margin-bottom: 0.5rem;
     }
@@ -117,7 +133,7 @@
     }
 
     .ql-editor h3 {
-      font-size: 1.5rem !important; 
+      font-size: 1.5rem !important;
       font-weight: bold;
       margin-bottom: 0.5rem;
     }
@@ -125,7 +141,7 @@
     .custom-toast {
         animation: slideInRight 0.5s ease-out;
     }
-    
+
     @keyframes slideInRight {
         from {
             transform: translateX(100%);
@@ -137,5 +153,5 @@
         }
     }
 
-    
+
     }
