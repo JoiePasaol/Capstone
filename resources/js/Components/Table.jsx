@@ -1,5 +1,3 @@
-import { format, parseISO } from 'date-fns';
-
 const Table = ({ headers, rows, actions }) => {
     return (
         <div className="overflow-x-auto">

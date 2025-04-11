@@ -27,12 +27,8 @@ class BorrowController extends Controller
             return [
                 'id' => $borrow->id,
                 'name' => $borrow->name,
-                'item_ids' => is_array($borrow->item_ids) 
-                    ? $borrow->item_ids 
-                    : json_decode($borrow->item_ids, true),
-                'item_names' => is_array($borrow->item_names) 
-                    ? $borrow->item_names 
-                    : json_decode($borrow->item_names, true),
+                'item_ids' => $borrow->item_ids, // The casts should handle this
+                'item_names' => $borrow->item_names, // The casts should handle this
                 'quantity' => $borrow->quantity,
                 'return_date' => $borrow->return_date ? Carbon::parse($borrow->return_date)->format('Y-m-d') : null,
                 'status' => $borrow->status,
@@ -65,7 +61,7 @@ class BorrowController extends Controller
             'item_names.*' => 'string|max:255',
             'return_date' => 'required|date',
             'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
-            'quantity' => 'required|integer|min:1',  
+            'quantity' => 'required|integer|min:1',
         ]);
     
         try {
@@ -77,7 +73,7 @@ class BorrowController extends Controller
                 'item_names' => $validated['item_names'],
                 'return_date' => $returnDate,
                 'status' => $validated['status'] ?? 'Borrowed',
-                'quantity' => $validated['quantity'],  // Store quantity
+                'quantity' => $validated['quantity'],
             ]);
     
             return response()->json([
@@ -95,8 +91,6 @@ class BorrowController extends Controller
         }
     }
     
-    
-
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
@@ -107,7 +101,7 @@ class BorrowController extends Controller
             'item_names.*' => 'string|max:255',
             'return_date' => 'required|date',
             'status' => 'required|string|max:50|in:Borrowed,Overdue,Returned',
-            'quantity' => 'required|integer|min:1', // Add validation for quantity
+            'quantity' => 'required|integer|min:1',
         ]);
     
         try {
@@ -121,7 +115,7 @@ class BorrowController extends Controller
                 'item_names' => $validated['item_names'],
                 'return_date' => $returnDate,
                 'status' => $validated['status'],
-                'quantity' => $validated['quantity'], // Update the quantity field
+                'quantity' => $validated['quantity'],
             ]);
     
             return response()->json([

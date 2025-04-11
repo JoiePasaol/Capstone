@@ -111,8 +111,8 @@ export default function ItemBorrow() {
                     item.name.toLowerCase().includes(searchLower) ||
                     (Array.isArray(item.item_names)
                         ? item.item_names.some((name) =>
-                              name.toLowerCase().includes(searchLower)
-                          )
+                            name.toLowerCase().includes(searchLower)
+                        )
                         : false)
             )
             .filter(
@@ -142,21 +142,27 @@ export default function ItemBorrow() {
 
     const fetchBorrowedItems = async () => {
         try {
-            const response = await axios.get("/borrows");
-            // Sort by created_at in descending order (newest first)
-            const sortedItems = response.data.sort(
-                (a, b) => new Date(b.created_at) - new Date(a.created_at)
-            );
-            setBorrowedItems(sortedItems);
+            const response = await axios.get("/api/borrows");
+            if (response.status === 200 && response.data) {
+                const sortedItems = response.data.sort(
+                    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+                );
+                setBorrowedItems(sortedItems);
+            } else {
+                throw new Error("Invalid response format");
+            }
         } catch (error) {
-            console.error("Error fetching borrowed items:", error);
+            console.error("Error details:", {
+                message: error.message,
+                response: error.response,
+            });
             setSuccessMessage(
+                error.response?.data?.message ||
                 "Failed to load borrowed items. Please try again."
             );
             setIsSuccessDialogOpen(true);
         }
     };
-
     useEffect(() => {
         fetchBorrowedItems();
     }, []);
@@ -169,23 +175,23 @@ export default function ItemBorrow() {
             const itemNames = Array.isArray(row.item_names)
                 ? row.item_names
                 : typeof row.item_names === "string"
-                ? JSON.parse(row.item_names)
-                : [];
+                    ? JSON.parse(row.item_names)
+                    : [];
 
             const itemIds = Array.isArray(row.item_ids)
                 ? row.item_ids
                 : typeof row.item_ids === "string"
-                ? JSON.parse(row.item_ids)
-                : [];
+                    ? JSON.parse(row.item_ids)
+                    : [];
 
             const selectedOpts = itemNames.map((name, index) => ({
-                value:
-                    itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
+                value: itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
                 label: name,
             }));
 
             setSelectedOptions(selectedOpts);
             setSelectedStatus(row.status);
+            setSelectedQuantity(row.quantity); // Make sure to set the quantity
 
             setData({
                 id: row.id,
@@ -194,6 +200,7 @@ export default function ItemBorrow() {
                 item_names: itemNames,
                 return_date: row.return_date,
                 status: row.status,
+                quantity: row.quantity, // Include quantity here
             });
 
             if (row.return_date) {
@@ -205,19 +212,22 @@ export default function ItemBorrow() {
             setSelectedOptions([]);
             setSelectedStatus(null);
             setReturnDate(null);
+            setSelectedQuantity(1); // Reset to default quantity
         }
     };
 
     const handleInputChange = async (inputValue) => {
+        console.log("Input value:", inputValue); // Debug what's being typed
         if (!inputValue) {
             setOptions([]);
             return;
         }
 
         try {
-            const response = await axios.get(
-                `/search-items?query=${inputValue}`
-            );
+            console.log("Making API request..."); // Debug API call
+            const response = await axios.get(`/api/search-items?query=${inputValue}`);
+            console.log("API response:", response.data); // Debug response
+
             if (!Array.isArray(response.data)) {
                 console.error("API response is not an array:", response.data);
                 setOptions([]);
@@ -227,18 +237,14 @@ export default function ItemBorrow() {
             const newOptions = response.data.map((item) => ({
                 value: item.id,
                 label: item.items,
-                quantity: item.quantity, // Assuming API returns 'quantity' field
+                quantity: item.quantity,
             }));
 
-            const combinedOptions = [...selectedOptions, ...newOptions];
-            const uniqueOptions = combinedOptions.filter(
-                (option, index, self) =>
-                    index === self.findIndex((o) => o.value === option.value)
-            );
-
-            setOptions(uniqueOptions);
+            console.log("Generated options:", newOptions); // Debug final options
+            setOptions(newOptions);
         } catch (error) {
             console.error("Error fetching items:", error);
+            setOptions([]);
         }
     };
 
@@ -269,52 +275,51 @@ export default function ItemBorrow() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
-    
+
         if (!selectedOptions) {
             alert("Please select an item.");
             setProcessing(false);
             return;
         }
-    
+
         const formattedReturnDate = returnDate ? format(returnDate, "MM/dd/yyyy") : "";
-    
-        // Ensure that quantity has a valid value, defaulting to 1 if not set
         const quantity = selectedQuantity || 1;
-    
+
         const formData = {
             name: data.name,
             item_ids: selectedOptions ? [selectedOptions.value] : [],
             item_names: selectedOptions ? [selectedOptions.label] : [],
             return_date: formattedReturnDate,
             status: data.status || "Borrowed",
-            quantity: quantity,  // Ensure quantity is set
+            quantity: quantity,
             _token: csrf,
         };
-    
+
         try {
             if (isEditMode && !data.id) {
                 throw new Error("Missing ID for update operation");
             }
-    
-            const endpoint = isEditMode ? `/borrow/${data.id}` : "/borrow";
-            const method = isEditMode ? "put" : "post";
-    
+
+            // Use the correct endpoint based on mode
+            const endpoint = isEditMode
+                ? `/api/borrow/${data.id}`
+                : '/api/borrow';
+
+            const method = isEditMode ? 'put' : 'post';
+
             const response = await axios[method](endpoint, formData, {
                 headers: {
                     "Content-Type": "application/json",
-                    Accept: "application/json",
                     "X-CSRF-TOKEN": csrf,
                 },
             });
-    
+
             if (response.data.success) {
                 reset();
                 setSelectedOptions(null);
                 setIsDrawerOpen(false);
                 setSuccessMessage(isEditMode ? "Item successfully updated!" : "Item successfully borrowed!");
                 setIsSuccessDialogOpen(true);
-    
-                // Fetch items again to ensure proper sorting
                 await fetchBorrowedItems();
             } else {
                 throw new Error(response.data.message || "Failed to save");
@@ -331,7 +336,7 @@ export default function ItemBorrow() {
             setProcessing(false);
         }
     };
-    
+
     const totalPages = Math.ceil(filteredBorrowedItems.length / itemsPerPage);
     const paginatedBorrowedItems = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -410,7 +415,7 @@ export default function ItemBorrow() {
             console.error("Error deleting items:", error);
             setSuccessMessage(
                 error.response?.data?.message ||
-                    "Failed to delete items. Please try again."
+                "Failed to delete items. Please try again."
             );
             setIsSuccessDialogOpen(true);
         }
@@ -448,18 +453,18 @@ export default function ItemBorrow() {
 
     const rows = paginatedBorrowedItems.map((item, index) => {
         console.log("Item data:", item);  // Log the item to check its data structure
-    
+
         const itemNames = Array.isArray(item.item_names)
             ? item.item_names
             : typeof item.item_names === "string"
-            ? JSON.parse(item.item_names)
-            : [];
-    
-       
+                ? JSON.parse(item.item_names)
+                : [];
+
+
         // Check if quantity is correctly set
         const quantity = item.quantity != null && item.quantity !== undefined ? item.quantity : 'N/A';
         console.log("Quantity:", quantity); // Log quantity for each item
-    
+
         const displayRow = {
             id: item.id,
             select: (
@@ -481,21 +486,21 @@ export default function ItemBorrow() {
                 ? formatDate(item.updated_at)
                 : "N/A",
         };
-    
+
         Object.defineProperty(displayRow, "_raw", {
             value: {
                 id: item.id,
                 item_names: itemNames,
-                quantity: item.quantity,  
+                quantity: item.quantity,
                 item_ids: Array.isArray(item.item_ids) ? item.item_ids : JSON.parse(item.item_ids),
                 return_date: item.return_date,
             },
             enumerable: false,
         });
-    
+
         return displayRow;
     });
-    
+
 
     const statusOptions = [
         { value: "Borrowed", label: "Borrowed" },
@@ -586,11 +591,10 @@ export default function ItemBorrow() {
                     <div className="flex">
                         <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
                             <DeleteIcon
-                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
-                                    selectedBorrowedItems.length === 0
-                                        ? "opacity-50 pointer-events-none"
-                                        : ""
-                                }`}
+                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${selectedBorrowedItems.length === 0
+                                    ? "opacity-50 pointer-events-none"
+                                    : ""
+                                    }`}
                                 onClick={() => {
                                     if (selectedBorrowedItems.length > 0) {
                                         confirmDelete();
@@ -664,11 +668,11 @@ export default function ItemBorrow() {
                                 value={selectedOptions}
                                 onChange={(option) => handleItemSelect(option)}
                                 onInputChange={(newValue) => {
-                                    if (newValue) {
-                                        handleInputChange(newValue);
-                                    }
+                                    handleInputChange(newValue);
                                 }}
                                 options={options}
+                                filterOption={null} // Important: Let the server handle filtering
+                                debounce={300} // Add debounce to avoid too many requests
                                 classNames={{
                                     control: ({ isFocused }) =>
                                         isFocused
@@ -679,11 +683,11 @@ export default function ItemBorrow() {
                                     singleValue: () => "custom-select-value",
                                     menu: () => "custom-select-menu",
                                     option: () => "custom-select-option",
-                                    placeholder: () =>
-                                        "custom-select-placeholder",
+                                    placeholder: () => "custom-select-placeholder",
                                     input: () => "custom-select-input",
                                 }}
                             />
+
                         </div>
                         <InputError message={errors.item_id} className="mt-2" />
                     </div>
