@@ -237,11 +237,11 @@ export default function AuthenticatedLayout({ header, children }) {
                         href={route("profile.edit")}
                         className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
                     >
-                        <User className="w-5 h-5 min-w-[20px]" />
+                        <User className="w-5 h-5 min-w-[20px] dark:text-gray-300" />
                         {isSidebarOpen && (
                             <div className="ml-3">
-                                <div className="font-medium">{user.firstname}</div>
-                                <div className="text-sm text-gray-500">{user.role}</div>
+                                <div className="font-medium dark:text-gray-300">{user.firstname}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-500">{user.role}</div>
                             </div>
                         )}
                     </Link>
