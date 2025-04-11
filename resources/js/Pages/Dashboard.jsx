@@ -14,51 +14,48 @@ import axios from "axios";
 import { checkRole } from "@/utils/CheckRole";
 
 export default function Dashboard({ successMessage }) {
-    // const [pendingUsers, setPendingUsers] = useState(0);
-    // const [approvedUsers, setApprovedUsers] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
-    // const [totalAmount, setTotalAmount] = useState(0);
     const [totalCategories, setTotalCategories] = useState(0);
     const [totalSuppliers, setTotalSuppliers] = useState(0);
     const [totalBorrowed, setTotalBorrowed] = useState(0);
     const [totalOverdue, setTotalOverdue] = useState(0);
     const [totalTransferred, setTotalTransferred] = useState(0);
+
     const { user } = usePage().props.auth;
 
     useEffect(() => {
         const fetchCounts = async () => {
             try {
+                console.log("Fetching counts...");
+
                 const [
-                    // pendingResponse,
-                    // approvedResponse,
                     itemsResponse,
-                    // amountResponse,
                     categoriesResponse,
                     supplierResponse,
                     borrowedResponse,
                     overdueResponse,
+                    transferredResponse,
                 ] = await Promise.all([
-                    // axios.get("/api/users/pending-count"),
-                    // axios.get("/api/users/approved-count"),
                     axios.get("/api/items/total-count"),
-                    // axios.get("/api/items/total-amount"),
                     axios.get("/api/categories/total-count"),
                     axios.get("/api/suppliers/total-count"),
                     axios.get("/api/borrowed-items/total-count"),
                     axios.get("/api/borrowed-items/total-overdue"),
-                    axios.get("/api/transferred-items/total-transferred"),
+                    axios.get("/api/transferred-items/total-transferred")
                 ]);
 
-                // setPendingUsers(pendingResponse.data.pending_users);
-                // setApprovedUsers(approvedResponse.data.approved_users);
-                setTotalItems(itemsResponse.data.total_items);
-                // setTotalAmount(amountResponse.data.total_amount);
-                setTotalCategories(categoriesResponse.data.total_categories);
-                setTotalSuppliers(supplierResponse.data.total_suppliers);
-                setTotalBorrowed(borrowedResponse.data.total_borrowed);
-                setTotalOverdue(overdueResponse.data.total_overdue);
+                console.log("Transferred items response:", transferredResponse.data);
+
+                setTotalItems(itemsResponse.data.total_items || 0);
+                setTotalCategories(categoriesResponse.data.total_categories || 0);
+                setTotalSuppliers(supplierResponse.data.total_suppliers || 0);
+                setTotalBorrowed(borrowedResponse.data.total_borrowed || 0);
+                setTotalOverdue(overdueResponse.data.total_overdue || 0);
+                setTotalTransferred(transferredResponse.data.total_transferred || 0);
+
             } catch (error) {
                 console.error("Error fetching counts:", error);
+                // Keep existing values on error
             }
         };
 
@@ -66,7 +63,6 @@ export default function Dashboard({ successMessage }) {
     }, []);
 
     useEffect(() => {
-        console.log("Success Message:", successMessage); // Debugging
         if (successMessage) {
             toast.custom(
                 (t) => (
@@ -140,66 +136,44 @@ export default function Dashboard({ successMessage }) {
                     link={route("item-list")}
                 />
 
-                {/* {checkRole(user, ["Super Admin", "Admin"]) && ( */}
-                <>
-                    <DashboardCard
-                        title="Total Borrowed Item"
-                        value={totalBorrowed}
-                        icon={
-                            <InventoryIcon
+                <DashboardCard
+                    title="Total Borrowed Item"
+                    value={totalBorrowed}
+                    icon={
+                        <InventoryIcon
                             className="absolute right-[-40px] bottom-[-40px]"
                             style={{ fontSize: "205px" }}
                         />
-                        }
-                        bgColor="bg-green-500"
-                        link={route("item-borrow")}
-                    />
+                    }
+                    bgColor="bg-green-500"
+                    link={route("item-borrow")}
+                />
 
-                    <DashboardCard
-                        title="Total Overdue Item"
-                        value={totalOverdue}
-                        icon={
-                            <InventoryIcon
+                <DashboardCard
+                    title="Total Overdue Item"
+                    value={totalOverdue}
+                    icon={
+                        <InventoryIcon
                             className="absolute right-[-40px] bottom-[-40px]"
                             style={{ fontSize: "205px" }}
                         />
-                        }
-                        bgColor="bg-red-500"
-                        link={route("item-borrow")}
-                    />
-                                        <DashboardCard
-                        title="Total Transferred Item"
-                        value={totalTransferred}
-                        icon={
-                            <InventoryIcon
+                    }
+                    bgColor="bg-red-500"
+                    link={route("item-borrow")}
+                />
+
+                <DashboardCard
+                    title="Total Transferred Item"
+                    value={totalTransferred}
+                    icon={
+                        <InventoryIcon
                             className="absolute right-[-40px] bottom-[-40px]"
                             style={{ fontSize: "205px" }}
                         />
-                        }
-                        bgColor="bg-yellow-500"
-                        link={route("transferred-items")}
-                    />
-                </>
-                {/* )} */}
-
-                {/* <DashboardCard
-                            title="Total Amount"
-                            value={`₱${totalAmount.toLocaleString()}`}
-                            icon={
-                                <GrMoney
-                                    className="absolute right-[-40px] bottom-[-40px]"
-                                    style={{ fontSize: "195px" }}
-                                />
-                            }
-                            bgColor="bg-orange-500"
-                        />
-
-                        <div className="lg:col-span-2 p-6 bg-white dark:bg-gray-900 ring-1 ring-gray-400 dark:ring-gray-400  rounded-lg shadow-md flex flex-col justify-between">
-                            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                                Monthly Report
-                            </h2>
-                            <LineChart />
-                        </div> */}
+                    }
+                    bgColor="bg-yellow-500"
+                    link={route("transferred-items")}
+                />
             </div>
         </AuthenticatedLayout>
     );

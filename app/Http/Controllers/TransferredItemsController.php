@@ -60,6 +60,25 @@ class TransferredItemsController extends Controller
             'departments' => ['IT', 'HR', 'Finance', 'Operations'],
         ]);
     }
+    public function getTotalTransferredCount()
+    {
+        try {
+            $count = TransferredItems::count();
+
+            return response()->json([
+                'success' => true,
+                'total_transferred' => $count
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get transferred items count: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'total_transferred' => 0,
+                'message' => 'Failed to get count'
+            ], 500);
+        }
+    }
+
 
     public function approve(Request $request, $id)
     {
