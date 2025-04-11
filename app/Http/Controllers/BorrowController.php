@@ -33,6 +33,7 @@ class BorrowController extends Controller
                 'item_names' => is_array($borrow->item_names) 
                     ? $borrow->item_names 
                     : json_decode($borrow->item_names, true),
+                'quantity' => $borrow->quantity,
                 'return_date' => $borrow->return_date ? Carbon::parse($borrow->return_date)->format('Y-m-d') : null,
                 'status' => $borrow->status,
                 'created_at' => $borrow->created_at->toISOString(),
@@ -45,14 +46,15 @@ class BorrowController extends Controller
     public function searchItems(Request $request)
     {
         $query = $request->input('query');
-    
+        
+        // Assuming 'quantity' exists in the 'items' table
         $items = Item::where('items', 'LIKE', "%{$query}%")
-               ->limit(10)
-               ->get(['id', 'items']);
-    
-        return response()->json($items);   
+                     ->limit(10)
+                     ->get(['id', 'items', 'quantity']);
+        
+        return response()->json($items);
     }
-
+    
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -63,6 +65,7 @@ class BorrowController extends Controller
             'item_names.*' => 'string|max:255',
             'return_date' => 'required|date',
             'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
+            'quantity' => 'required|integer|min:1',  // Add validation for quantity
         ]);
     
         try {
@@ -73,16 +76,17 @@ class BorrowController extends Controller
                 'item_ids' => $validated['item_ids'],
                 'item_names' => $validated['item_names'],
                 'return_date' => $returnDate,
-                'status' => $validated['status'] ?? 'Borrowed'
+                'status' => $validated['status'] ?? 'Borrowed',
+                'quantity' => $validated['quantity'],  // Store quantity
             ]);
-            
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Items borrowed successfully.',
                 'data' => $borrow
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error creating borrow record: '.$e->getMessage());
+            \Log::error('Error creating borrow record: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to save record. Please try again.',
@@ -90,6 +94,8 @@ class BorrowController extends Controller
             ], 500);
         }
     }
+    
+    
 
     public function update(Request $request, $id)
     {
@@ -101,19 +107,21 @@ class BorrowController extends Controller
             'item_names.*' => 'string|max:255',
             'return_date' => 'required|date',
             'status' => 'required|string|max:50|in:Borrowed,Overdue,Returned',
+            'quantity' => 'required|integer|min:1', // Add validation for quantity
         ]);
     
         try {
             $borrow = Borrow::findOrFail($id);
-            
+    
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
-            
+    
             $borrow->update([
                 'name' => $validated['name'],
                 'item_ids' => $validated['item_ids'],
                 'item_names' => $validated['item_names'],
                 'return_date' => $returnDate,
                 'status' => $validated['status'],
+                'quantity' => $validated['quantity'], // Update the quantity field
             ]);
     
             return response()->json([
@@ -122,7 +130,7 @@ class BorrowController extends Controller
                 'data' => $borrow
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error updating borrow record: '.$e->getMessage());
+            \Log::error('Error updating borrow record: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update record. Please try again.',
@@ -130,6 +138,7 @@ class BorrowController extends Controller
             ], 500);
         }
     }
+    
 
     public function destroy($id)
     {

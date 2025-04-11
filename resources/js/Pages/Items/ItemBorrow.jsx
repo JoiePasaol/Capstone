@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Head, useForm, usePage } from "@inertiajs/react";
-import { format, parseISO, isValid } from 'date-fns';
-import { debounce } from 'lodash';
+import { format } from "date-fns";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -51,6 +50,8 @@ export default function ItemBorrow() {
     const [selectedBorrowedItems, setSelectedBorrowedItems] = useState([]);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [statusFilter, setStatusFilter] = useState("All");
+    const [availableQuantity, setAvailableQuantity] = useState(0);
+    const [selectedQuantity, setSelectedQuantity] = useState(null);
 
     const itemsPerPage = 10;
 
@@ -60,6 +61,7 @@ export default function ItemBorrow() {
         item_names: [],
         return_date: "",
         status: "Borrowed",
+        quantity: 1,
     });
 
     const ItemList = ({ items }) => {
@@ -85,20 +87,22 @@ export default function ItemBorrow() {
             </div>
         );
     };
-
     const filteredBorrowedItems = useMemo(() => {
-        if (!Array.isArray(borrowedItems) || borrowedItems.length === 0) return [];
+        if (!Array.isArray(borrowedItems) || borrowedItems.length === 0)
+            return [];
 
         const today = new Date();
         const searchLower = searchTerm.toLowerCase();
 
         // Create a copy of the array before sorting to avoid mutating the original
         const result = [...borrowedItems]
-            .map(item => {
-                const isOverdue = item.status === "Borrowed" && new Date(item.return_date) < today;
+            .map((item) => {
+                const isOverdue =
+                    item.status === "Borrowed" &&
+                    new Date(item.return_date) < today;
                 return {
                     ...item,
-                    status: isOverdue ? "Overdue" : item.status
+                    status: isOverdue ? "Overdue" : item.status,
                 };
             })
             .filter((item) => item && item.name)
@@ -106,14 +110,33 @@ export default function ItemBorrow() {
                 (item) =>
                     item.name.toLowerCase().includes(searchLower) ||
                     (Array.isArray(item.item_names)
-                        ? item.item_names.some(name => name.toLowerCase().includes(searchLower))
+                        ? item.item_names.some((name) =>
+                              name.toLowerCase().includes(searchLower)
+                          )
                         : false)
             )
-            .filter((item) =>
-                statusFilter === "All" || item.status === statusFilter
+            .filter(
+                (item) => statusFilter === "All" || item.status === statusFilter
             )
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            .sort((a, b) => {
+                // Debug logging
+                console.log("Sorting:", {
+                    a: {
+                        id: a.id,
+                        created_at: a.created_at,
+                        date: new Date(a.created_at),
+                    },
+                    b: {
+                        id: b.id,
+                        created_at: b.created_at,
+                        date: new Date(b.created_at),
+                    },
+                    comparison: new Date(b.created_at) - new Date(a.created_at),
+                });
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
 
+        console.log("Sorted result:", result);
         return result;
     }, [borrowedItems, searchTerm, statusFilter]);
 
@@ -121,13 +144,15 @@ export default function ItemBorrow() {
         try {
             const response = await axios.get("/borrows");
             // Sort by created_at in descending order (newest first)
-            const sortedItems = response.data.sort((a, b) =>
-                new Date(b.created_at) - new Date(a.created_at)
+            const sortedItems = response.data.sort(
+                (a, b) => new Date(b.created_at) - new Date(a.created_at)
             );
             setBorrowedItems(sortedItems);
         } catch (error) {
             console.error("Error fetching borrowed items:", error);
-            setSuccessMessage("Failed to load borrowed items. Please try again.");
+            setSuccessMessage(
+                "Failed to load borrowed items. Please try again."
+            );
             setIsSuccessDialogOpen(true);
         }
     };
@@ -141,38 +166,34 @@ export default function ItemBorrow() {
         setIsEditMode(isEdit);
 
         if (open && isEdit && row) {
-            // Clear any existing options first
-            setOptions([]);
-
-            // Parse item data - handle both array and single item cases
             const itemNames = Array.isArray(row.item_names)
-                ? row.item_names[0] // Take first item if array
-                : typeof row.item_names === 'string'
-                    ? JSON.parse(row.item_names)[0] // Parse and take first if string
-                    : row.item_names || ''; // Fallback
+                ? row.item_names
+                : typeof row.item_names === "string"
+                ? JSON.parse(row.item_names)
+                : [];
 
             const itemIds = Array.isArray(row.item_ids)
-                ? row.item_ids[0] // Take first item if array
-                : typeof row.item_ids === 'string'
-                    ? JSON.parse(row.item_ids)[0] // Parse and take first if string
-                    : row.item_ids || ''; // Fallback
+                ? row.item_ids
+                : typeof row.item_ids === "string"
+                ? JSON.parse(row.item_ids)
+                : [];
 
-            // Create single option object
-            const selectedOption = itemNames ? {
-                value: itemIds,
-                label: itemNames
-            } : null;
+            const selectedOpts = itemNames.map((name, index) => ({
+                value:
+                    itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
+                label: name,
+            }));
 
-            setSelectedOptions(selectedOption);
+            setSelectedOptions(selectedOpts);
             setSelectedStatus(row.status);
 
             setData({
                 id: row.id,
                 name: row.name,
-                item_ids: [itemIds], // Keep as array for backend
-                item_names: [itemNames], // Keep as array for backend
+                item_ids: itemIds,
+                item_names: itemNames,
                 return_date: row.return_date,
-                status: row.status || 'Borrowed',
+                status: row.status,
             });
 
             if (row.return_date) {
@@ -181,10 +202,9 @@ export default function ItemBorrow() {
             }
         } else if (!open) {
             reset();
-            setSelectedOptions(null);
+            setSelectedOptions([]);
             setSelectedStatus(null);
             setReturnDate(null);
-            setOptions([]); // Clear options when closing
         }
     };
 
@@ -195,73 +215,87 @@ export default function ItemBorrow() {
         }
 
         try {
-            const response = await axios.get(`/search-items?query=${inputValue}`);
-
+            const response = await axios.get(
+                `/search-items?query=${inputValue}`
+            );
             if (!Array.isArray(response.data)) {
                 console.error("API response is not an array:", response.data);
                 setOptions([]);
                 return;
             }
 
-            // Don't combine with selectedOptions - just use fresh results
             const newOptions = response.data.map((item) => ({
                 value: item.id,
                 label: item.items,
+                quantity: item.quantity, // Assuming API returns 'quantity' field
             }));
 
-            setOptions(newOptions);
+            const combinedOptions = [...selectedOptions, ...newOptions];
+            const uniqueOptions = combinedOptions.filter(
+                (option, index, self) =>
+                    index === self.findIndex((o) => o.value === option.value)
+            );
+
+            setOptions(uniqueOptions);
         } catch (error) {
             console.error("Error fetching items:", error);
-            setOptions([]);
         }
     };
 
-    const debouncedInputChange = useMemo(
-        () => debounce((inputValue) => {
-            handleInputChange(inputValue);
-        }, 300),
-        []
+    const quantityOptions = Array.from(
+        { length: availableQuantity },
+        (_, index) => ({
+            key: index + 1,
+            label: (index + 1).toString(),
+        })
     );
 
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            debouncedInputChange.cancel();
-        };
-    }, [debouncedInputChange]);
+    // Function to handle item selection
+    const handleItemSelect = (selectedOption) => {
+        // Update the selected item
+        setSelectedOptions(selectedOption);
+        setData({
+            ...data,
+            item_ids: selectedOption ? [selectedOption.value] : [],
+            item_names: selectedOption ? [selectedOption.label] : [],
+        });
+
+        // Set the available quantity based on the selected item
+        if (selectedOption && selectedOption.quantity) {
+            setAvailableQuantity(selectedOption.quantity);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
-
+    
         if (!selectedOptions) {
             alert("Please select an item.");
             setProcessing(false);
             return;
         }
-
-        const formattedReturnDate = returnDate
-            ? format(returnDate, "yyyy-MM-dd") // Match backend format
-            : null;
-
-        // Prepare form data - wrap single item in arrays for backend
+    
+        const formattedReturnDate = returnDate ? format(returnDate, "MM/dd/yyyy") : "";
+    
         const formData = {
             name: data.name,
-            item_ids: [selectedOptions.value], // Array with single item
-            item_names: [selectedOptions.label], // Array with single item
+            item_ids: selectedOptions ? [selectedOptions.value] : [],
+            item_names: selectedOptions ? [selectedOptions.label] : [],
             return_date: formattedReturnDate,
             status: data.status || "Borrowed",
+            quantity: selectedQuantity, // Add the quantity to the form data
             _token: csrf,
         };
-
+    
         try {
             if (isEditMode && !data.id) {
                 throw new Error("Missing ID for update operation");
             }
-
+    
             const endpoint = isEditMode ? `/borrow/${data.id}` : "/borrow";
             const method = isEditMode ? "put" : "post";
-
+    
             const response = await axios[method](endpoint, formData, {
                 headers: {
                     "Content-Type": "application/json",
@@ -269,25 +303,24 @@ export default function ItemBorrow() {
                     "X-CSRF-TOKEN": csrf,
                 },
             });
-
+    
             if (response.data.success) {
                 reset();
                 setSelectedOptions(null);
                 setIsDrawerOpen(false);
-                setSuccessMessage(
-                    isEditMode
-                        ? "Item successfully updated!"
-                        : "Item successfully borrowed!"
-                );
+                setSuccessMessage(isEditMode ? "Item successfully updated!" : "Item successfully borrowed!");
                 setIsSuccessDialogOpen(true);
+    
+                // Fetch items again to ensure proper sorting
                 await fetchBorrowedItems();
             } else {
                 throw new Error(response.data.message || "Failed to save");
             }
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Full error:", error);
             if (error.response) {
-                alert(`Error: ${error.response.data.message || error.response.statusText}`);
+                console.error("Server response:", error.response.data);
+                alert(`Server error: ${error.response.data.message || JSON.stringify(error.response.data)}`);
             } else {
                 alert(`Error: ${error.message}`);
             }
@@ -295,6 +328,7 @@ export default function ItemBorrow() {
             setProcessing(false);
         }
     };
+    
 
     const totalPages = Math.ceil(filteredBorrowedItems.length / itemsPerPage);
     const paginatedBorrowedItems = useMemo(() => {
@@ -344,17 +378,17 @@ export default function ItemBorrow() {
         if (!deleteTarget || deleteTarget.length === 0) return;
 
         try {
-            const response = await axios.post(route('borrows.bulkDestroy'), {
-                ids: deleteTarget
+            const response = await axios.post(route("borrows.bulkDestroy"), {
+                ids: deleteTarget,
             });
 
             if (response.data.success) {
                 // Update all related states
-                setBorrowedItems(prevItems =>
-                    prevItems.filter(item => !deleteTarget.includes(item.id))
+                setBorrowedItems((prevItems) =>
+                    prevItems.filter((item) => !deleteTarget.includes(item.id))
                 );
-                setSelectedBorrowedItems(prev =>
-                    prev.filter(id => !deleteTarget.includes(id))
+                setSelectedBorrowedItems((prev) =>
+                    prev.filter((id) => !deleteTarget.includes(id))
                 );
                 setDeleteTarget(null);
                 setIsConfirmDialogOpen(false);
@@ -366,13 +400,15 @@ export default function ItemBorrow() {
                 );
                 setIsSuccessDialogOpen(true);
             } else {
-                throw new Error(response.data.message || "Failed to delete items");
+                throw new Error(
+                    response.data.message || "Failed to delete items"
+                );
             }
         } catch (error) {
             console.error("Error deleting items:", error);
             setSuccessMessage(
                 error.response?.data?.message ||
-                "Failed to delete items. Please try again."
+                    "Failed to delete items. Please try again."
             );
             setIsSuccessDialogOpen(true);
         }
@@ -390,30 +426,37 @@ export default function ItemBorrow() {
                     onChange={handleSelectAll}
                 />
             ),
-            key: "select-all"
+            key: "select-all",
         },
         { label: "#", key: "index" },
         { label: "Name", key: "name" },
         { label: "Item", key: "item" },
+        { label: "Quantity", key: "quantity" },
         { label: "Date_Return", key: "date_return" },
         { label: "Status", key: "status" },
         { label: "Created_at", key: "created_at" },
         { label: "Updated_at", key: "updated_at" },
     ];
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const date = parseISO(dateString);
-        return isValid(date) ? format(date, 'MM/dd/yyyy hh:mm:ss a') : 'N/A';
-    };
-
     const rows = paginatedBorrowedItems.map((item, index) => {
+        console.log("Item data:", item);  // Log the item to check its data structure
+    
         const itemNames = Array.isArray(item.item_names)
             ? item.item_names
-            : typeof item.item_names === 'string'
-                ? JSON.parse(item.item_names)
-                : [];
-
+            : typeof item.item_names === "string"
+            ? JSON.parse(item.item_names)
+            : [];
+    
+        const formatDate = (dateString) => {
+            if (!dateString) return "";
+            const date = new Date(dateString);
+            return isNaN(date.getTime()) ? dateString : format(date, "MM/dd/yyyy");
+        };
+    
+        // Check if quantity is correctly set
+        const quantity = item.quantity != null && item.quantity !== undefined ? item.quantity : 'N/A';
+        console.log("Quantity:", quantity); // Log quantity for each item
+    
         const displayRow = {
             id: item.id,
             select: (
@@ -425,30 +468,27 @@ export default function ItemBorrow() {
             index: index + 1 + (currentPage - 1) * itemsPerPage,
             name: item.name,
             item: <ItemList items={itemNames} />,
+            quantity: quantity,  // Use the valid quantity
             date_return: formatDate(item.return_date),
             status: item.status,
-            created_at: item.created_at
-                ? formatDate(item.created_at)
-                : "N/A",
-            updated_at: item.updated_at
-                ? formatDate(item.updated_at)
-                : "N/A",
+            created_at: formatDate(item.created_at),
+            updated_at: formatDate(item.updated_at),
         };
-
+    
         Object.defineProperty(displayRow, "_raw", {
             value: {
                 id: item.id,
                 item_names: itemNames,
-                item_ids: Array.isArray(item.item_ids)
-                    ? item.item_ids
-                    : JSON.parse(item.item_ids),
+                quantity: item.quantity,  // Ensure this is properly stored and accessed
+                item_ids: Array.isArray(item.item_ids) ? item.item_ids : JSON.parse(item.item_ids),
                 return_date: item.return_date,
             },
             enumerable: false,
         });
-
+    
         return displayRow;
     });
+    
 
     const statusOptions = [
         { value: "Borrowed", label: "Borrowed" },
@@ -539,10 +579,11 @@ export default function ItemBorrow() {
                     <div className="flex">
                         <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
                             <DeleteIcon
-                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${selectedBorrowedItems.length === 0
-                                    ? "opacity-50 pointer-events-none"
-                                    : ""
-                                    }`}
+                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
+                                    selectedBorrowedItems.length === 0
+                                        ? "opacity-50 pointer-events-none"
+                                        : ""
+                                }`}
                                 onClick={() => {
                                     if (selectedBorrowedItems.length > 0) {
                                         confirmDelete();
@@ -613,35 +654,59 @@ export default function ItemBorrow() {
                                 noOptionsMessage={() => "No items found"}
                                 isClearable
                                 isSearchable
-                                isMulti={false}
                                 value={selectedOptions}
-                                onChange={(option) => {
-                                    setSelectedOptions(option);
-                                    setData({
-                                        ...data,
-                                        item_ids: option ? [option.value] : [],
-                                        item_names: option ? [option.label] : [],
-                                    });
+                                onChange={(option) => handleItemSelect(option)}
+                                onInputChange={(newValue) => {
+                                    if (newValue) {
+                                        handleInputChange(newValue);
+                                    }
                                 }}
-                                onInputChange={debouncedInputChange}
                                 options={options}
-                                filterOption={null}
                                 classNames={{
                                     control: ({ isFocused }) =>
                                         isFocused
                                             ? "custom-select-container custom-select-container--focused"
                                             : "custom-select-container",
-                                    valueContainer: () => "custom-select-value py-1 pl-2 min-h-[40px]",
+                                    valueContainer: () =>
+                                        "custom-select-value py-1 pl-2 min-h-[40px]",
                                     singleValue: () => "custom-select-value",
                                     menu: () => "custom-select-menu",
                                     option: () => "custom-select-option",
-                                    placeholder: () => "custom-select-placeholder",
+                                    placeholder: () =>
+                                        "custom-select-placeholder",
                                     input: () => "custom-select-input",
                                 }}
                             />
                         </div>
                         <InputError message={errors.item_id} className="mt-2" />
                     </div>
+
+                    {/* Quantity SelectOption */}
+                    <div className="mt-4">
+                        <InputLabel htmlFor="quantity" value="Quantity" />
+                        <div className="relative">
+                            <SelectOption
+                                id="quantity"
+                                className="mt-2 block w-full h-10 rounded-sm text-sm"
+                                placeholder="Select quantity..."
+                                options={quantityOptions}
+                                value={selectedQuantity}
+                                onChange={(e) => {
+                                    setSelectedQuantity(e.target.value);
+                                    setData({
+                                        ...data,
+                                        quantity: e.target.value,
+                                    });
+                                }}
+                            />
+                        </div>
+                        <InputError
+                            message={errors.quantity}
+                            className="mt-2"
+                        />
+                    </div>
+
+                    {/* Return Date */}
                     <div className="mt-4 w-full">
                         <InputLabel htmlFor="Date" value="Date Return" />
                         <div className="relative">
