@@ -32,6 +32,9 @@ class Item extends Model
         'ch_date',
         'or',
         'or_date',
+        'property_no',
+        'classification_no',
+        'date_purchase',
     ];
 
 
