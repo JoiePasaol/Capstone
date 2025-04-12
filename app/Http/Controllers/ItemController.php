@@ -477,6 +477,7 @@ public function import(Request $request)
     }
 }
 
+
 public function getTotalItems()
 {
     $totalItems = Item::count();

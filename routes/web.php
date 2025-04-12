@@ -140,8 +140,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/items/bulk-delete', [ItemController::class, 'bulkDestroy'])->name('items.bulk-destroy');
         Route::get('/items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
         Route::put('/items/{id}', [ItemController::class, 'update'])->name('items.update');
+        Route::get('/items-report', function (Request $request) {
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+            $department = $request->query('department');
+        
+            $query = Item::query();
+        
+            if ($startDate && $endDate) {
+                $startDate = Carbon::parse($startDate)->startOfDay();
+                $endDate = Carbon::parse($endDate)->endOfDay();
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            }
+        
+            if ($department) {
+                $query->where('department', $department);
+            }
+        
+            return $query->select(
+                'items as item', 
+                'description', 
+                'estimated_life', 
+                'quantity', 
+                'price as amount', 
+                'department', 
+                'created_at'
+            )->get();
+        });
         Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
-        Route::get('/items-report', [ItemController::class, 'report'])->name('items.report');
+
+     
+
         Route::get('/items/total', [ItemController::class, 'getTotalItems']);
 
         // Borrow Routes
