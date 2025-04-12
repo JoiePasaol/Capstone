@@ -39,7 +39,8 @@ Route::get('/email/verify', function () {
 Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['auth', 'signed'])
     ->name('verification.verify');
-
+    Route::post('/transferred-items/transfer-from-transferred', [TransferredItemsController::class, 'transferFromTransferred'])
+    ->name('transferred-items.transfer-from-transferred');
 // Transfer approval routes (outside auth group for email access)
 Route::get('/transferred-items/{id}/approve', [TransferredItemsController::class, 'approve'])
     ->name('transfer.approve');

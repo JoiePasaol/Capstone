@@ -141,10 +141,11 @@ export default function ItemList() {
             if (transferItemId) {
                 const item = items.find(item => item.id === transferItemId);
                 if (item) {
-                    setMaxQuantity(item.quantity);
+                    // Change from quantity to remaining_quantity
+                    setMaxQuantity(item.remaining_quantity);
                     setTransferData(prev => ({
                         ...prev,
-                        quantityToTransfer: Math.min(prev.quantityToTransfer, item.quantity)
+                        quantityToTransfer: Math.min(prev.quantityToTransfer, item.remaining_quantity)
                     }));
                 }
             }
@@ -182,7 +183,6 @@ export default function ItemList() {
 
         const handleTransferSubmit = async (e) => {
             e.preventDefault();
-
             try {
                 setProcessing(true);
                 const response = await axios.post(route('items.transfer'), {
@@ -200,17 +200,13 @@ export default function ItemList() {
                     approved_by_title: transferData.approvedByTitle,
                     witnessed_by_name: transferData.witnessedByName,
                     witnessed_by_title: transferData.witnessedByTitle
-                }, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
                 });
 
                 setSuccessMessage(response.data.message || "Item transferred successfully!");
                 setIsSuccessDialogOpen(true);
                 setIsTransferModalOpen(false);
-                fetchItems();
+                fetchItems(); // Refresh the item list
+
             } catch (error) {
                 console.error("Transfer failed:", error);
                 let errorMessage = "Transfer failed. Please try again.";
@@ -250,9 +246,9 @@ export default function ItemList() {
                             className="mt-1 block w-full"
                             required
                         />
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Available: {maxQuantity}
-                        </div>
+<div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+    Available: {maxQuantity}
+</div>
                     </div>
 
                     {/* Transfer To and Name/Designation */}

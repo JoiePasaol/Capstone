@@ -15,6 +15,7 @@ class TransferredItems extends Model
         'transfer_to',
         'name_designation',
         'position_intended',
+        'remaining_quantity',
         'designated_office',
         'office_name_designation',
         'office_position_intended',
