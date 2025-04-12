@@ -52,6 +52,7 @@ export default function ItemBorrow() {
     const [statusFilter, setStatusFilter] = useState("All");
     const [availableQuantity, setAvailableQuantity] = useState(0);
     const [selectedQuantity, setSelectedQuantity] = useState(null);
+    const [isBulkDelete, setIsBulkDelete] = useState(false);
 
     const itemsPerPage = 10;
 
@@ -111,8 +112,8 @@ export default function ItemBorrow() {
                     item.name.toLowerCase().includes(searchLower) ||
                     (Array.isArray(item.item_names)
                         ? item.item_names.some((name) =>
-                            name.toLowerCase().includes(searchLower)
-                        )
+                              name.toLowerCase().includes(searchLower)
+                          )
                         : false)
             )
             .filter(
@@ -158,7 +159,7 @@ export default function ItemBorrow() {
             });
             setSuccessMessage(
                 error.response?.data?.message ||
-                "Failed to load borrowed items. Please try again."
+                    "Failed to load borrowed items. Please try again."
             );
             setIsSuccessDialogOpen(true);
         }
@@ -175,23 +176,32 @@ export default function ItemBorrow() {
             const itemNames = Array.isArray(row.item_names)
                 ? row.item_names
                 : typeof row.item_names === "string"
-                    ? JSON.parse(row.item_names)
-                    : [];
+                ? JSON.parse(row.item_names)
+                : [];
 
             const itemIds = Array.isArray(row.item_ids)
                 ? row.item_ids
                 : typeof row.item_ids === "string"
-                    ? JSON.parse(row.item_ids)
-                    : [];
+                ? JSON.parse(row.item_ids)
+                : [];
 
-            const selectedOpts = itemNames.map((name, index) => ({
-                value: itemIds[index] || name.toLowerCase().replace(/\s+/g, "-"),
-                label: name,
-            }));
+            const selectedOpts = itemNames
+                .map((name, index) => {
+                    const id = itemIds[index];
+                    if (!id) {
+                        console.warn(`Missing item ID for ${name}`);
+                        return null;
+                    }
+                    return {
+                        value: id,
+                        label: name,
+                    };
+                })
+                .filter(Boolean);
 
             setSelectedOptions(selectedOpts);
             setSelectedStatus(row.status);
-            setSelectedQuantity(row.quantity); // Make sure to set the quantity
+            setSelectedQuantity(row.quantity);
 
             setData({
                 id: row.id,
@@ -200,7 +210,7 @@ export default function ItemBorrow() {
                 item_names: itemNames,
                 return_date: row.return_date,
                 status: row.status,
-                quantity: row.quantity, // Include quantity here
+                quantity: row.quantity,
             });
 
             if (row.return_date) {
@@ -212,7 +222,7 @@ export default function ItemBorrow() {
             setSelectedOptions([]);
             setSelectedStatus(null);
             setReturnDate(null);
-            setSelectedQuantity(1); // Reset to default quantity
+            setSelectedQuantity(1);
         }
     };
 
@@ -225,7 +235,9 @@ export default function ItemBorrow() {
 
         try {
             console.log("Making API request..."); // Debug API call
-            const response = await axios.get(`/api/search-items?query=${inputValue}`);
+            const response = await axios.get(
+                `/api/search-items?query=${inputValue}`
+            );
             console.log("API response:", response.data); // Debug response
 
             if (!Array.isArray(response.data)) {
@@ -258,16 +270,19 @@ export default function ItemBorrow() {
 
     // Function to handle item selection
     const handleItemSelect = (selectedOption) => {
-        // Update the selected item
         setSelectedOptions(selectedOption);
+
+        const ids = selectedOption ? [selectedOption.value] : [];
+        const names = selectedOption ? [selectedOption.label] : [];
+
         setData({
             ...data,
-            item_ids: selectedOption ? [selectedOption.value] : [],
-            item_names: selectedOption ? [selectedOption.label] : [],
+            item_ids: ids,
+            item_names: names,
+            quantity: selectedOption?.quantity || 1,
         });
 
-        // Set the available quantity based on the selected item
-        if (selectedOption && selectedOption.quantity) {
+        if (selectedOption?.quantity) {
             setAvailableQuantity(selectedOption.quantity);
         }
     };
@@ -276,36 +291,46 @@ export default function ItemBorrow() {
         e.preventDefault();
         setProcessing(true);
 
-        if (!selectedOptions) {
+        if (
+            !selectedOptions ||
+            (Array.isArray(selectedOptions) && selectedOptions.length === 0)
+        ) {
             alert("Please select an item.");
             setProcessing(false);
             return;
         }
 
-        const formattedReturnDate = returnDate ? format(returnDate, "MM/dd/yyyy") : "";
-        const quantity = selectedQuantity || 1;
+        const formattedReturnDate = returnDate
+            ? format(returnDate, "MM/dd/yyyy")
+            : "";
+        const quantity = parseInt(selectedQuantity) || 1;
 
         const formData = {
             name: data.name,
-            item_ids: selectedOptions ? [selectedOptions.value] : [],
-            item_names: selectedOptions ? [selectedOptions.label] : [],
+            item_ids: Array.isArray(selectedOptions)
+                ? selectedOptions.map((opt) => opt.value)
+                : [selectedOptions.value],
+            item_names: Array.isArray(selectedOptions)
+                ? selectedOptions.map((opt) => opt.label)
+                : [selectedOptions.label],
             return_date: formattedReturnDate,
             status: data.status || "Borrowed",
             quantity: quantity,
             _token: csrf,
         };
 
+        console.log("Submitting data:", formData); // for debug
+
         try {
             if (isEditMode && !data.id) {
                 throw new Error("Missing ID for update operation");
             }
 
-            // Use the correct endpoint based on mode
             const endpoint = isEditMode
                 ? `/api/borrow/${data.id}`
-                : '/api/borrow';
+                : "/api/borrow";
 
-            const method = isEditMode ? 'put' : 'post';
+            const method = isEditMode ? "put" : "post";
 
             const response = await axios[method](endpoint, formData, {
                 headers: {
@@ -318,7 +343,11 @@ export default function ItemBorrow() {
                 reset();
                 setSelectedOptions(null);
                 setIsDrawerOpen(false);
-                setSuccessMessage(isEditMode ? "Item successfully updated!" : "Item successfully borrowed!");
+                setSuccessMessage(
+                    isEditMode
+                        ? "Item successfully updated!"
+                        : "Item successfully borrowed!"
+                );
                 setIsSuccessDialogOpen(true);
                 await fetchBorrowedItems();
             } else {
@@ -328,7 +357,12 @@ export default function ItemBorrow() {
             console.error("Full error:", error);
             if (error.response) {
                 console.error("Server response:", error.response.data);
-                alert(`Server error: ${error.response.data.message || JSON.stringify(error.response.data)}`);
+                alert(
+                    `Server error: ${
+                        error.response.data.message ||
+                        JSON.stringify(error.response.data)
+                    }`
+                );
             } else {
                 alert(`Error: ${error.message}`);
             }
@@ -367,7 +401,8 @@ export default function ItemBorrow() {
     };
 
     const confirmDelete = (id = null) => {
-        const count = id ? 1 : selectedBorrowedItems.length;
+        const isBulk = id === null;
+        const count = isBulk ? selectedBorrowedItems.length : 1;
 
         if (count === 0) return;
 
@@ -377,20 +412,27 @@ export default function ItemBorrow() {
                 : `Are you sure you want to delete these ${count} borrowed items?`
         );
 
-        setDeleteTarget(id ? [id] : [...selectedBorrowedItems]);
+        setDeleteTarget(isBulk ? [...selectedBorrowedItems] : [id]);
         setIsConfirmDialogOpen(true);
+        setIsBulkDelete(isBulk); // You need this to distinguish in the next step
     };
 
     const handleConfirmDelete = async () => {
         if (!deleteTarget || deleteTarget.length === 0) return;
 
         try {
-            const response = await axios.post(route("borrows.bulkDestroy"), {
-                ids: deleteTarget,
-            });
+            let response;
+            if (isBulkDelete) {
+                response = await axios.post(route("borrows.bulk-destroy"), {
+                    ids: deleteTarget,
+                });
+            } else {
+                response = await axios.delete(
+                    route("borrows.destroy", { id: deleteTarget[0] })
+                );
+            }
 
             if (response.data.success) {
-                // Update all related states
                 setBorrowedItems((prevItems) =>
                     prevItems.filter((item) => !deleteTarget.includes(item.id))
                 );
@@ -399,7 +441,6 @@ export default function ItemBorrow() {
                 );
                 setDeleteTarget(null);
                 setIsConfirmDialogOpen(false);
-
                 setSuccessMessage(
                     deleteTarget.length === 1
                         ? "Borrowed item successfully deleted!"
@@ -415,7 +456,7 @@ export default function ItemBorrow() {
             console.error("Error deleting items:", error);
             setSuccessMessage(
                 error.response?.data?.message ||
-                "Failed to delete items. Please try again."
+                    "Failed to delete items. Please try again."
             );
             setIsSuccessDialogOpen(true);
         }
@@ -446,23 +487,25 @@ export default function ItemBorrow() {
     ];
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
+        if (!dateString) return "N/A";
         const date = parseISO(dateString);
-        return isValid(date) ? format(date, 'MM/dd/yyyy hh:mm:ss a') : 'N/A';
+        return isValid(date) ? format(date, "MM/dd/yyyy hh:mm:ss a") : "N/A";
     };
 
     const rows = paginatedBorrowedItems.map((item, index) => {
-        console.log("Item data:", item);  // Log the item to check its data structure
+        console.log("Item data:", item); // Log the item to check its data structure
 
         const itemNames = Array.isArray(item.item_names)
             ? item.item_names
             : typeof item.item_names === "string"
-                ? JSON.parse(item.item_names)
-                : [];
-
+            ? JSON.parse(item.item_names)
+            : [];
 
         // Check if quantity is correctly set
-        const quantity = item.quantity != null && item.quantity !== undefined ? item.quantity : 'N/A';
+        const quantity =
+            item.quantity != null && item.quantity !== undefined
+                ? item.quantity
+                : "N/A";
         console.log("Quantity:", quantity); // Log quantity for each item
 
         const displayRow = {
@@ -476,15 +519,11 @@ export default function ItemBorrow() {
             index: index + 1 + (currentPage - 1) * itemsPerPage,
             name: item.name,
             item: <ItemList items={itemNames} />,
-            quantity: quantity,  // Use the valid quantity
+            quantity: quantity, // Use the valid quantity
             date_return: formatDate(item.return_date),
             status: item.status,
-            created_at: item.created_at
-                ? formatDate(item.created_at)
-                : "N/A",
-            updated_at: item.updated_at
-                ? formatDate(item.updated_at)
-                : "N/A",
+            created_at: item.created_at ? formatDate(item.created_at) : "N/A",
+            updated_at: item.updated_at ? formatDate(item.updated_at) : "N/A",
         };
 
         Object.defineProperty(displayRow, "_raw", {
@@ -492,7 +531,9 @@ export default function ItemBorrow() {
                 id: item.id,
                 item_names: itemNames,
                 quantity: item.quantity,
-                item_ids: Array.isArray(item.item_ids) ? item.item_ids : JSON.parse(item.item_ids),
+                item_ids: Array.isArray(item.item_ids)
+                    ? item.item_ids
+                    : JSON.parse(item.item_ids),
                 return_date: item.return_date,
             },
             enumerable: false,
@@ -500,7 +541,6 @@ export default function ItemBorrow() {
 
         return displayRow;
     });
-
 
     const statusOptions = [
         { value: "Borrowed", label: "Borrowed" },
@@ -591,16 +631,18 @@ export default function ItemBorrow() {
                     <div className="flex">
                         <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
                             <DeleteIcon
-                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${selectedBorrowedItems.length === 0
-                                    ? "opacity-50 pointer-events-none"
-                                    : ""
-                                    }`}
+                                className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
+                                    selectedBorrowedItems.length < 2
+                                        ? "opacity-50 pointer-events-none"
+                                        : ""
+                                }`}
                                 onClick={() => {
-                                    if (selectedBorrowedItems.length > 0) {
-                                        confirmDelete();
+                                    if (selectedBorrowedItems.length >= 2) {
+                                        confirmDelete(); 
                                     }
                                 }}
                             />
+
                             <AddCircleIcon
                                 className="text-gray-600 dark:text-gray-300 cursor-pointer"
                                 onClick={() => toggleDrawer(true)}
@@ -683,11 +725,11 @@ export default function ItemBorrow() {
                                     singleValue: () => "custom-select-value",
                                     menu: () => "custom-select-menu",
                                     option: () => "custom-select-option",
-                                    placeholder: () => "custom-select-placeholder",
+                                    placeholder: () =>
+                                        "custom-select-placeholder",
                                     input: () => "custom-select-input",
                                 }}
                             />
-
                         </div>
                         <InputError message={errors.item_id} className="mt-2" />
                     </div>
@@ -703,10 +745,11 @@ export default function ItemBorrow() {
                                 options={quantityOptions}
                                 value={selectedQuantity}
                                 onChange={(e) => {
-                                    setSelectedQuantity(e.target.value);
+                                    const value = parseInt(e.target.value);
+                                    setSelectedQuantity(value);
                                     setData({
                                         ...data,
-                                        quantity: e.target.value,
+                                        quantity: value,
                                     });
                                 }}
                             />
