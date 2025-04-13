@@ -249,7 +249,7 @@ export default function ItemBorrow() {
             const newOptions = response.data.map((item) => ({
                 value: item.id,
                 label: item.items,
-                quantity: item.quantity,
+                remaining_quantity: item.remaining_quantity,
             }));
 
             console.log("Generated options:", newOptions); // Debug final options
@@ -279,11 +279,11 @@ export default function ItemBorrow() {
             ...data,
             item_ids: ids,
             item_names: names,
-            quantity: selectedOption?.quantity || 1,
+            quantity: 1, // default to 1
         });
 
-        if (selectedOption?.quantity) {
-            setAvailableQuantity(selectedOption.quantity);
+        if (selectedOption?.remaining_quantity) {
+            setAvailableQuantity(selectedOption.remaining_quantity);
         }
     };
 
@@ -638,7 +638,7 @@ export default function ItemBorrow() {
                                 }`}
                                 onClick={() => {
                                     if (selectedBorrowedItems.length >= 2) {
-                                        confirmDelete(); 
+                                        confirmDelete();
                                     }
                                 }}
                             />
@@ -743,7 +743,9 @@ export default function ItemBorrow() {
                                 className="mt-2 block w-full h-10 rounded-sm text-sm"
                                 placeholder="Select quantity..."
                                 options={quantityOptions}
-                                value={selectedQuantity}
+                                value={quantityOptions.find(
+                                    (opt) => opt.key === selectedQuantity
+                                )} 
                                 onChange={(e) => {
                                     const value = parseInt(e.target.value);
                                     setSelectedQuantity(value);

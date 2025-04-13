@@ -657,7 +657,7 @@ export default function TransferredItems({ items = [] }) {
 
             <Head title="Transferred Items" />
             <div className="py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-6xl mx-auto">
 
                     <PrintTemplate
                         selectedItems={items.filter(item => selectedItems.includes(item.id))}

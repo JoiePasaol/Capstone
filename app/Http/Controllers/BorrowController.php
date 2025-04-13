@@ -46,7 +46,7 @@ class BorrowController extends Controller
         // Assuming 'quantity' exists in the 'items' table
         $items = Item::where('items', 'LIKE', "%{$query}%")
                      ->limit(10)
-                     ->get(['id', 'items', 'quantity']);
+                     ->get(['id', 'items', 'remaining_quantity']);
         
         return response()->json($items);
     }
@@ -64,17 +64,38 @@ class BorrowController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
     
+        \DB::beginTransaction();
+    
         try {
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
     
+            // Create the borrow record (let model handle casting)
             $borrow = Borrow::create([
                 'name' => $validated['name'],
-                'item_ids' => $validated['item_ids'],
-                'item_names' => $validated['item_names'],
+                'item_ids' => $validated['item_ids'],     // no json_encode
+                'item_names' => $validated['item_names'], // no json_encode
                 'return_date' => $returnDate,
                 'status' => $validated['status'] ?? 'Borrowed',
                 'quantity' => $validated['quantity'],
             ]);
+    
+            // Update remaining_quantity for each item
+            foreach ($validated['item_ids'] as $itemId) {
+                $item = \App\Models\Item::find($itemId);
+    
+                if (!$item) {
+                    throw new \Exception("Item with ID {$itemId} not found.");
+                }
+    
+                if ($item->remaining_quantity < $validated['quantity']) {
+                    throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Requested: {$validated['quantity']})");
+                }
+    
+                $item->remaining_quantity -= $validated['quantity'];
+                $item->save();
+            }
+    
+            \DB::commit();
     
             return response()->json([
                 'success' => true,
@@ -82,7 +103,9 @@ class BorrowController extends Controller
                 'data' => $borrow
             ]);
         } catch (\Exception $e) {
+            \DB::rollBack();
             \Log::error('Error creating borrow record: ' . $e->getMessage());
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to save record. Please try again.',
@@ -90,6 +113,8 @@ class BorrowController extends Controller
             ], 500);
         }
     }
+    
+    
     
     public function update(Request $request, $id)
     {
@@ -104,8 +129,23 @@ class BorrowController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
     
+        \DB::beginTransaction();
+    
         try {
             $borrow = Borrow::findOrFail($id);
+            $originalStatus = $borrow->status;
+    
+            // If it's being returned now and was previously not returned
+            if ($originalStatus !== 'Returned' && $validated['status'] === 'Returned') {
+                foreach ($validated['item_ids'] as $itemId) {
+                    $item = \App\Models\Item::find($itemId);
+    
+                    if ($item) {
+                        $item->remaining_quantity += $validated['quantity'];
+                        $item->save();
+                    }
+                }
+            }
     
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
     
@@ -118,13 +158,17 @@ class BorrowController extends Controller
                 'quantity' => $validated['quantity'],
             ]);
     
+            \DB::commit();
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Borrow record updated successfully.',
                 'data' => $borrow
             ]);
         } catch (\Exception $e) {
+            \DB::rollBack();
             \Log::error('Error updating borrow record: ' . $e->getMessage());
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update record. Please try again.',
@@ -132,6 +176,7 @@ class BorrowController extends Controller
             ], 500);
         }
     }
+    
     
 
     public function destroy($id)
