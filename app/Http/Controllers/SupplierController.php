@@ -21,7 +21,7 @@ class SupplierController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
-            'mobile_number' => 'required|string|max:15',
+            'mobile_number' => 'required|numeric',
             'email' => 'required|string|email|unique:suppliers,email',
         ]);
     

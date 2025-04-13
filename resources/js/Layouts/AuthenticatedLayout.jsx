@@ -206,6 +206,16 @@ export default function AuthenticatedLayout({ header, children }) {
 
                         {activeDropdown === "transfer" && isSidebarOpen && (
                             <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
+                                 <Link
+                                    href={route("signatory")}
+                                    className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                        isActive("signatory")
+                                            ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                            : ""
+                                    } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                                >
+                                    Signatory
+                                </Link>
                                 <Link
                                     href={route("transferred-items")}
                                     className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
@@ -216,16 +226,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Transferred Items
                                 </Link>
-                                <Link
-                                    href={route("signatory")}
-                                    className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                        isActive("signatory")
-                                            ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                            : ""
-                                    } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                >
-                                    Signatory
-                                </Link>
+                               
                             </div>
                         )}
                     </div>

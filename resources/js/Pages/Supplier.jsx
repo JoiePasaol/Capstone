@@ -32,12 +32,13 @@ export default function Supplier() {
     const [confirmMessage, setConfirmMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
-    const { data, setData, post, reset, errors } = useForm({
+    const { data, setData, post, reset, errors, setError } = useForm({
         name: "",
         address: "",
         mobile_number: "",
         email: "",
     });
+    
 
     const [processing, setProcessing] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -87,13 +88,13 @@ export default function Supplier() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
-
+    
         if (!data.id) {
             // Create new supplier
             axios
                 .post(route("suppliers.store"), data)
                 .then((response) => {
-                    setSuppliers((prev) => [...prev, response.data.supplier]); // Update state
+                    setSuppliers((prev) => [...prev, response.data.supplier]);
                     setFilteredSuppliers((prev) => [
                         ...prev,
                         response.data.supplier,
@@ -102,13 +103,17 @@ export default function Supplier() {
                     reset();
                     setSuccessMessage("Supplier successfully added!");
                     setIsSuccessDialogOpen(true);
-                    setProcessing(false);
                 })
-                .catch(() => {
+                .catch((error) => {
+                    if (error.response?.status === 422) {
+                        setError(error.response.data.errors); // 👈 Set validation errors
+                    }
+                })
+                .finally(() => {
                     setProcessing(false);
                 });
         } else {
-            // Update existing supplier
+            // Update supplier
             axios
                 .put(route("suppliers.update", { id: data.id }), {
                     ...data,
@@ -133,13 +138,18 @@ export default function Supplier() {
                     reset();
                     setSuccessMessage("Supplier successfully updated!");
                     setIsSuccessDialogOpen(true);
-                    setProcessing(false);
                 })
-                .catch(() => {
+                .catch((error) => {
+                    if (error.response?.status === 422) {
+                        setError(error.response.data.errors); // 👈 Again for update
+                    }
+                })
+                .finally(() => {
                     setProcessing(false);
                 });
         }
     };
+    
 
     useEffect(() => {
         if (!Array.isArray(suppliers) || suppliers.length === 0) return;
@@ -205,7 +215,7 @@ export default function Supplier() {
         if (!deleteTarget || deleteTarget.length === 0) return;
 
         try {
-            await axios.post(route("suppliers.bulkDestroy"), {
+            await axios.post(route("suppliers.bulk-destroy"), {
                 ids: deleteTarget,
             });
 

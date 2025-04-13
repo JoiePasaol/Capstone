@@ -19,7 +19,7 @@ export default function Dashboard({ successMessage }) {
     const [totalOverdue, setTotalOverdue] = useState(0);
     const [totalTransferred, setTotalTransferred] = useState(0);
 
-    const { user } = usePage().props.auth;
+    
 
 
     useEffect(() => {

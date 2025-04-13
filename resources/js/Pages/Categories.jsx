@@ -224,7 +224,7 @@ export default function Categories({ categories }) {
         if (!selectedCategory || selectedCategory.length === 0) return;
 
         try {
-            const response = await axios.post(route("categories.bulkDestroy"), {
+            const response = await axios.post(route("categories.bulk-destroy"), {
                 ids: selectedCategory.map((category) => category.id),
             });
             if (response.status === 200) {
