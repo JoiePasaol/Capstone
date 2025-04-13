@@ -180,8 +180,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/borrow/{id}', [BorrowController::class, 'update'])->name('borrows.update');
         Route::delete('/borrow/{id}', [BorrowController::class, 'destroy'])->name('borrows.destroy');
         Route::post('/borrow/bulk-destroy', [BorrowController::class, 'bulkDestroy'])->name('borrows.bulk-destroy');
-        Route::get('/borrowed-items/total-count', [BorrowController::class, 'countBorrowed'])->name('borrows.count-borrowed');
-        Route::get('/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue'])->name('borrows.count-overdue');
+        Route::get('/borrowed-items/total-count', [BorrowController::class, 'countBorrowed']);
+        Route::get('/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue']);
         
         // Supplier Routes
         Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');

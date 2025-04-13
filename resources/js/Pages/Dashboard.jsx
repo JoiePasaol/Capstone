@@ -14,26 +14,39 @@ import axios from "axios";
 export default function Dashboard({ successMessage }) {
     const [totalItems, setTotalItems] = useState(0);
     const [totalCategories, setTotalCategories] = useState(0);
-    const [totalSuppliers, setTotalSuppliers] = useState(0); // New state for suppliers
+    const [totalSuppliers, setTotalSuppliers] = useState(0); 
+    const [totalBorrowed, setTotalBorrowed] = useState(0);
+    const [totalOverdue, setTotalOverdue] = useState(0);
+
 
     useEffect(() => {
         // Fetch total items, categories, and suppliers count
         const fetchCounts = async () => {
             try {
-                const [itemsResponse, categoriesResponse, suppliersResponse] = await Promise.all([
+                const [
+                    itemsResponse,
+                    categoriesResponse,
+                    suppliersResponse,
+                    borrowedResponse,
+                    overdueResponse,
+                ] = await Promise.all([
                     axios.get("/api/items/total"),
                     axios.get("/api/categories/total"),
-                    axios.get("/api/suppliers"), // Fetch supplier count
+                    axios.get("/api/suppliers"),
+                    axios.get("/api/borrowed-items/total-count"),
+                    axios.get("/api/borrowed-items/total-overdue"),
                 ]);
-
+        
                 setTotalItems(itemsResponse.data.totalItems);
                 setTotalCategories(categoriesResponse.data.totalCategories);
-                setTotalSuppliers(suppliersResponse.data.suppliers.length); // Update supplier count
+                setTotalSuppliers(suppliersResponse.data.suppliers.length);
+                setTotalBorrowed(borrowedResponse.data.total_borrowed);
+                setTotalOverdue(overdueResponse.data.total_overdue);
             } catch (error) {
                 console.error("Error fetching counts:", error);
             }
         };
-
+        
         fetchCounts();
     }, []);
 
@@ -115,7 +128,7 @@ export default function Dashboard({ successMessage }) {
                 <>
                     <DashboardCard
                         title="Total Borrowed Item"
-
+                        value={totalBorrowed}
                         icon={
                             <InventoryIcon
                                 className="absolute right-[-40px] bottom-[-40px]"
@@ -128,7 +141,7 @@ export default function Dashboard({ successMessage }) {
 
                     <DashboardCard
                         title="Total Overdue Item"
-
+                        value={totalOverdue}
                         icon={
                             <InventoryIcon
                                 className="absolute right-[-40px] bottom-[-40px]"

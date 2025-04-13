@@ -1709,35 +1709,35 @@ export default function ItemList() {
                                 />
                             </div>
                             <div className="mt-4 w-60">
-    <InputLabel htmlFor="date_purchase" value="Date Purchase" />
-    <div className="relative">
-        <select
-            className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
-            rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
-            onClick={() => toggleDatePicker("date_purchase")}
-        >
-            <option hidden value="">
-                {data.date_purchase
-                    ? format(parse(data.date_purchase, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
-                    : "Select date"}
-            </option>
-        </select>
-        {activeDatePicker === "date_purchase" && (
-            <div className="absolute z-50">
-                <DatePicker
-                    selected={data.date_purchase ? parse(data.date_purchase, "yyyy-MM-dd", new Date()) : null}
-                    onChange={(date) => {
-                        setData("date_purchase", format(date, "yyyy-MM-dd"));
-                        setActiveDatePicker(null);
-                    }}
-                    inline
-                    calendarClassName="dark:bg-gray-800 pb-7"
-                />
-            </div>
-        )}
-    </div>
-    <InputError message={errors.date_purchase} className="mt-2" />
-</div>
+                            <InputLabel htmlFor="date_purchase" value="Date Purchase" />
+                            <div className="relative">
+                                <select
+                                    className="px-3 w-60 h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700
+                                    rounded-sm text-sm text-gray-700 dark:text-gray-200 bg-transparent cursor-pointer flex items-center"
+                                    onClick={() => toggleDatePicker("date_purchase")}
+                                >
+                                    <option hidden value="">
+                                        {data.date_purchase
+                                            ? format(parse(data.date_purchase, "yyyy-MM-dd", new Date()), "MM/dd/yyyy")
+                                            : "Select date"}
+                                    </option>
+                                </select>
+                                {activeDatePicker === "date_purchase" && (
+                                    <div className="absolute z-50">
+                                        <DatePicker
+                                            selected={data.date_purchase ? parse(data.date_purchase, "yyyy-MM-dd", new Date()) : null}
+                                            onChange={(date) => {
+                                                setData("date_purchase", format(date, "yyyy-MM-dd"));
+                                                setActiveDatePicker(null);
+                                            }}
+                                            inline
+                                            calendarClassName="dark:bg-gray-800 pb-7"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <InputError message={errors.date_purchase} className="mt-2" />
+                        </div>
                         </div>
                     </div>
 

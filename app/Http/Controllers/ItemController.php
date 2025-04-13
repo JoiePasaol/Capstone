@@ -47,7 +47,7 @@ class ItemController extends Controller
             'estimated_life' => 'required|string',
             'quantity' => 'required|integer',
             'price' => 'required|numeric|min:0',
-            'suppliers' => 'required|string', // Changed from 'supplier'
+            'suppliers' => 'required|string', 
             'ics' => 'nullable|string',
             'pr' => 'nullable|string',
             'pr_date' => 'nullable|date',
