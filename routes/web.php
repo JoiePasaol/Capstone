@@ -39,7 +39,10 @@ Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['auth', 'signed'])
     ->name('verification.verify');
 
-// Transfer approval routes (outside auth group)
+    Route::post('/transferred-items/transfer-from-transferred', [TransferredItemsController::class, 'transferFromTransferred'])
+    ->name('transferred-items.transfer-from-transferred');
+// Transfer approval routes (outside auth group for email access)
+
 Route::get('/transferred-items/{id}/approve', [TransferredItemsController::class, 'approve'])
     ->name('transfer.approve');
 
@@ -48,6 +51,14 @@ Route::post('/transferred-items/{id}/approve', [TransferredItemsController::clas
 
 Route::get('/transferred-items/{id}/status', [TransferredItemsController::class, 'approvalStatus'])
     ->name('transfer.status');
+
+
+// API Routes that don't require authentication
+Route::prefix('api')->group(function () {
+    // Move the transferred items count route here
+    Route::get('/transferred-items/total-transferred', [TransferredItemsController::class, 'getTotalTransferredCount']);
+});
+
 
 // Authenticated and Verified Routes
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -107,7 +118,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/transferred-items/bulk-delete', [TransferredItemsController::class, 'bulkDestroy'])
         ->name('transferred-items.bulkDestroy');
 
-    // API Routes Group
+
+    // API Routes that require authentication
+
     Route::prefix('api')->group(function () {
         // User API Endpoints
         Route::get('/users', [UserController::class, 'fetchUsers'])->name('users.fetch');
@@ -123,8 +136,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::put('/categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
         Route::post('/categories/bulk-destroy', [CategoryController::class, 'bulkDestroy'])->name('categories.bulk-destroy');
         Route::get('/categories/total', [CategoryController::class, 'getTotalCategoriesCount']);
+
 
         // Signatory Routes
         Route::get('/signatories', [SignatoryController::class, 'index'])->name('signatories.index');
@@ -140,19 +155,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/items/bulk-delete', [ItemController::class, 'bulkDestroy'])->name('items.bulk-destroy');
         Route::get('/items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
         Route::put('/items/{id}', [ItemController::class, 'update'])->name('items.update');
+
+        // Report Route
         Route::get('/items-report', function (Request $request) {
             $startDate = $request->query('start_date');
             $endDate = $request->query('end_date');
             $department = $request->query('department');
         
             $query = Item::query();
+
         
             if ($startDate && $endDate) {
                 $startDate = Carbon::parse($startDate)->startOfDay();
                 $endDate = Carbon::parse($endDate)->endOfDay();
                 $query->whereBetween('created_at', [$startDate, $endDate]);
             }
-        
+
             if ($department) {
                 $query->where('department', $department);
             }
@@ -168,9 +186,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             )->get();
         });
         Route::post('/items/import', [ItemController::class, 'import'])->name('items.import');
-
-     
-
         Route::get('/items/total', [ItemController::class, 'getTotalItems']);
 
         // Borrow Routes
@@ -183,6 +198,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/borrowed-items/total-count', [BorrowController::class, 'countBorrowed']);
         Route::get('/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue']);
         
+
         // Supplier Routes
         Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
         Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
@@ -191,6 +207,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
         Route::post('/suppliers/bulk-destroy', [SupplierController::class, 'bulkDestroy'])->name('suppliers.bulk-destroy');
         Route::get('/suppliers/total', [SupplierController::class, 'getTotalSuppliersCount'])->name('suppliers.count');
+
 
         // Profile Routes
         Route::prefix('profile')->group(function () {

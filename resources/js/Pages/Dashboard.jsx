@@ -17,33 +17,41 @@ export default function Dashboard({ successMessage }) {
     const [totalSuppliers, setTotalSuppliers] = useState(0); 
     const [totalBorrowed, setTotalBorrowed] = useState(0);
     const [totalOverdue, setTotalOverdue] = useState(0);
+    const [totalTransferred, setTotalTransferred] = useState(0);
+
+    const { user } = usePage().props.auth;
 
 
     useEffect(() => {
         // Fetch total items, categories, and suppliers count
         const fetchCounts = async () => {
             try {
+                console.log("Fetching counts...");
+
                 const [
                     itemsResponse,
                     categoriesResponse,
                     suppliersResponse,
                     borrowedResponse,
                     overdueResponse,
+                    transferredResponse,
                 ] = await Promise.all([
                     axios.get("/api/items/total"),
                     axios.get("/api/categories/total"),
                     axios.get("/api/suppliers"),
                     axios.get("/api/borrowed-items/total-count"),
                     axios.get("/api/borrowed-items/total-overdue"),
+                    axios.get("/api/transferred-items/total-transferred")
                 ]);
-        
                 setTotalItems(itemsResponse.data.totalItems);
                 setTotalCategories(categoriesResponse.data.totalCategories);
                 setTotalSuppliers(suppliersResponse.data.suppliers.length);
                 setTotalBorrowed(borrowedResponse.data.total_borrowed);
                 setTotalOverdue(overdueResponse.data.total_overdue);
+                setTotalTransferred(transferredResponse.data.total_transferred || 0);
             } catch (error) {
                 console.error("Error fetching counts:", error);
+                // Keep existing values on error
             }
         };
         
@@ -51,7 +59,6 @@ export default function Dashboard({ successMessage }) {
     }, []);
 
     useEffect(() => {
-        console.log("Success Message:", successMessage); // Debugging
         if (successMessage) {
             toast.custom(
                 (t) => (
@@ -123,8 +130,6 @@ export default function Dashboard({ successMessage }) {
                     bgColor="bg-blue-500"
                     link={route("item-list")}
                 />
-
-
                 <>
                     <DashboardCard
                         title="Total Borrowed Item"
@@ -151,9 +156,19 @@ export default function Dashboard({ successMessage }) {
                         bgColor="bg-red-500"
                         link={route("item-borrow")}
                     />
+                         <DashboardCard
+                    title="Total Transferred Item"
+                    value={totalTransferred}
+                    icon={
+                        <InventoryIcon
+                            className="absolute right-[-40px] bottom-[-40px]"
+                            style={{ fontSize: "205px" }}
+                        />
+                    }
+                    bgColor="bg-yellow-500"
+                    link={route("transferred-items")}
+                />
                 </>
-
-
 
             </div>
         </AuthenticatedLayout>

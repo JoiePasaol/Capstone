@@ -10,19 +10,23 @@ use Inertia\Inertia;
 use App\Models\Signatory;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class TransferredItemsController extends Controller
 {
     public function index()
     {
-        $transferredItems = TransferredItems::with('originalItem')
-            ->orderBy('transferred_at', 'desc')
-            ->get()
-            ->map(function ($item) {
-                return [
+        $transferredItems = TransferredItems::with(['originalItem' => function($query) {
+            $query->select('id', 'remaining_quantity', 'property_no', 'classification_no');
+        }])
+        ->orderBy('transferred_at', 'desc')
+        ->get()
+        ->map(function ($item) {
+            return [
                     'id' => $item->id,
                     'original_item_id' => $item->original_item_id,
                     'quantity' => $item->quantity,
+                    'remaining_quantity' => $item->remaining_quantity,
                     'transfer_to' => $item->transfer_to,
                     'recommended_by_name' => $item->recommended_by_name,
                     'recommended_by_title' => $item->recommended_by_title,
@@ -44,12 +48,12 @@ class TransferredItemsController extends Controller
                     'amount' => $item->amount,
                     'date_purchase' => $item->date_purchase?->format('Y-m-d'),
                     'transferred_at' => $item->transferred_at->format('Y-m-d H:i:s'),
-                    'original_item' => $item->originalItem ? [
-                        'id' => $item->originalItem->id,
-                        'quantity' => $item->originalItem->quantity,
-                        'property_no' => $item->originalItem->property_no,
-                        'classification_no' => $item->originalItem->classification_no,
-                    ] : null,
+'original_item' => $item->originalItem ? [
+                'id' => $item->originalItem->id,
+                'remaining_quantity' => $item->originalItem->remaining_quantity, // Add this
+                'property_no' => $item->originalItem->property_no,
+                'classification_no' => $item->originalItem->classification_no,
+            ] : null,
                 ];
             });
 
@@ -58,7 +62,153 @@ class TransferredItemsController extends Controller
             'departments' => ['IT', 'HR', 'Finance', 'Operations'],
         ]);
     }
+    public function getTotalTransferredCount()
+    {
+        try {
+            $count = TransferredItems::count();
 
+            return response()->json([
+                'success' => true,
+                'total_transferred' => $count
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get transferred items count: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'total_transferred' => 0,
+                'message' => 'Failed to get count'
+            ], 500);
+        }
+    }
+// In TransferredItemsController.php
+protected function sendTransferNotifications($transferredItem)
+{
+    $signatories = [
+        'recommended' => [
+            'signatory' => Signatory::where('name_designation', $transferredItem->recommended_by_name)->first(),
+            'email_field' => 'recommended_by_email'
+        ],
+        'approved' => [
+            'signatory' => Signatory::where('name_designation', $transferredItem->approved_by_name)->first(),
+            'email_field' => 'approved_by_email'
+        ],
+        'witnessed' => [
+            'signatory' => Signatory::where('name_designation', $transferredItem->witnessed_by_name)->first(),
+            'email_field' => 'witnessed_by_email'
+        ],
+        'name_designation' => [
+            'signatory' => Signatory::where('name_designation', $transferredItem->name_designation)->first(),
+            'email_field' => 'email'
+        ],
+        'office_name_designation' => [
+            'signatory' => Signatory::where('name_designation', $transferredItem->office_name_designation)->first(),
+            'email_field' => 'email'
+        ],
+    ];
+
+    foreach ($signatories as $type => $data) {
+        if ($data['signatory'] && $data['signatory']->email) {
+            $url = URL::signedRoute('transfer.approve', [
+                'id' => $transferredItem->id,
+                'signatory_type' => $type
+            ]);
+
+            \Mail::to($data['signatory']->email)->send(new \App\Mail\TransferApprovalRequest(
+                $transferredItem,
+                $type,
+                $data['signatory'],
+                $url
+            ));
+        }
+    }
+}
+// TransferredItemsController.php
+public function transferFromTransferred(Request $request)
+{
+    DB::beginTransaction();
+    try {
+        $validated = $request->validate([
+            'transferred_item_id' => 'required|exists:transferred_items,id',
+            'quantity_transferred' => 'required|integer|min:1',
+            'transferTo' => 'required|string',
+            'nameDesignation' => 'required|string',
+            'positionIntended' => 'required|string',
+            'designatedOffice' => 'required|string',
+            'officeNameDesignation' => 'required|string',
+            'officePositionIntended' => 'required|string',
+            'recommended_by_name' => 'required|string',
+            'recommended_by_title' => 'required|string',
+            'approved_by_name' => 'required|string',
+            'approved_by_title' => 'required|string',
+            'witnessed_by_name' => 'required|string',
+            'witnessed_by_title' => 'required|string',
+        ]);
+
+        // Get the source transferred item
+        $sourceItem = TransferredItems::findOrFail($validated['transferred_item_id']);
+
+        // Check available quantity
+        if ($validated['quantity_transferred'] > $sourceItem->remaining_quantity) {
+            return response()->json([
+                'message' => 'Cannot transfer more than available remaining quantity'
+            ], 422);
+        }
+        // Calculate new remaining quantity
+        $newRemainingQuantity = $sourceItem->remaining_quantity - $validated['quantity_transferred'];
+
+        // Create new transferred item record
+        $transferredItem = TransferredItems::create([
+            'original_item_id' => $sourceItem->original_item_id,
+            'quantity' => $validated['quantity_transferred'],
+            'remaining_quantity' => $validated['quantity_transferred'],
+            'transfer_to' => $validated['transferTo'],
+            'name_designation' => $validated['nameDesignation'],
+            'position_intended' => $validated['positionIntended'],
+            'designated_office' => $validated['designatedOffice'],
+            'office_name_designation' => $validated['officeNameDesignation'],
+            'office_position_intended' => $validated['officePositionIntended'],
+            'recommended_by_name' => $validated['recommended_by_name'],
+            'recommended_by_title' => $validated['recommended_by_title'],
+            'approved_by_name' => $validated['approved_by_name'],
+            'approved_by_title' => $validated['approved_by_title'],
+            'witnessed_by_name' => $validated['witnessed_by_name'],
+            'witnessed_by_title' => $validated['witnessed_by_title'],
+            'category' => $sourceItem->category,
+            'description' => $sourceItem->description,
+            'property_no' => $sourceItem->property_no,
+            'classification_no' => $sourceItem->classification_no,
+            'amount' => $sourceItem->amount,
+            'date_purchase' => $sourceItem->date_purchase,
+            'transferred_at' => now(),
+            'approval_status' => null,
+            'is_fully_approved' => false,
+        ]);
+
+        // Update the source item's remaining quantity
+        $sourceItem->remaining_quantity = $newRemainingQuantity;
+        $sourceItem->save();
+
+        // Send notifications to signatories
+        $this->sendTransferNotifications($transferredItem);
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Item transferred successfully',
+            'transferred_item' => $transferredItem,
+            'source_item' => $sourceItem->fresh(),
+            'remaining_quantity' => $newRemainingQuantity
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Transfer from transferred item failed: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Transfer failed. Please try again.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
     public function approve(Request $request, $id)
     {
         try {

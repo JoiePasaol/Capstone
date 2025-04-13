@@ -73,13 +73,13 @@ class ItemController extends Controller
             $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
         }
 
-
         $prDate = $request->pr_date ? Carbon::parse($request->pr_date)->format('Y-m-d') : null;
         $poDate = $request->po_date ? Carbon::parse($request->po_date)->format('Y-m-d') : null;
         $vcDate = $request->vc_date ? Carbon::parse($request->vc_date)->format('Y-m-d') : null;
         $chDate = $request->ch_date ? Carbon::parse($request->ch_date)->format('Y-m-d') : null;
         $orDate = $request->or_date ? Carbon::parse($request->or_date)->format('Y-m-d') : null;
         $datePurchase = $request->date_purchase ? Carbon::parse($request->date_purchase)->format('Y-m-d') : null;
+
         $item = Item::create([
             'user_id' => $user->id,
             'name' => $fullName,
@@ -90,6 +90,7 @@ class ItemController extends Controller
             'description' => $request->description,
             'estimated_life' => $request->estimated_life,
             'quantity' => $request->quantity,
+            'remaining_quantity' => $request->quantity, // Set initial remaining quantity equal to quantity
             'price' => $request->price,
             'suppliers' => $request->suppliers,
             'ics' => $request->ics,
@@ -135,19 +136,21 @@ class ItemController extends Controller
 
             $originalItem = Item::findOrFail($validated['item_id']);
 
-            if ($validated['quantity_transferred'] > $originalItem->quantity) {
+            // Check available quantity
+            if ($validated['quantity_transferred'] > $originalItem->remaining_quantity) {
                 return response()->json([
-                    'message' => 'Cannot transfer more than available quantity'
+                    'message' => 'Cannot transfer more than available remaining quantity'
                 ], 422);
             }
 
-            // Update original item quantity
-            $originalItem->decrement('quantity', $validated['quantity_transferred']);
+            // Calculate new remaining quantity
+            $newRemainingQuantity = $originalItem->remaining_quantity - $validated['quantity_transferred'];
 
             // Create transferred item record
             $transferredItem = TransferredItems::create([
                 'original_item_id' => $originalItem->id,
                 'quantity' => $validated['quantity_transferred'],
+                'remaining_quantity' => $validated['quantity_transferred'],
                 'transfer_to' => $validated['transferTo'],
                 'name_designation' => $validated['nameDesignation'],
                 'position_intended' => $validated['positionIntended'],
@@ -169,26 +172,27 @@ class ItemController extends Controller
                 'transferred_at' => now(),
             ]);
 
-            // ✅ Send emails to signatories
+            // Update the original item's remaining quantity
+            $originalItem->remaining_quantity -= $validated['quantity_transferred'];
+            $originalItem->save();
+            // Send emails to signatories
             $this->sendTransferNotifications($transferredItem);
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Item transferred successfully',
-                'original_item' => $originalItem,
                 'transferred_item' => $transferredItem,
+                'original_item' => $originalItem->fresh()
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Transfer failed: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Transfer failed: ' . $e->getMessage()
             ], 500);
         }
     }
-
     // ✅ Add this method below the transfer method in the same controller
     protected function sendTransferNotifications($transferredItem)
     {
@@ -314,7 +318,10 @@ public function update(Request $request, $id)
     ]);
 
     $item = Item::findOrFail($id);
-
+    if (isset($validatedData['quantity'])) {
+        $quantityChange = $validatedData['quantity'] - $item->quantity;
+        $item->remaining_quantity += $quantityChange;
+    }
     if ($request->hasFile('image')) {
         if ($item->image && \Storage::disk('public')->exists($item->image)) {
             \Storage::disk('public')->delete($item->image);
