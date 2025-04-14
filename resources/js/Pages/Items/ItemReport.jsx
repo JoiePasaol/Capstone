@@ -187,7 +187,7 @@ export default function ItemReport() {
                     <div className="flex items-center justify-between mb-3  flex-wrap gap-2">
                         <div className="flex items-center gap-3">
                             {/* Department Filter */}
-                            <select
+                            {/* <select
                                 value={selectedDepartment}
                                 onChange={handleDepartmentChange}
                                 className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer"
@@ -198,7 +198,7 @@ export default function ItemReport() {
                                         {department}
                                     </option>
                                 ))}
-                            </select>
+                            </select> */}
 
                             {/* Year Filter */}
                             <select
