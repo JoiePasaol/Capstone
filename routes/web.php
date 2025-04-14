@@ -196,6 +196,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/borrow/bulk-destroy', [BorrowController::class, 'bulkDestroy'])->name('borrows.bulk-destroy');
         Route::get('/borrowed-items/total-count', [BorrowController::class, 'countBorrowed']);
         Route::get('/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue']);
+        Route::get('/item/{id}', [ItemController::class, 'show']);
+
         
 
         // Supplier Routes

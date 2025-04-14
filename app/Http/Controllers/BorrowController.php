@@ -50,6 +50,17 @@ class BorrowController extends Controller
         
         return response()->json($items);
     }
+
+    public function show($id)
+{
+    $item = Item::findOrFail($id);
+    return response()->json([
+        'id' => $item->id,
+        'items' => $item->items,
+        'remaining_quantity' => $item->remaining_quantity,
+    ]);
+}
+
     
     public function store(Request $request)
     {
@@ -134,17 +145,43 @@ class BorrowController extends Controller
         try {
             $borrow = Borrow::findOrFail($id);
             $originalStatus = $borrow->status;
+            $originalQuantity = $borrow->quantity;
+            $newQuantity = $validated['quantity'];
     
-            // If it's being returned now and was previously not returned
-            if ($originalStatus !== 'Returned' && $validated['status'] === 'Returned') {
-                foreach ($validated['item_ids'] as $itemId) {
-                    $item = \App\Models\Item::find($itemId);
+            $quantityDifference = $originalQuantity - $newQuantity;
     
-                    if ($item) {
-                        $item->remaining_quantity += $validated['quantity'];
-                        $item->save();
+            foreach ($validated['item_ids'] as $itemId) {
+                $item = \App\Models\Item::find($itemId);
+    
+                if (!$item) {
+                    throw new \Exception("Item with ID {$itemId} not found.");
+                }
+    
+                if ($originalStatus !== 'Returned' && $validated['status'] === 'Returned') {
+                    // If item is being returned now
+                    $item->remaining_quantity += $originalQuantity;
+                } elseif ($originalStatus === 'Returned' && $validated['status'] !== 'Returned') {
+                    // If previously returned and now marked as borrowed again
+                    if ($item->remaining_quantity < $newQuantity) {
+                        throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Requested: {$newQuantity})");
+                    }
+                    $item->remaining_quantity -= $newQuantity;
+                } elseif ($validated['status'] === 'Borrowed') {
+                    // Just a quantity update while still in borrowed status
+                    if ($quantityDifference > 0) {
+                        // Returning some quantity
+                        $item->remaining_quantity += $quantityDifference;
+                    } elseif ($quantityDifference < 0) {
+                        // Borrowing more
+                        $extraNeeded = abs($quantityDifference);
+                        if ($item->remaining_quantity < $extraNeeded) {
+                            throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Additional Requested: {$extraNeeded})");
+                        }
+                        $item->remaining_quantity -= $extraNeeded;
                     }
                 }
+    
+                $item->save();
             }
     
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');

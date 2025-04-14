@@ -168,41 +168,36 @@ export default function ItemBorrow() {
         fetchBorrowedItems();
     }, []);
 
-    const toggleDrawer = (open, isEdit = false, row = null) => {
+    const toggleDrawer = async (open, isEdit = false, row = null) => {
         setIsDrawerOpen(open);
         setIsEditMode(isEdit);
-
+    
         if (open && isEdit && row) {
             const itemNames = Array.isArray(row.item_names)
                 ? row.item_names
                 : typeof row.item_names === "string"
                 ? JSON.parse(row.item_names)
                 : [];
-
+    
             const itemIds = Array.isArray(row.item_ids)
                 ? row.item_ids
                 : typeof row.item_ids === "string"
                 ? JSON.parse(row.item_ids)
                 : [];
-
-            const selectedOpts = itemNames
-                .map((name, index) => {
-                    const id = itemIds[index];
-                    if (!id) {
-                        console.warn(`Missing item ID for ${name}`);
-                        return null;
-                    }
-                    return {
-                        value: id,
-                        label: name,
-                    };
-                })
-                .filter(Boolean);
-
+    
+            const selectedOpts = itemNames.map((name, index) => {
+                const id = itemIds[index];
+                if (!id) return null;
+                return {
+                    value: id,
+                    label: name,
+                };
+            }).filter(Boolean);
+    
             setSelectedOptions(selectedOpts);
             setSelectedStatus(row.status);
             setSelectedQuantity(row.quantity);
-
+    
             setData({
                 id: row.id,
                 name: row.name,
@@ -212,10 +207,28 @@ export default function ItemBorrow() {
                 status: row.status,
                 quantity: row.quantity,
             });
-
+    
             if (row.return_date) {
                 const date = new Date(row.return_date);
                 setReturnDate(isNaN(date.getTime()) ? null : date);
+            }
+    
+            // ✅ NEW: Fetch latest remaining_quantity from API
+            if (selectedOpts.length > 0) {
+                try {
+                    const itemId = selectedOpts[0].value;
+                    const response = await axios.get(`/api/item/${itemId}`);
+                    const latestRemaining = response.data.remaining_quantity ?? 0;
+    
+                    // ✅ Add back the original borrowed quantity
+                    const available = latestRemaining + (row.quantity || 0);
+                    setAvailableQuantity(available);
+                } catch (error) {
+                    console.error("Failed to fetch item for edit:", error);
+                    setAvailableQuantity(row.quantity || 10); // fallback
+                }
+            } else {
+                setAvailableQuantity(row.quantity || 10); // fallback
             }
         } else if (!open) {
             reset();
@@ -225,6 +238,7 @@ export default function ItemBorrow() {
             setSelectedQuantity(1);
         }
     };
+    
 
     const handleInputChange = async (inputValue) => {
         console.log("Input value:", inputValue); // Debug what's being typed
@@ -249,7 +263,7 @@ export default function ItemBorrow() {
             const newOptions = response.data.map((item) => ({
                 value: item.id,
                 label: item.items,
-                remaining_quantity: item.remaining_quantity,
+                remaining_quantity: item.remaining_quantity, 
             }));
 
             console.log("Generated options:", newOptions); // Debug final options
@@ -271,21 +285,22 @@ export default function ItemBorrow() {
     // Function to handle item selection
     const handleItemSelect = (selectedOption) => {
         setSelectedOptions(selectedOption);
-
+    
         const ids = selectedOption ? [selectedOption.value] : [];
         const names = selectedOption ? [selectedOption.label] : [];
-
+    
         setData({
             ...data,
             item_ids: ids,
             item_names: names,
             quantity: 1, // default to 1
         });
-
+    
         if (selectedOption?.remaining_quantity) {
             setAvailableQuantity(selectedOption.remaining_quantity);
         }
     };
+    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -638,7 +653,7 @@ export default function ItemBorrow() {
                                 }`}
                                 onClick={() => {
                                     if (selectedBorrowedItems.length >= 2) {
-                                        confirmDelete();
+                                        confirmDelete(); 
                                     }
                                 }}
                             />
@@ -743,9 +758,7 @@ export default function ItemBorrow() {
                                 className="mt-2 block w-full h-10 rounded-sm text-sm"
                                 placeholder="Select quantity..."
                                 options={quantityOptions}
-                                value={quantityOptions.find(
-                                    (opt) => opt.key === selectedQuantity
-                                )} 
+                                value={selectedQuantity}
                                 onChange={(e) => {
                                     const value = parseInt(e.target.value);
                                     setSelectedQuantity(value);
