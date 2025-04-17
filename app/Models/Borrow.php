@@ -15,6 +15,7 @@ class Borrow extends Model
         'item_ids',
         'item_names',
         'quantity',
+        'borrowed_date', 
         'return_date',
         'status'
     ];

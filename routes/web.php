@@ -69,24 +69,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 
-    // Restricted to Admin and Super Admin Only
-    Route::middleware(['role.admin'])->group(function () {
-        Route::get('/item-report', function () {
-            return Inertia::render('Items/ItemReport');
-        })->name('item-report');
-
-        Route::get('/item-borrow', function () {
-            return Inertia::render('Items/ItemBorrow');
-        })->name('item-borrow');
-
-        Route::get('/user-status', function () {
-            return Inertia::render('User/UserStatus');
-        })->name('user-status');
-
-        Route::get('/user-management', function () {
-            return Inertia::render('User/UserManagement');
-        })->name('user-management');
-    });
 
     // Other Routes (Accessible by all authenticated users)
     Route::get('/categories', function () {

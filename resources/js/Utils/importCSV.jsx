@@ -28,6 +28,9 @@ export function importCSV(event, callback) {
             return obj;
         });
 
+     
+        data.forEach(row => delete row.image);
+
         console.log("Parsed CSV Data Before Sending:", data);
 
         callback(data);

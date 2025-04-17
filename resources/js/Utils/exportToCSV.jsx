@@ -4,19 +4,30 @@ export function exportToCSV(data, filename = "items.csv") {
         return;
     }
 
+    const allowedHeaders = [
+        'name', 'department', 'categories', 'items', 'description', 'estimated_life',
+        'quantity', 'remaining_quantity', 'price', 'suppliers', 'ics', 'pr', 'pr_date', 'po', 'po_date',
+        'vc', 'vc_date', 'ch', 'ch_date', 'or', 'or_date', 'created_at', 'updated_at',
+        'property_no', 'classification_no', 'date_purchase'
+    ];
 
-    const headers = Object.keys(data[0]).filter((key) => 
-        !["id", "user_id", "image", "user"].includes(key)
-    );
+    const headers = allowedHeaders.filter(h => h in data[0]);
 
+    const cleanHTML = (str) => {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = str;
+        return tempDiv.textContent || tempDiv.innerText || "";
+    };
 
     const csvContent = [
-        headers.join(","), 
-        ...data.map((row) =>
-            headers.map((field) => `"${row[field] ?? ""}"`).join(",")
-        ),
+        headers.join(","), // header row
+        ...data.map(row =>
+            headers.map(field => {
+                const value = row[field] ?? "";
+                return `"${typeof value === 'string' ? cleanHTML(value) : value}"`;
+            }).join(",")
+        )
     ].join("\n");
-
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -26,7 +37,6 @@ export function exportToCSV(data, filename = "items.csv") {
     a.download = filename;
     document.body.appendChild(a);
     a.click();
-
 
     document.body.removeChild(a);
     URL.revokeObjectURL(url);

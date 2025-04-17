@@ -14,7 +14,7 @@ class BorrowController extends Controller
         $now = Carbon::now();
     
         $borrows = Borrow::orderBy('created_at', 'desc')->get()->map(function ($borrow) use ($now) {
-            // Auto update status to 'Overdue' if current date is past return_date
+           
             if (
                 $borrow->status === 'Borrowed' &&
                 $borrow->return_date &&
@@ -27,9 +27,10 @@ class BorrowController extends Controller
             return [
                 'id' => $borrow->id,
                 'name' => $borrow->name,
-                'item_ids' => $borrow->item_ids, // The casts should handle this
-                'item_names' => $borrow->item_names, // The casts should handle this
+                'item_ids' => $borrow->item_ids, 
+                'item_names' => $borrow->item_names, 
                 'quantity' => $borrow->quantity,
+                'borrowed_date' => $borrow->borrowed_date ? Carbon::parse($borrow->borrowed_date)->format('Y-m-d') : null,
                 'return_date' => $borrow->return_date ? Carbon::parse($borrow->return_date)->format('Y-m-d') : null,
                 'status' => $borrow->status,
                 'created_at' => $borrow->created_at->toISOString(),
@@ -43,7 +44,7 @@ class BorrowController extends Controller
     {
         $query = $request->input('query');
         
-        // Assuming 'quantity' exists in the 'items' table
+  
         $items = Item::where('items', 'LIKE', "%{$query}%")
                      ->limit(10)
                      ->get(['id', 'items', 'remaining_quantity']);
@@ -70,6 +71,7 @@ class BorrowController extends Controller
             'item_ids.*' => 'exists:items,id',
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
+            'borrowed_date' => 'required|date',
             'return_date' => 'required|date',
             'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
             'quantity' => 'required|integer|min:1',
@@ -79,18 +81,18 @@ class BorrowController extends Controller
     
         try {
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
-    
-            // Create the borrow record (let model handle casting)
+            $borrowDate = Carbon::parse($validated['borrowed_date'])->format('Y-m-d');
+         
             $borrow = Borrow::create([
                 'name' => $validated['name'],
-                'item_ids' => $validated['item_ids'],     // no json_encode
-                'item_names' => $validated['item_names'], // no json_encode
+                'item_ids' => $validated['item_ids'],     
+                'item_names' => $validated['item_names'],
+                'borrowed_date' => $borrowDate,
                 'return_date' => $returnDate,
                 'status' => $validated['status'] ?? 'Borrowed',
                 'quantity' => $validated['quantity'],
             ]);
-    
-            // Update remaining_quantity for each item
+   
             foreach ($validated['item_ids'] as $itemId) {
                 $item = \App\Models\Item::find($itemId);
     
@@ -135,6 +137,7 @@ class BorrowController extends Controller
             'item_ids.*' => 'exists:items,id',
             'item_names' => 'required|array',
             'item_names.*' => 'string|max:255',
+            'borrowed_date' => 'required|date',
             'return_date' => 'required|date',
             'status' => 'required|string|max:50|in:Borrowed,Overdue,Returned',
             'quantity' => 'required|integer|min:1',
@@ -158,21 +161,21 @@ class BorrowController extends Controller
                 }
     
                 if ($originalStatus !== 'Returned' && $validated['status'] === 'Returned') {
-                    // If item is being returned now
+                  
                     $item->remaining_quantity += $originalQuantity;
                 } elseif ($originalStatus === 'Returned' && $validated['status'] !== 'Returned') {
-                    // If previously returned and now marked as borrowed again
+                  
                     if ($item->remaining_quantity < $newQuantity) {
                         throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Requested: {$newQuantity})");
                     }
                     $item->remaining_quantity -= $newQuantity;
                 } elseif ($validated['status'] === 'Borrowed') {
-                    // Just a quantity update while still in borrowed status
+                   
                     if ($quantityDifference > 0) {
-                        // Returning some quantity
+                      
                         $item->remaining_quantity += $quantityDifference;
                     } elseif ($quantityDifference < 0) {
-                        // Borrowing more
+                     
                         $extraNeeded = abs($quantityDifference);
                         if ($item->remaining_quantity < $extraNeeded) {
                             throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Additional Requested: {$extraNeeded})");
@@ -183,13 +186,16 @@ class BorrowController extends Controller
     
                 $item->save();
             }
-    
+            
+            $borrowDate = Carbon::parse($validated['borrowed_date'])->format('Y-m-d');
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
+            
     
             $borrow->update([
                 'name' => $validated['name'],
                 'item_ids' => $validated['item_ids'],
                 'item_names' => $validated['item_names'],
+                'borrowed_date' => $borrowDate,
                 'return_date' => $returnDate,
                 'status' => $validated['status'],
                 'quantity' => $validated['quantity'],
@@ -273,7 +279,7 @@ class BorrowController extends Controller
 
         return response()->json([
             'success' => true,
-            'total_borrowed' => $count  // Changed from 'borrowed_count' to match frontend expectation
+            'total_borrowed' => $count 
         ]);
     } catch (\Exception $e) {
         \Log::error('Error fetching borrowed items count: ' . $e->getMessage());
@@ -291,7 +297,7 @@ public function countOverdue()
 
         return response()->json([
             'success' => true,
-            'total_overdue' => $count  // Changed from 'overdue_count' to be consistent
+            'total_overdue' => $count 
         ]);
     } catch (\Exception $e) {
         \Log::error('Error fetching overdue items count: ' . $e->getMessage());

@@ -31,6 +31,7 @@ export default function ItemBorrow() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
+    const [showPickerBorrowed, setShowPickerBorrowed] = useState(false);
 
     // Dialog state
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
@@ -44,6 +45,7 @@ export default function ItemBorrow() {
     const [options, setOptions] = useState([]);
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [selectedStatus, setSelectedStatus] = useState(null);
+    const [borrowedDate, setBorrowedDate] = useState(null);
     const [returnDate, setReturnDate] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
@@ -60,6 +62,7 @@ export default function ItemBorrow() {
         name: "",
         item_ids: [],
         item_names: [],
+        borrowed_date: "", 
         return_date: "",
         status: "Borrowed",
         quantity: 1,
@@ -171,58 +174,67 @@ export default function ItemBorrow() {
     const toggleDrawer = async (open, isEdit = false, row = null) => {
         setIsDrawerOpen(open);
         setIsEditMode(isEdit);
-    
+
         if (open && isEdit && row) {
             const itemNames = Array.isArray(row.item_names)
                 ? row.item_names
                 : typeof row.item_names === "string"
                 ? JSON.parse(row.item_names)
                 : [];
-    
+
             const itemIds = Array.isArray(row.item_ids)
                 ? row.item_ids
                 : typeof row.item_ids === "string"
                 ? JSON.parse(row.item_ids)
                 : [];
-    
-            const selectedOpts = itemNames.map((name, index) => {
-                const id = itemIds[index];
-                if (!id) return null;
-                return {
-                    value: id,
-                    label: name,
-                };
-            }).filter(Boolean);
-    
+
+            const selectedOpts = itemNames
+                .map((name, index) => {
+                    const id = itemIds[index];
+                    if (!id) return null;
+                    return {
+                        value: id,
+                        label: name,
+                    };
+                })
+                .filter(Boolean);
+
             setSelectedOptions(selectedOpts);
             setSelectedStatus(row.status);
             setSelectedQuantity(row.quantity);
-    
+
             setData({
                 id: row.id,
                 name: row.name,
                 item_ids: itemIds,
                 item_names: itemNames,
+                borrowed_date: row.borrowed_date,
                 return_date: row.return_date,
                 status: row.status,
                 quantity: row.quantity,
             });
-    
+
             if (row.return_date) {
                 const date = new Date(row.return_date);
                 setReturnDate(isNaN(date.getTime()) ? null : date);
             }
-    
-            // ✅ NEW: Fetch latest remaining_quantity from API
+
+            if (row.borrowed_date) {
+                const date = new Date(row.borrowed_date);
+                setBorrowedDate(isNaN(date.getTime()) ? null : date);
+            }
+
             if (selectedOpts.length > 0) {
                 try {
                     const itemId = selectedOpts[0].value;
                     const response = await axios.get(`/api/item/${itemId}`);
-                    const latestRemaining = response.data.remaining_quantity ?? 0;
-    
-                    // ✅ Add back the original borrowed quantity
-                    const available = latestRemaining + (row.quantity || 0);
-                    setAvailableQuantity(available);
+                    const latestRemaining =
+                        response.data.remaining_quantity ?? 0;
+
+                    const originalTotal = latestRemaining + (row.quantity || 0);
+
+                    // ✅ Set this as the total available for generating quantity options
+                    setAvailableQuantity(originalTotal); // used in quantityOptions
                 } catch (error) {
                     console.error("Failed to fetch item for edit:", error);
                     setAvailableQuantity(row.quantity || 10); // fallback
@@ -238,7 +250,6 @@ export default function ItemBorrow() {
             setSelectedQuantity(1);
         }
     };
-    
 
     const handleInputChange = async (inputValue) => {
         console.log("Input value:", inputValue); // Debug what's being typed
@@ -263,7 +274,7 @@ export default function ItemBorrow() {
             const newOptions = response.data.map((item) => ({
                 value: item.id,
                 label: item.items,
-                remaining_quantity: item.remaining_quantity, 
+                remaining_quantity: item.remaining_quantity,
             }));
 
             console.log("Generated options:", newOptions); // Debug final options
@@ -285,22 +296,21 @@ export default function ItemBorrow() {
     // Function to handle item selection
     const handleItemSelect = (selectedOption) => {
         setSelectedOptions(selectedOption);
-    
+
         const ids = selectedOption ? [selectedOption.value] : [];
         const names = selectedOption ? [selectedOption.label] : [];
-    
+
         setData({
             ...data,
             item_ids: ids,
             item_names: names,
             quantity: 1, // default to 1
         });
-    
+
         if (selectedOption?.remaining_quantity) {
             setAvailableQuantity(selectedOption.remaining_quantity);
         }
     };
-    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -315,9 +325,14 @@ export default function ItemBorrow() {
             return;
         }
 
+        const formattedBorrowedDate = borrowedDate
+            ? format(borrowedDate, "MM/dd/yyyy")
+            : "";
+
         const formattedReturnDate = returnDate
             ? format(returnDate, "MM/dd/yyyy")
             : "";
+
         const quantity = parseInt(selectedQuantity) || 1;
 
         const formData = {
@@ -328,6 +343,7 @@ export default function ItemBorrow() {
             item_names: Array.isArray(selectedOptions)
                 ? selectedOptions.map((opt) => opt.label)
                 : [selectedOptions.label],
+            borrowed_date: formattedBorrowedDate,
             return_date: formattedReturnDate,
             status: data.status || "Borrowed",
             quantity: quantity,
@@ -481,6 +497,18 @@ export default function ItemBorrow() {
         selectedBorrowedItems.length === filteredBorrowedItems.length &&
         filteredBorrowedItems.length > 0;
 
+    const formatDate = (dateString) => {
+        if (!dateString) return "N/A";
+        const date = parseISO(dateString);
+        return isValid(date) ? format(date, "MM/dd/yyyy hh:mm:ss a") : "N/A";
+    };
+
+    const formatDateOnly = (dateString) => {
+        if (!dateString) return "N/A";
+        const date = parseISO(dateString);
+        return isValid(date) ? format(date, "MM/dd/yyyy") : "N/A";
+    };
+
     const headers = [
         {
             label: (
@@ -495,17 +523,12 @@ export default function ItemBorrow() {
         { label: "Name", key: "name" },
         { label: "Item", key: "item" },
         { label: "Quantity", key: "quantity" },
+        { label: "Date_Borrow", key: "date_borrow" },
         { label: "Date_Return", key: "date_return" },
         { label: "Status", key: "status" },
         { label: "Created_at", key: "created_at" },
         { label: "Updated_at", key: "updated_at" },
     ];
-
-    const formatDate = (dateString) => {
-        if (!dateString) return "N/A";
-        const date = parseISO(dateString);
-        return isValid(date) ? format(date, "MM/dd/yyyy hh:mm:ss a") : "N/A";
-    };
 
     const rows = paginatedBorrowedItems.map((item, index) => {
         console.log("Item data:", item); // Log the item to check its data structure
@@ -534,8 +557,9 @@ export default function ItemBorrow() {
             index: index + 1 + (currentPage - 1) * itemsPerPage,
             name: item.name,
             item: <ItemList items={itemNames} />,
-            quantity: quantity, // Use the valid quantity
-            date_return: formatDate(item.return_date),
+            quantity: quantity,
+            date_borrow: formatDateOnly(item.borrowed_date),
+            date_return: formatDateOnly(item.return_date),
             status: item.status,
             created_at: item.created_at ? formatDate(item.created_at) : "N/A",
             updated_at: item.updated_at ? formatDate(item.updated_at) : "N/A",
@@ -653,7 +677,7 @@ export default function ItemBorrow() {
                                 }`}
                                 onClick={() => {
                                     if (selectedBorrowedItems.length >= 2) {
-                                        confirmDelete(); 
+                                        confirmDelete();
                                     }
                                 }}
                             />
@@ -774,7 +798,46 @@ export default function ItemBorrow() {
                             className="mt-2"
                         />
                     </div>
-
+                    {/* Date Borrowed */}
+                    <div className="mt-4 w-full">
+                        <InputLabel
+                            htmlFor="borrowedDate"
+                            value="Date Borrowed"
+                        />
+                        <div className="relative">
+                            <div
+                                className="px-3 w-full h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer flex items-center"
+                                onClick={() =>
+                                    setShowPickerBorrowed(!showPickerBorrowed)
+                                }
+                            >
+                                {borrowedDate
+                                    ? format(borrowedDate, "MM/dd/yyyy")
+                                    : "Select date"}
+                            </div>
+                            {showPickerBorrowed && (
+                                <div className="absolute z-50">
+                                    <DatePicker
+                                        selected={borrowedDate}
+                                        onChange={(date) => {
+                                            setBorrowedDate(date);
+                                            setData(
+                                                "borrowed_date",
+                                                format(date, "MM/dd/yyyy")
+                                            );
+                                        }}
+                                        dateFormat="MM/dd/yyyy"
+                                        inline
+                                        calendarClassName="dark:bg-gray-800 pb-7"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <InputError
+                            message={errors.borrowed_date}
+                            className="mt-2"
+                        />
+                    </div>
                     {/* Return Date */}
                     <div className="mt-4 w-full">
                         <InputLabel htmlFor="Date" value="Date Return" />

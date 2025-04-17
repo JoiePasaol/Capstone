@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePage, Head } from "@inertiajs/react";
-import { checkRole } from "@/Utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import TextInput from "@/Components/TextInput";
 import SecondaryButton from "@/Components/SecondaryButton";
@@ -264,7 +263,7 @@ export default function Categories({ categories }) {
                     <Dropdown.Trigger>
                         <SettingsIcon className="cursor-pointer text-gray-600 dark:text-gray-300" />
                     </Dropdown.Trigger>
-                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-90px]  bg-gray-100 dark:bg-gray-700">
+                    <Dropdown.Content contentClasses="relative py-1 right-7 top-[-80px]  bg-gray-100 dark:bg-gray-700">
                     <Dropdown.Link
                             onClick={(e) => {
                                 e.preventDefault();
@@ -273,7 +272,7 @@ export default function Categories({ categories }) {
                         >
                             Edit
                         </Dropdown.Link>
-                        {checkRole(user, ["Super Admin"]) && (
+                   
                             <Dropdown.Link
                                 onClick={(e) => {
                                     e.preventDefault();
@@ -282,7 +281,7 @@ export default function Categories({ categories }) {
                             >
                                 Delete
                             </Dropdown.Link>
-                        )}
+                
                     </Dropdown.Content>
                 </Dropdown>
             </div>
@@ -332,7 +331,7 @@ export default function Categories({ categories }) {
                                     All Categories
                                 </div>
                                 <div className="w-full flex justify-end px-4 mt-4 mb-3 text-gray-900 dark:text-gray-100">
-                                    {checkRole(user, ["Super Admin"]) && (
+                               
                                         <DeleteIcon
                                             className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
                                                 rows.filter((row) => row.checkbox)
@@ -346,7 +345,7 @@ export default function Categories({ categories }) {
                                                     .length < 2
                                             }
                                         />
-                                    )}
+                              
                                 </div>
                                 <div className="w-full px-4 text-gray-900 dark:text-gray-100">
                                     <Table

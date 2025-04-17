@@ -36,10 +36,14 @@ class ItemController extends Controller
     public function store(Request $request)
     {
         \Log::info('Received Request Data:', $request->all());
+    
         $request->merge([
             'price' => $request->price ? (float) str_replace(',', '', $request->price) : null
         ]);
+    
         $request->validate([
+            'name' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
             'image' => 'nullable|image|max:2048',
             'categories' => 'required|string',
             'items' => 'required|string',
@@ -47,7 +51,7 @@ class ItemController extends Controller
             'estimated_life' => 'required|string',
             'quantity' => 'required|integer',
             'price' => 'required|numeric|min:0',
-            'suppliers' => 'required|string', 
+            'suppliers' => 'nullable|string',
             'ics' => 'nullable|string',
             'pr' => 'nullable|string',
             'pr_date' => 'nullable|date',
@@ -63,55 +67,47 @@ class ItemController extends Controller
             'or' => 'nullable|string',
             'or_date' => 'nullable|date',
         ]);
-
-        $user = Auth::user();
-        $fullName = trim($user->firstname . ' ' . $user->lastname);
-
+    
+        $user = Auth::user(); 
+    
         $imagePath = null;
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
         }
-
-        $prDate = $request->pr_date ? Carbon::parse($request->pr_date)->format('Y-m-d') : null;
-        $poDate = $request->po_date ? Carbon::parse($request->po_date)->format('Y-m-d') : null;
-        $vcDate = $request->vc_date ? Carbon::parse($request->vc_date)->format('Y-m-d') : null;
-        $chDate = $request->ch_date ? Carbon::parse($request->ch_date)->format('Y-m-d') : null;
-        $orDate = $request->or_date ? Carbon::parse($request->or_date)->format('Y-m-d') : null;
-        $datePurchase = $request->date_purchase ? Carbon::parse($request->date_purchase)->format('Y-m-d') : null;
-
+    
         $item = Item::create([
             'user_id' => $user->id,
-            'name' => $fullName,
-            'department' => $user->department ?? 'N/A',
+            'name' => $request->name,
+            'department' => $request->department,
             'image' => $imagePath,
             'categories' => $request->categories,
             'items' => $request->items,
             'description' => $request->description,
             'estimated_life' => $request->estimated_life,
             'quantity' => $request->quantity,
-            'remaining_quantity' => $request->quantity, // Set initial remaining quantity equal to quantity
+            'remaining_quantity' => $request->quantity,
             'price' => $request->price,
             'suppliers' => $request->suppliers,
             'ics' => $request->ics,
             'pr' => $request->pr,
-            'pr_date' => $prDate,
+            'pr_date' => $request->pr_date ? Carbon::parse($request->pr_date)->format('Y-m-d') : null,
             'po' => $request->po,
-            'po_date' => $poDate,
+            'po_date' => $request->po_date ? Carbon::parse($request->po_date)->format('Y-m-d') : null,
+            'vc' => $request->vc,
+            'vc_date' => $request->vc_date ? Carbon::parse($request->vc_date)->format('Y-m-d') : null,
+            'ch' => $request->ch,
+            'ch_date' => $request->ch_date ? Carbon::parse($request->ch_date)->format('Y-m-d') : null,
+            'or' => $request->or,
+            'or_date' => $request->or_date ? Carbon::parse($request->or_date)->format('Y-m-d') : null,
             'property_no' => $request->property_no,
             'classification_no' => $request->classification_no,
-            'date_purchase' => $datePurchase,
-            'vc' => $request->vc,
-            'vc_date' => $vcDate,
-            'ch' => $request->ch,
-            'ch_date' => $chDate,
-            'or' => $request->or,
-            'or_date' => $orDate
+            'date_purchase' => $request->date_purchase ? Carbon::parse($request->date_purchase)->format('Y-m-d') : null,
         ]);
-
+    
         return redirect()->route('item-list')->with('success', 'Item added successfully.');
     }
-
+    
 
     public function transfer(Request $request)
     {
@@ -292,6 +288,8 @@ public function update(Request $request, $id)
             'price' => $request->price ? (float) str_replace(',', '', $request->price) : null
         ]);
     $validatedData = $request->validate([
+        'name' => 'required|string',
+        'department' => 'nullable|string',
         'image' => 'nullable|image|max:2048',
         'categories' => 'nullable|string',
         'description' => 'nullable|string',
@@ -332,6 +330,8 @@ public function update(Request $request, $id)
         $item->image = $imagePath;
     }
 
+    $item->name = $validatedData['name'] ?? $item->name;
+    $item->department = $validatedData['department'] ?? $item->department;
     $item->categories = $validatedData['categories'] ?? $item->categories;
     $item->description = $validatedData['description'] ?? $item->description;
     $item->items = $validatedData['items'] ?? $item->items;
@@ -378,7 +378,7 @@ public function import(Request $request)
         // ✅ Required CSV columns
         $requiredHeaders = [
             'name', 'department', 'categories', 'items', 'description', 'estimated_life',
-            'quantity', 'price', 'suppliers', 'ics', 'pr', 'pr_date', 'po', 'po_date',
+            'quantity', 'remaining_quantity', 'price', 'suppliers', 'ics', 'pr', 'pr_date', 'po', 'po_date',
             'vc', 'vc_date', 'ch', 'ch_date', 'or','property_no','classification_no','date_purchase','or_date', 'created_at', 'updated_at'
         ];
 
@@ -410,6 +410,7 @@ public function import(Request $request)
                 ['items', $row['items']],
                 ['estimated_life', $row['estimated_life']],
                 ['quantity', $row['quantity']],
+                ['remaining_quantity', $row['remaining_quantity']],
                 ['price', $row['price']],
                 ['suppliers', $row['suppliers']],
                 ['department', $department],
@@ -425,6 +426,9 @@ public function import(Request $request)
                 ['ch_date', $row['ch_date']],
                 ['or', $row['or']],
                 ['or_date', $row['or_date']],
+                ['property_no', $row['property_no']],
+                ['classification_no', $row['classification_no']],
+                ['date_purchase', $row['date_purchase']],
             ])->exists();
 
             if (!$exists) {
@@ -442,6 +446,7 @@ public function import(Request $request)
                     'items' => $row['items'],
                     'estimated_life' => $row['estimated_life'],
                     'quantity' => intval($row['quantity']),
+                    'remaining_quantity' => intval($row['remaining_quantity']),
                     'price' => floatval($row['price']),
                     'suppliers' => $row['suppliers'],
                     'ics' => $row['ics'] ?? null,
@@ -455,6 +460,9 @@ public function import(Request $request)
                     'ch_date' => !empty($row['ch_date']) ? Carbon::parse($row['ch_date']) : null,
                     'or' => $row['or'] ?? null,
                     'or_date' => !empty($row['or_date']) ? Carbon::parse($row['or_date']) : null,
+                    'property_no' => $row['property_no'] ?? null,
+                    'classification_no' => $row['classification_no'] ?? null,
+                    'date_purchase' => !empty($row['date_purchase']) ? Carbon::parse($row['date_purchase']) : null,
                     'created_at' => $createdAt,
                     'updated_at' => $updatedAt,
                 ]);

@@ -1,6 +1,5 @@
 import { Head, useForm, usePage } from "@inertiajs/react";
 import { useState, useEffect, useMemo } from "react";
-import { checkRole } from "@/Utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import Dropdown from "@/Components/Dropdown";
@@ -287,7 +286,7 @@ export default function Supplier() {
                 >
                     Edit
                 </Dropdown.Link>
-                {checkRole(user, ["Super Admin"]) && (
+         
                     <Dropdown.Link
                         onClick={(e) => {
                             e.preventDefault();
@@ -296,7 +295,7 @@ export default function Supplier() {
                     >
                         Delete
                     </Dropdown.Link>
-                )}
+         
             </Dropdown.Content>
         </Dropdown>
     );
@@ -320,7 +319,7 @@ export default function Supplier() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                             <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
-                                {checkRole(user, ["Super Admin"]) && (
+                             
                                     <DeleteIcon
                                         className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
                                             selectedSuppliers.length < 2
@@ -330,7 +329,7 @@ export default function Supplier() {
                                         onClick={() => confirmDelete()}
                                         disabled={selectedSuppliers.length < 2}
                                     />
-                                )}
+                        
                                 <AddCircleIcon
                                     className="text-gray-600 dark:text-gray-300 cursor-pointer"
                                     onClick={() => toggleDrawer(true, false)}
