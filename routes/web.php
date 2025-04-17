@@ -87,6 +87,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Items/ItemList');
     })->name('item-list');
 
+    Route::get('/item-borrow', function () {
+        return Inertia::render('Items/ItemBorrow');
+    })->name('item-borrow');
+
+    Route::get('/item-report', function () {
+        return Inertia::render('Items/ItemReport');
+    })->name('item-report');
+
     // Transfer routes
     Route::post('/items/transfer', [ItemController::class, 'transfer'])
         ->name('items.transfer');

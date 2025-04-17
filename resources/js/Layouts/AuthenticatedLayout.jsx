@@ -12,7 +12,6 @@ import {
 import SimpleLightDarkToggle from "@/Components/SimpleLightDarkToggle";
 import { Link, usePage } from "@inertiajs/react";
 import { useState, useEffect } from "react";
-import { checkRole } from "@/utils/CheckRole";
 
 export default function AuthenticatedLayout({ header, children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -24,11 +23,13 @@ export default function AuthenticatedLayout({ header, children }) {
         if (!Array.isArray(paths)) {
             paths = [paths];
         }
-        const currentPath = url.replace(/^\//, '');
-        return paths.some(path => {
-            const routePath = path.replace(/^\//, '');
-            return currentPath === routePath ||
-                   currentPath.startsWith(`${routePath}/`);
+        const currentPath = url.replace(/^\//, "");
+        return paths.some((path) => {
+            const routePath = path.replace(/^\//, "");
+            return (
+                currentPath === routePath ||
+                currentPath.startsWith(`${routePath}/`)
+            );
         });
     };
 
@@ -74,11 +75,12 @@ export default function AuthenticatedLayout({ header, children }) {
                         }`}
                     >
                         <Home className="w-5 h-5 min-w-[20px]" />
-                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
+                        <span
+                            className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}
+                        >
                             Dashboard
                         </span>
                     </Link>
-
 
                     {/* Categories */}
                     <Link
@@ -90,7 +92,9 @@ export default function AuthenticatedLayout({ header, children }) {
                         }`}
                     >
                         <Package className="w-5 h-5 min-w-[20px]" />
-                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
+                        <span
+                            className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}
+                        >
                             Categories
                         </span>
                     </Link>
@@ -105,100 +109,114 @@ export default function AuthenticatedLayout({ header, children }) {
                         }`}
                     >
                         <Truck className="w-5 h-5 min-w-[20px]" />
-                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
+                        <span
+                            className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}
+                        >
                             Suppliers
                         </span>
                     </Link>
 
                     {/* Items Dropdown */}
-                    {(checkRole(user, ["Basic"]) || checkRole(user, ["Super Admin", "Admin"])) && (
-                        <div>
-                            <button
-                                onClick={() => toggleDropdown("items")}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                    isActive(["item-list", "item-report", "item-borrow"]) || activeDropdown === "items"
-                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                        : ""
-                                }`}
-                            >
-                                <div className="flex items-center">
-                                    <Package className="w-5 h-5 min-w-[20px]" />
-                                    <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
-                                        Items
-                                    </span>
-                                </div>
-                                {isSidebarOpen && (
-                                    <ChevronDown
-                                        className={`w-4 h-4 transition-transform ${
-                                            activeDropdown === "items" ? "rotate-180" : ""
-                                        }`}
-                                    />
-                                )}
-                            </button>
 
-                            {activeDropdown === "items" && isSidebarOpen && (
-                                <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
-                                    <Link
-                                        href={route("item-list")}
-                                        className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                            isActive("item-list")
-                                                ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                : ""
-                                        } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                    >
-                                        Item List
-                                    </Link>
-
-                                    {user.role === "Super Admin" && (
-                                        <>
-                                            <Link
-                                                href={route("item-borrow")}
-                                                className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                                    isActive("item-borrow")
-                                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                        : ""
-                                                } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                            >
-                                                Item Borrow
-                                            </Link>
-
-                                            <Link
-                                                href={route("item-report")}
-                                                className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                                    isActive("item-report")
-                                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
-                                                        : ""
-                                                } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
-                                            >
-                                                Item Report
-                                            </Link>
-                                        </>
-                                    )}
-                                </div>
+                    <div>
+                        <button
+                            onClick={() => toggleDropdown("items")}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                isActive([
+                                    "item-list",
+                                    "item-report",
+                                    "item-borrow",
+                                ]) || activeDropdown === "items"
+                                    ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                    : ""
+                            }`}
+                        >
+                            <div className="flex items-center">
+                                <Package className="w-5 h-5 min-w-[20px]" />
+                                <span
+                                    className={`ml-3 ${
+                                        isSidebarOpen ? "" : "hidden"
+                                    }`}
+                                >
+                                    Items
+                                </span>
+                            </div>
+                            {isSidebarOpen && (
+                                <ChevronDown
+                                    className={`w-4 h-4 transition-transform ${
+                                        activeDropdown === "items"
+                                            ? "rotate-180"
+                                            : ""
+                                    }`}
+                                />
                             )}
-                        </div>
-                    )}
+                        </button>
+
+                        {activeDropdown === "items" && isSidebarOpen && (
+                            <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
+                                <Link
+                                    href={route("item-list")}
+                                    className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                        isActive("item-list")
+                                            ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                            : ""
+                                    } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                                >
+                                    Item List
+                                </Link>
+
+                                <Link
+                                    href={route("item-borrow")}
+                                    className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                        isActive("item-borrow")
+                                            ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                            : ""
+                                    } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                                >
+                                    Item Borrow
+                                </Link>
+
+                                <Link
+                                    href={route("item-report")}
+                                    className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                        isActive("item-report")
+                                            ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                            : ""
+                                    } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                                >
+                                    Item Report
+                                </Link>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Transfer Dropdown */}
                     <div>
                         <button
                             onClick={() => toggleDropdown("transfer")}
                             className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                isActive(["transferred-items", "signatory"]) || activeDropdown === "transfer"
+                                isActive(["transferred-items", "signatory"]) ||
+                                activeDropdown === "transfer"
                                     ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
                                     : ""
                             }`}
                         >
                             <div className="flex items-center">
                                 <ArrowLeftRight className="w-5 h-5 min-w-[20px]" />
-                                <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
+                                <span
+                                    className={`ml-3 ${
+                                        isSidebarOpen ? "" : "hidden"
+                                    }`}
+                                >
                                     Transfer
                                 </span>
                             </div>
                             {isSidebarOpen && (
                                 <ChevronDown
                                     className={`w-4 h-4 transition-transform ${
-                                        activeDropdown === "transfer" ? "rotate-180" : ""
+                                        activeDropdown === "transfer"
+                                            ? "rotate-180"
+                                            : ""
                                     }`}
                                 />
                             )}
@@ -206,7 +224,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
                         {activeDropdown === "transfer" && isSidebarOpen && (
                             <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
-                                 <Link
+                                <Link
                                     href={route("signatory")}
                                     className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
                                         isActive("signatory")
@@ -226,7 +244,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Transferred Items
                                 </Link>
-                               
                             </div>
                         )}
                     </div>
@@ -241,8 +258,12 @@ export default function AuthenticatedLayout({ header, children }) {
                         <User className="w-5 h-5 min-w-[20px] dark:text-gray-300" />
                         {isSidebarOpen && (
                             <div className="ml-3">
-                                <div className="font-medium dark:text-gray-300">{user.firstname}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-500">{user.role}</div>
+                                <div className="font-medium dark:text-gray-300">
+                                    {user.firstname}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-500">
+                                    {user.role}
+                                </div>
                             </div>
                         )}
                     </Link>
@@ -253,7 +274,9 @@ export default function AuthenticatedLayout({ header, children }) {
                         className="w-full flex items-center px-4 py-3 rounded-lg text-red-600 hover:bg-red-200 dark:hover:bg-red-900/30"
                     >
                         <LogOut className="w-5 h-5 min-w-[20px]" />
-                        <span className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}>
+                        <span
+                            className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}
+                        >
                             Logout
                         </span>
                     </Link>
