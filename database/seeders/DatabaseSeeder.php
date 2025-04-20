@@ -17,22 +17,22 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $faker = Faker::create();
-    
+
         // Insert default account
         DB::table('users')->insert([
             'firstname' => 'Admin',
             'lastname' => 'User',
             'department' => 'System',
             'email' => 'admin@admin.com',
-            'role' => 'Super Admin',
-            'status' => 'active', 
+            'role' => 'Admin',
+            'status' => 'active',
             'email_verified_at' => now(),
-            'password' => bcrypt('password'), 
+            'password' => bcrypt('password'),
             'remember_token' => Str::random(10),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-    
+
         // Seed users table with random data
         for ($i = 0; $i < 20; $i++) {
             DB::table('users')->insert([
@@ -43,13 +43,13 @@ class DatabaseSeeder extends Seeder
                 'role' => $faker->randomElement(['Basic', 'Admin']),
                 'status' => $faker->randomElement(['pending']),
                 'email_verified_at' => $faker->boolean ? $faker->dateTimeThisYear : null,
-                'password' => bcrypt('password'), 
+                'password' => bcrypt('password'),
                 'remember_token' => Str::random(10),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         }
-    
+
         // Seed password_reset_tokens table
         for ($i = 0; $i < 20; $i++) {
             DB::table('password_reset_tokens')->insert([
@@ -58,7 +58,7 @@ class DatabaseSeeder extends Seeder
                 'created_at' => now(),
             ]);
         }
-    
+
         // Seed sessions table
         for ($i = 0; $i < 20; $i++) {
             DB::table('sessions')->insert([
@@ -71,5 +71,5 @@ class DatabaseSeeder extends Seeder
             ]);
         }
     }
-    
+
 }
