@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Head, usePage } from "@inertiajs/react";
-import { checkRole } from "@/utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Table from "@/Components/Table";
 import TrueButton from "@/Components/TrueButton";
@@ -18,12 +17,12 @@ export default function UserStatus() {
     const fetchUsers = async () => {
         try {
             const response = await axios.get("/api/users?status=pending");
-    
+
             // Sort by created_at descending
-            const sortedData = response.data.sort((a, b) => 
+            const sortedData = response.data.sort((a, b) =>
                 new Date(b.created_at) - new Date(a.created_at)
             );
-    
+
             // If the current user is a Super Admin, show all users
             const filteredUsers =
                 currentUser.role === "Super Admin"
@@ -31,7 +30,7 @@ export default function UserStatus() {
                     : sortedData.filter(
                           (user) => user.department === currentUser.department
                       );
-    
+
             setUsers(filteredUsers);
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -142,7 +141,7 @@ export default function UserStatus() {
         >
             <Head title="User Status" />
 
-        
+
             <div className="px-4 py-4 overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40">
                     <div className="p-2 text-gray-900 dark:text-gray-100">
                         {users.length > 0 ? (
@@ -156,7 +155,7 @@ export default function UserStatus() {
                         )}
                     </div>
                 </div>
-           
+
             <SuccessDialog
                 isOpen={isSuccessDialogOpen}
                 onClose={() => setIsSuccessDialogOpen(false)}

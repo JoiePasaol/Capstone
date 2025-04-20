@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePage, Head } from "@inertiajs/react";
-import { checkRole } from "@/Utils/CheckRole";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import TextInput from "@/Components/TextInput";
 import SecondaryButton from "@/Components/SecondaryButton";
