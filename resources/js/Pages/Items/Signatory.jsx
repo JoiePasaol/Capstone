@@ -284,7 +284,6 @@ export default function Signatory() {
                         >
                             Edit
                         </Dropdown.Link>
-                        {checkRole(user, ["Super Admin"]) && (
                             <Dropdown.Link
                                 onClick={(e) => {
                                     e.preventDefault();
@@ -293,7 +292,7 @@ export default function Signatory() {
                             >
                                 Delete
                             </Dropdown.Link>
-                        )}
+
                     </Dropdown.Content>
                 </Dropdown>
             </div>
@@ -369,7 +368,7 @@ export default function Signatory() {
                             All Signatory
                         </div>
                         <div className="w-full flex justify-end px-4 mt-4 mb-3 text-gray-900 dark:text-gray-100">
-                            {checkRole(user, ["Super Admin"]) && (
+
                                 <DeleteIcon
                                     className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
                                         rows.filter((row) => row.checkbox).length < 2
@@ -379,7 +378,6 @@ export default function Signatory() {
                                     onClick={handleBulkDeleteClick}
                                     disabled={rows.filter((row) => row.checkbox).length < 2}
                                 />
-                            )}
                         </div>
                         <div className="w-full px-4 text-gray-900 dark:text-gray-100">
                             <Table
