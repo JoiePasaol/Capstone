@@ -62,7 +62,7 @@ export default function ItemBorrow() {
         name: "",
         item_ids: [],
         item_names: [],
-        borrowed_date: "", 
+        borrowed_date: "",
         return_date: "",
         status: "Borrowed",
         quantity: 1,
@@ -203,25 +203,62 @@ export default function ItemBorrow() {
             setSelectedStatus(row.status);
             setSelectedQuantity(row.quantity);
 
+            // Set form data
             setData({
                 id: row.id,
                 name: row.name,
                 item_ids: itemIds,
                 item_names: itemNames,
-                borrowed_date: row.borrowed_date,
-                return_date: row.return_date,
+                borrowed_date: row.borrowed_date || "",
+                return_date: row.return_date || "",
                 status: row.status,
                 quantity: row.quantity,
             });
 
+            // Handle return date
             if (row.return_date) {
-                const date = new Date(row.return_date);
-                setReturnDate(isNaN(date.getTime()) ? null : date);
+                const date = parseISO(row.return_date);
+                setReturnDate(isValid(date) ? date : null);
+            } else {
+                setReturnDate(null);
             }
 
+            // Handle borrowed date - improved parsing logic
             if (row.borrowed_date) {
-                const date = new Date(row.borrowed_date);
-                setBorrowedDate(isNaN(date.getTime()) ? null : date);
+                console.log("Original borrowed date:", row.borrowed_date);
+
+                // First, try direct parsing with parseISO
+                let parsedDate = parseISO(row.borrowed_date);
+
+                // If not valid and it's in YYYY-MM-DD format
+                if (!isValid(parsedDate) && /^\d{4}-\d{2}-\d{2}/.test(row.borrowed_date)) {
+                    parsedDate = new Date(row.borrowed_date);
+                }
+
+                // If still not valid and it might be MM/DD/YYYY format
+                if (!isValid(parsedDate) && row.borrowed_date.includes('/')) {
+                    const parts = row.borrowed_date.split('/');
+                    if (parts.length === 3) {
+                        // Note: months are 0-indexed in JavaScript Date
+                        parsedDate = new Date(parts[2], parseInt(parts[0])-1, parseInt(parts[1]));
+                    }
+                }
+
+                console.log("Parsed borrowed date:", parsedDate, "isValid:", isValid(parsedDate));
+
+                // Set the borrowed date state if valid
+                if (isValid(parsedDate)) {
+                    setBorrowedDate(parsedDate);
+                    // Also update the form data with formatted date
+                    setData(data => ({
+                        ...data,
+                        borrowed_date: format(parsedDate, "MM/dd/yyyy")
+                    }));
+                } else {
+                    setBorrowedDate(null);
+                }
+            } else {
+                setBorrowedDate(null);
             }
 
             if (selectedOpts.length > 0) {
@@ -247,6 +284,7 @@ export default function ItemBorrow() {
             setSelectedOptions([]);
             setSelectedStatus(null);
             setReturnDate(null);
+            setBorrowedDate(null);
             setSelectedQuantity(1);
         }
     };
@@ -568,12 +606,15 @@ export default function ItemBorrow() {
         Object.defineProperty(displayRow, "_raw", {
             value: {
                 id: item.id,
+                name: item.name,
                 item_names: itemNames,
                 quantity: item.quantity,
                 item_ids: Array.isArray(item.item_ids)
                     ? item.item_ids
                     : JSON.parse(item.item_ids),
+                borrowed_date: item.borrowed_date,
                 return_date: item.return_date,
+                status: item.status,
             },
             enumerable: false,
         });
@@ -806,7 +847,7 @@ export default function ItemBorrow() {
                         />
                         <div className="relative">
                             <div
-                                className="px-3 w-full h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer flex items-center"
+                                className="px-3 w-full h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer flex items-center"
                                 onClick={() =>
                                     setShowPickerBorrowed(!showPickerBorrowed)
                                 }
@@ -821,10 +862,10 @@ export default function ItemBorrow() {
                                         selected={borrowedDate}
                                         onChange={(date) => {
                                             setBorrowedDate(date);
-                                            setData(
-                                                "borrowed_date",
-                                                format(date, "MM/dd/yyyy")
-                                            );
+                                            setData({
+                                                ...data,
+                                                borrowed_date: format(date, "MM/dd/yyyy")
+                                            });
                                         }}
                                         dateFormat="MM/dd/yyyy"
                                         inline
@@ -843,7 +884,7 @@ export default function ItemBorrow() {
                         <InputLabel htmlFor="Date" value="Date Return" />
                         <div className="relative">
                             <div
-                                className="px-3 w-full h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 rounded-sm text-gray-700 dark:text-gray-500 bg-transparent cursor-pointer flex items-center"
+                                className="px-3 w-full h-10 mt-2 block border dark:bg-gray-900 border-black/20 dark:border-gray-700 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer flex items-center"
                                 onClick={() => setShowPicker(!showPicker)}
                             >
                                 {returnDate
@@ -856,10 +897,10 @@ export default function ItemBorrow() {
                                         selected={returnDate}
                                         onChange={(date) => {
                                             setReturnDate(date);
-                                            setData(
-                                                "return_date",
-                                                format(date, "MM/dd/yyyy")
-                                            );
+                                            setData({
+                                                ...data,
+                                                return_date: format(date, "MM/dd/yyyy")
+                                            });
                                         }}
                                         dateFormat="MM/dd/yyyy"
                                         inline

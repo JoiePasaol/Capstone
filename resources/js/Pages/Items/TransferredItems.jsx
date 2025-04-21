@@ -183,13 +183,13 @@ export default function TransferredItems({ items = [] }) {
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
             filtered = filtered.filter(item =>
-                item.description.toLowerCase().includes(term) ||
-                item.property_no.toLowerCase().includes(term) ||
-                item.classification_no.toLowerCase().includes(term) ||
-                item.transfer_to.toLowerCase().includes(term) ||
-                item.name_designation.toLowerCase().includes(term) ||
-                item.designated_office.toLowerCase().includes(term) ||
-                item.office_name_designation.toLowerCase().includes(term)
+                (item.description?.toLowerCase() || '').includes(term) ||
+                (item.property_no?.toLowerCase() || '').includes(term) ||
+                (item.classification_no?.toLowerCase() || '').includes(term) ||
+                (item.transfer_to?.toLowerCase() || '').includes(term) ||
+                (item.name_designation?.toLowerCase() || '').includes(term) ||
+                (item.designated_office?.toLowerCase() || '').includes(term) ||
+                (item.office_name_designation?.toLowerCase() || '').includes(term)
             );
         }
 
@@ -656,8 +656,8 @@ export default function TransferredItems({ items = [] }) {
         >
 
             <Head title="Transferred Items" />
-            <div className="py-6">
-                <div className="max-w-6xl mx-auto">
+            <div className="">
+                <div className="">
 
                     <PrintTemplate
                         selectedItems={items.filter(item => selectedItems.includes(item.id))}
