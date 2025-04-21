@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             'lastname' => 'User',
             'department' => 'System',
             'email' => 'admin@admin.com',
+            'email_reset_pass' => 'villanuevajohn519@gmail.com',
             'role' => 'Admin',
             'status' => 'active',
             'email_verified_at' => now(),

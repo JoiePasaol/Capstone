@@ -25,6 +25,10 @@ export default function ForgotPassword({ status }) {
                 allow you to choose a new one.
             </div>
 
+            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                You can use either your primary email or your recovery email to reset your password.
+            </div>
+
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600 dark:text-green-400">
                     {status}
@@ -40,6 +44,7 @@ export default function ForgotPassword({ status }) {
                     className="mt-1 block w-full"
                     isFocused={true}
                     onChange={(e) => setData('email', e.target.value)}
+                    placeholder="Enter your primary or recovery email"
                 />
 
                 <InputError message={errors.email} className="mt-2" />
