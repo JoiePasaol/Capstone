@@ -1,9 +1,14 @@
 @component('mail::message')
 # Approval Request for Item Transfer
 
-**Item:** {!! $transferredItem->description !!}
-**Quantity:** {{ $transferredItem->quantity }}
-**Transfer To:** {{ $transferredItem->transfer_to }}
+**Item:**
+{!! $transferredItem->items !!}
+
+**Quantity:**
+{{ $transferredItem->quantity }}
+
+**Transfer To:**
+{{ $transferredItem->transfer_to }}
 
 You have been identified as the {{ ucfirst($type) }} By for this transfer.
 
