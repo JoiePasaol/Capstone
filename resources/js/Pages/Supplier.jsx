@@ -17,15 +17,13 @@ import ConfirmationDialog from "@/Components/ConfirmationDialog";
 import SuccessDialog from "@/Components/SuccessDialog";
 
 export default function Supplier() {
-
-    // Extract user authentication information
     const { user } = usePage().props.auth;
 
-    //Drawer Management
+    // Drawer Management
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
 
-    //Dialog Management
+    // Dialog Management
     const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
     const [confirmMessage, setConfirmMessage] = useState("");
@@ -37,7 +35,6 @@ export default function Supplier() {
         mobile_number: "",
         email: "",
     });
-    
 
     const [processing, setProcessing] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -53,17 +50,39 @@ export default function Supplier() {
         axios
             .get(route("suppliers.index"))
             .then((response) => {
-                setSuppliers(response.data.suppliers);
-                setFilteredSuppliers(response.data.suppliers);
+                setSuppliers(response.data.suppliers || []);
+                setFilteredSuppliers(response.data.suppliers || []);
             })
-            .catch((error) =>
-                console.error("Error fetching suppliers:", error)
-            );
+            .catch((error) => {
+                console.error("Error fetching suppliers:", error);
+                setSuppliers([]);
+                setFilteredSuppliers([]);
+            });
     };
 
     useEffect(() => {
         fetchSuppliers();
     }, []);
+
+    useEffect(() => {
+        if (!Array.isArray(suppliers) || suppliers.length === 0) {
+            setFilteredSuppliers([]);
+            return;
+        }
+
+        const searchLower = searchTerm.toLowerCase();
+        const filtered = suppliers.filter(supplier => {
+            if (!supplier) return false;
+
+            const nameMatch = supplier.name?.toLowerCase().includes(searchLower) || false;
+            const emailMatch = supplier.email?.toLowerCase().includes(searchLower) || false;
+
+            return nameMatch || emailMatch;
+        });
+
+        setFilteredSuppliers(filtered);
+        setCurrentPage(1);
+    }, [searchTerm, suppliers]);
 
     const toggleDrawer = (open, isEdit = false, item = null) => {
         setIsDrawerOpen(open);
@@ -87,7 +106,7 @@ export default function Supplier() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
-    
+
         if (!data.id) {
             // Create new supplier
             axios
@@ -105,7 +124,7 @@ export default function Supplier() {
                 })
                 .catch((error) => {
                     if (error.response?.status === 422) {
-                        setError(error.response.data.errors); // 👈 Set validation errors
+                        setError(error.response.data.errors);
                     }
                 })
                 .finally(() => {
@@ -140,7 +159,7 @@ export default function Supplier() {
                 })
                 .catch((error) => {
                     if (error.response?.status === 422) {
-                        setError(error.response.data.errors); // 👈 Again for update
+                        setError(error.response.data.errors);
                     }
                 })
                 .finally(() => {
@@ -148,23 +167,6 @@ export default function Supplier() {
                 });
         }
     };
-    
-
-    useEffect(() => {
-        if (!Array.isArray(suppliers) || suppliers.length === 0) return;
-
-        const searchLower = searchTerm.toLowerCase();
-        const filtered = suppliers
-            .filter((supplier) => supplier && supplier.name)
-            .filter(
-                (supplier) =>
-                    supplier.name.toLowerCase().includes(searchLower) ||
-                    supplier.email.toLowerCase().includes(searchLower)
-            );
-
-        setFilteredSuppliers(filtered);
-        setCurrentPage(1);
-    }, [searchTerm, suppliers]);
 
     const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -218,7 +220,7 @@ export default function Supplier() {
                 ids: deleteTarget,
             });
 
-            fetchSuppliers(); // ✅ Fetch updated supplier list
+            fetchSuppliers();
             setSelectedSuppliers([]);
             setDeleteTarget(null);
             setIsConfirmDialogOpen(false);
@@ -266,10 +268,10 @@ export default function Supplier() {
             />
         ),
         index: index + 1 + (currentPage - 1) * itemsPerPage,
-        name: supplier.name,
-        address: supplier.address,
-        mobile_number: supplier.mobile_number,
-        email: supplier.email,
+        name: supplier.name || "-",
+        address: supplier.address || "-",
+        mobile_number: supplier.mobile_number || "-",
+        email: supplier.email || "-",
     }));
 
     const actions = (row) => (
@@ -286,16 +288,14 @@ export default function Supplier() {
                 >
                     Edit
                 </Dropdown.Link>
-         
-                    <Dropdown.Link
-                        onClick={(e) => {
-                            e.preventDefault();
-                            confirmDelete(row.id);
-                        }}
-                    >
-                        Delete
-                    </Dropdown.Link>
-         
+                <Dropdown.Link
+                    onClick={(e) => {
+                        e.preventDefault();
+                        confirmDelete(row.id);
+                    }}
+                >
+                    Delete
+                </Dropdown.Link>
             </Dropdown.Content>
         </Dropdown>
     );
@@ -309,47 +309,48 @@ export default function Supplier() {
             }
         >
             <Head title="Supplier" />
-          
-                    <div className="px-4 py-4  overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40">
-                        <div className="flex mb-3 gap-2 items-center justify-between ">
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="dark:placeholder-gray-300 placeholder-gray-600 dark:text-gray-300 border border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
-                             
-                                    <DeleteIcon
-                                        className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
-                                            selectedSuppliers.length < 2
-                                                ? "opacity-50 pointer-events-none"
-                                                : ""
-                                        }`}
-                                        onClick={() => confirmDelete()}
-                                        disabled={selectedSuppliers.length < 2}
-                                    />
-                        
-                                <AddCircleIcon
-                                    className="text-gray-600 dark:text-gray-300 cursor-pointer"
-                                    onClick={() => toggleDrawer(true, false)}
-                                />
-                            </div>
-                        </div>
-                        <div className="text-gray-900 dark:text-gray-100">
-                            <Table
-                                headers={headers}
-                                rows={rows}
-                                actions={actions}
-                            />
-                        </div>
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={handlePageChange}
+
+            <div className="px-4 py-4 overflow-hidden bg-white ring-1 ring-black/10 sm:rounded-lg dark:bg-gray-800/40">
+                <div className="flex mb-3 gap-2 items-center justify-between ">
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        className="dark:placeholder-gray-300 placeholder-gray-600 dark:text-gray-300 border border-black/20 dark:border-white bg-transparent rounded-sm px-4 py-1 focus:outline-none focus:ring-none dark:focus:border-white"
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={searchTerm}
+                    />
+                    <div className="pl-2 border-l border-gray-500 flex gap-2 items-center">
+                        <DeleteIcon
+                            className={`text-gray-600 dark:text-gray-300 cursor-pointer ${
+                                selectedSuppliers.length < 1
+                                    ? "opacity-50 pointer-events-none"
+                                    : ""
+                            }`}
+                            onClick={() => confirmDelete()}
+                            disabled={selectedSuppliers.length < 1}
+                        />
+                        <AddCircleIcon
+                            className="text-gray-600 dark:text-gray-300 cursor-pointer"
+                            onClick={() => toggleDrawer(true, false)}
                         />
                     </div>
-           
+                </div>
+                <div className="text-gray-900 dark:text-gray-100">
+                    <Table
+                        headers={headers}
+                        rows={rows}
+                        actions={actions}
+                    />
+                </div>
+                {totalPages > 1 && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                    />
+                )}
+            </div>
+
             <Drawer
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={toggleDrawer}
@@ -357,7 +358,6 @@ export default function Supplier() {
                 width="350px"
             >
                 <form onSubmit={handleSubmit}>
-                    {/* Name Field */}
                     <div className="mt-2">
                         <InputLabel htmlFor="name" value="Name" />
                         <TextInput
@@ -435,7 +435,6 @@ export default function Supplier() {
                 title={confirmMessage}
             />
 
-            {/* Success Dialog */}
             <SuccessDialog
                 isOpen={isSuccessDialogOpen}
                 onClose={() => setIsSuccessDialogOpen(false)}
