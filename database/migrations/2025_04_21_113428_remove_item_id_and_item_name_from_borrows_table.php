@@ -12,7 +12,8 @@ return new class extends Migration
     public function up()
     {
         Schema::table('borrows', function (Blueprint $table) {
-            $table->dropColumn('item_id');
+            $table->dropForeign(['item_id']); // only if it exists
+            $table->dropColumn(['item_id', 'item_name']);
         });
     }
     
@@ -20,6 +21,7 @@ return new class extends Migration
     {
         Schema::table('borrows', function (Blueprint $table) {
             $table->foreignId('item_id')->constrained('items')->onDelete('cascade');
+            $table->string('item_name');
         });
     }
     
