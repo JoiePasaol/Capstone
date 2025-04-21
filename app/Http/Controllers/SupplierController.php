@@ -17,24 +17,24 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         \Log::info('Received Request Data:', $request->all());
-    
+
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
             'mobile_number' => 'nullable|numeric',
             'email' => 'nullable|string|email|unique:suppliers,email',
         ]);
-    
+
         $supplier = Supplier::create([
             'name' => $request->name,
             'address' => $request->address,
             'mobile_number' => $request->mobile_number,
             'email' => $request->email,
         ]);
-    
+
         return response()->json(['supplier' => $supplier, 'message' => 'Supplier added successfully!']);
     }
-    
+
 
     public function edit($id)
     {
@@ -89,6 +89,6 @@ class SupplierController extends Controller
             return response()->json(['total_suppliers' => $totalSuppliers]);
         }
 
-        
+
 
 }

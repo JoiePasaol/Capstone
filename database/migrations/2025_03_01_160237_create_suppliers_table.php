@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->string('name');
             $table->string('address');
             $table->string('mobile_number')->nullable()->constrained(13)->regex('/^[0-9]+$/');
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
             $table->timestamps();
         });
     }
