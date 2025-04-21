@@ -36,11 +36,11 @@ class ItemController extends Controller
     public function store(Request $request)
     {
         \Log::info('Received Request Data:', $request->all());
-    
+
         $request->merge([
             'price' => $request->price ? (float) str_replace(',', '', $request->price) : null
         ]);
-    
+
         $request->validate([
             'name' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
@@ -67,15 +67,15 @@ class ItemController extends Controller
             'or' => 'nullable|string',
             'or_date' => 'nullable|date',
         ]);
-    
-        $user = Auth::user(); 
-    
+
+        $user = Auth::user();
+
         $imagePath = null;
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imagePath = $image->storeAs('images', $image->getClientOriginalName(), 'public');
         }
-    
+
         $item = Item::create([
             'user_id' => $user->id,
             'name' => $request->name,
@@ -104,10 +104,10 @@ class ItemController extends Controller
             'classification_no' => $request->classification_no,
             'date_purchase' => $request->date_purchase ? Carbon::parse($request->date_purchase)->format('Y-m-d') : null,
         ]);
-    
+
         return redirect()->route('item-list')->with('success', 'Item added successfully.');
     }
-    
+
 
     public function transfer(Request $request)
     {
@@ -161,6 +161,7 @@ class ItemController extends Controller
                 'witnessed_by_title' => $validated['witnessed_by_title'],
                 'category' => $originalItem->categories,
                 'description' => $originalItem->description,
+                'items' => $originalItem->items,
                 'property_no' => $originalItem->property_no,
                 'classification_no' => $originalItem->classification_no,
                 'amount' => $originalItem->price,

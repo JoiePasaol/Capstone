@@ -27,6 +27,7 @@ class TransferredItems extends Model
         'witnessed_by_title',
         'category',
         'description',
+        'items',
         'property_no',
         'classification_no',
         'amount',

@@ -189,7 +189,8 @@ export default function TransferredItems({ items = [] }) {
                 (item.transfer_to?.toLowerCase() || '').includes(term) ||
                 (item.name_designation?.toLowerCase() || '').includes(term) ||
                 (item.designated_office?.toLowerCase() || '').includes(term) ||
-                (item.office_name_designation?.toLowerCase() || '').includes(term)
+                (item.office_name_designation?.toLowerCase() || '').includes(term) ||
+                (item.items?.toLowerCase() || '').includes(term)
             );
         }
 
@@ -321,7 +322,6 @@ export default function TransferredItems({ items = [] }) {
                     witnessed_by_title: transferData.witnessedByTitle
                 });
 
-                // Refresh the data after successful transfer
                 await refreshData();
 
                 setSuccessMessage(response.data.message || "Item transferred successfully!");
@@ -349,27 +349,27 @@ export default function TransferredItems({ items = [] }) {
 
         return (
             <Drawer
-            isDrawerOpen={isTransferModalOpen}
-            toggleDrawer={() => setIsTransferModalOpen(false)}
-            title="Transfer Item"
-            width="550px"
-        >
-            <form onSubmit={handleTransferSubmit} className="space-y-4">
-                <div>
-                    <InputLabel value="Quantity to Transfer:" />
-                    <TextInput
-                        type="number"
-                        min="1"
-                        max={maxQuantity}
-                        value={transferData.quantityToTransfer}
-                        onChange={handleQuantityChange}
-                        className="mt-1 block w-full"
-                        required
-                    />
-                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Available: {maxQuantity}
+                isDrawerOpen={isTransferModalOpen}
+                toggleDrawer={() => setIsTransferModalOpen(false)}
+                title="Transfer Item"
+                width="550px"
+            >
+                <form onSubmit={handleTransferSubmit} className="space-y-4">
+                    <div>
+                        <InputLabel value="Quantity to Transfer:" />
+                        <TextInput
+                            type="number"
+                            min="1"
+                            max={maxQuantity}
+                            value={transferData.quantityToTransfer}
+                            onChange={handleQuantityChange}
+                            className="mt-1 block w-full"
+                            required
+                        />
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Available: {maxQuantity}
+                        </div>
                     </div>
-                </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -561,6 +561,7 @@ export default function TransferredItems({ items = [] }) {
         },
         { label: "#", key: "id" },
         { label: "Category", key: "category" },
+        { label: "Item", key: "items" },
         { label: "Description", key: "description" },
         { label: "Date Purchase", key: "date_purchase" },
         { label: "Transfer To", key: "transfer_to" },
@@ -603,6 +604,7 @@ export default function TransferredItems({ items = [] }) {
         ),
         "#": <span className="dark:text-white">{item.id}</span>,
         category: <span className="dark:text-white">{item.category}</span>,
+        items: <span className="dark:text-white">{item.items}</span>,
         description: <span className="dark:text-white" dangerouslySetInnerHTML={{ __html: item.description }}></span>,
         date_purchase: (
             <span className="dark:text-white">
@@ -654,11 +656,9 @@ export default function TransferredItems({ items = [] }) {
                 </h2>
             }
         >
-
             <Head title="Transferred Items" />
             <div className="">
                 <div className="">
-
                     <PrintTemplate
                         selectedItems={items.filter(item => selectedItems.includes(item.id))}
                     />

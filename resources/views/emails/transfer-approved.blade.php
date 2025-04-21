@@ -1,21 +1,21 @@
 @component('mail::message')
 # Transfer Approval Confirmation
 
-**Item:**  
-{!! $transferredItem->description !!}  
+**Item:**
+{!! $transferredItem->items !!}
 
-**Quantity Transferred:**  
-{{ $transferredItem->quantity }}  
+**Quantity Transferred:**
+{{ $transferredItem->quantity }}
 
-**Transfer To:**  
-{{ $transferredItem->transfer_to }}  
+**Transfer To:**
+{{ $transferredItem->transfer_to }}
 
 @if($signatory)
-**Approved By:**  
-{{ $signatory->name_designation }}  
+**Approved By:**
+{{ $signatory->name_designation }}
 
-**Position:**  
-{{ $signatory->position }}  
+**Position:**
+{{ $signatory->position }}
 @endif
 
 **Approval Type:** {{ ucfirst($type) }}

@@ -2,7 +2,8 @@
 # Transfer Process Completed
 
 The following item transfer has been fully approved by all required signatories:
-
+**Item :**
+{!! $transferredItem->items !!}
 **Item Description:**
 {{ strip_tags($transferredItem->description) }}
 
