@@ -897,7 +897,7 @@ export default function ItemList() {
         },
         { label: "#", key: "index" },
         { label: "Name", key: "name" },
-        { label: "Department", key: "department" },
+        { label: "Office", key: "department" },
         { label: "Image", key: "image" },
         { label: "Category", key: "categories" },
         { label: "Item", key: "items" },
@@ -1296,7 +1296,7 @@ export default function ItemList() {
                             <div className="mt-3">
                                 <InputLabel
                                     htmlFor="department"
-                                    value="Department"
+                                    value="Office"
                                 />
                                 <TextInput
                                     id="department"

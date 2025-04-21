@@ -42,8 +42,8 @@ class ItemController extends Controller
         ]);
     
         $request->validate([
-            'name' => 'required|string|max:255',
-            'department' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
+            'department' => 'nullable|string|max:255',
             'image' => 'nullable|image|max:2048',
             'categories' => 'required|string',
             'items' => 'required|string',
@@ -288,7 +288,7 @@ public function update(Request $request, $id)
             'price' => $request->price ? (float) str_replace(',', '', $request->price) : null
         ]);
     $validatedData = $request->validate([
-        'name' => 'required|string',
+        'name' => 'nullable|string',
         'department' => 'nullable|string',
         'image' => 'nullable|image|max:2048',
         'categories' => 'nullable|string',
