@@ -85,13 +85,14 @@ class BorrowController extends Controller
          
             $borrow = Borrow::create([
                 'name' => $validated['name'],
-                'item_ids' => $validated['item_ids'],     
+                'item_ids' => $validated['item_ids'],
                 'item_names' => $validated['item_names'],
                 'borrowed_date' => $borrowDate,
                 'return_date' => $returnDate,
                 'status' => $validated['status'] ?? 'Borrowed',
                 'quantity' => $validated['quantity'],
             ]);
+            
    
             foreach ($validated['item_ids'] as $itemId) {
                 $item = \App\Models\Item::find($itemId);
