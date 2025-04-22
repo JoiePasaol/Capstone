@@ -14,7 +14,7 @@ class BorrowController extends Controller
         $now = Carbon::now();
 
         $borrows = Borrow::orderBy('created_at', 'desc')->get()->map(function ($borrow) use ($now) {
-
+            // Auto update status to 'Overdue' if current date is past return_date
             if (
                 $borrow->status === 'Borrowed' &&
                 $borrow->return_date &&
@@ -40,10 +40,10 @@ class BorrowController extends Controller
 
         return response()->json($borrows);
     }
+
     public function searchItems(Request $request)
     {
         $query = $request->input('query');
-
 
         $items = Item::where('items', 'LIKE', "%{$query}%")
                      ->limit(10)
@@ -53,15 +53,14 @@ class BorrowController extends Controller
     }
 
     public function show($id)
-{
-    $item = Item::findOrFail($id);
-    return response()->json([
-        'id' => $item->id,
-        'items' => $item->items,
-        'remaining_quantity' => $item->remaining_quantity,
-    ]);
-}
-
+    {
+        $item = Item::findOrFail($id);
+        return response()->json([
+            'id' => $item->id,
+            'items' => $item->items,
+            'remaining_quantity' => $item->remaining_quantity,
+        ]);
+    }
 
     public function store(Request $request)
     {
@@ -93,9 +92,9 @@ class BorrowController extends Controller
                 'quantity' => $validated['quantity'],
             ]);
 
-
+            // Update remaining_quantity for each item
             foreach ($validated['item_ids'] as $itemId) {
-                $item = \App\Models\Item::find($itemId);
+                $item = Item::find($itemId);
 
                 if (!$item) {
                     throw new \Exception("Item with ID {$itemId} not found.");
@@ -128,8 +127,6 @@ class BorrowController extends Controller
         }
     }
 
-
-
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
@@ -155,28 +152,28 @@ class BorrowController extends Controller
             $quantityDifference = $originalQuantity - $newQuantity;
 
             foreach ($validated['item_ids'] as $itemId) {
-                $item = \App\Models\Item::find($itemId);
+                $item = Item::find($itemId);
 
                 if (!$item) {
                     throw new \Exception("Item with ID {$itemId} not found.");
                 }
 
                 if ($originalStatus !== 'Returned' && $validated['status'] === 'Returned') {
-
+                    // If item is being returned now
                     $item->remaining_quantity += $originalQuantity;
                 } elseif ($originalStatus === 'Returned' && $validated['status'] !== 'Returned') {
-
+                    // If previously returned and now marked as borrowed again
                     if ($item->remaining_quantity < $newQuantity) {
                         throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Requested: {$newQuantity})");
                     }
                     $item->remaining_quantity -= $newQuantity;
                 } elseif ($validated['status'] === 'Borrowed') {
-
+                    // Just a quantity update while still in borrowed status
                     if ($quantityDifference > 0) {
-
+                        // Returning some quantity
                         $item->remaining_quantity += $quantityDifference;
                     } elseif ($quantityDifference < 0) {
-
+                        // Borrowing more
                         $extraNeeded = abs($quantityDifference);
                         if ($item->remaining_quantity < $extraNeeded) {
                             throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Additional Requested: {$extraNeeded})");
@@ -188,9 +185,8 @@ class BorrowController extends Controller
                 $item->save();
             }
 
-            $borrowDate = Carbon::parse($validated['borrowed_date'])->format('Y-m-d');
             $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
-
+            $borrowDate = Carbon::parse($validated['borrowed_date'])->format('Y-m-d');
 
             $borrow->update([
                 'name' => $validated['name'],
@@ -221,12 +217,22 @@ class BorrowController extends Controller
         }
     }
 
-
-
     public function destroy($id)
     {
         try {
             $borrow = Borrow::findOrFail($id);
+
+            // If the item was borrowed and not returned, restore the quantity
+            if ($borrow->status === 'Borrowed' || $borrow->status === 'Overdue') {
+                foreach ($borrow->item_ids as $itemId) {
+                    $item = Item::find($itemId);
+                    if ($item) {
+                        $item->remaining_quantity += $borrow->quantity;
+                        $item->save();
+                    }
+                }
+            }
+
             $borrow->delete();
 
             return response()->json([
@@ -255,7 +261,26 @@ class BorrowController extends Controller
         }
 
         try {
+            \DB::beginTransaction();
+
+            $borrows = Borrow::whereIn('id', $ids)->get();
+
+            foreach ($borrows as $borrow) {
+                // If the item was borrowed and not returned, restore the quantity
+                if ($borrow->status === 'Borrowed' || $borrow->status === 'Overdue') {
+                    foreach ($borrow->item_ids as $itemId) {
+                        $item = Item::find($itemId);
+                        if ($item) {
+                            $item->remaining_quantity += $borrow->quantity;
+                            $item->save();
+                        }
+                    }
+                }
+            }
+
             $deletedCount = Borrow::whereIn('id', $ids)->delete();
+
+            \DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -263,6 +288,7 @@ class BorrowController extends Controller
                 'deleted_count' => $deletedCount
             ]);
         } catch (\Exception $e) {
+            \DB::rollBack();
             \Log::error('Bulk delete error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
@@ -272,42 +298,41 @@ class BorrowController extends Controller
         }
     }
 
-
     public function countBorrowed()
-{
-    try {
-        $count = Borrow::where('status', 'Borrowed')->count();
+    {
+        try {
+            $count = Borrow::where('status', 'Borrowed')->count();
 
-        return response()->json([
-            'success' => true,
-            'total_borrowed' => $count
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Error fetching borrowed items count: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch borrowed items count.',
-            'error' => $e->getMessage()
-        ], 500);
+            return response()->json([
+                'success' => true,
+                'total_borrowed' => $count
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching borrowed items count: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch borrowed items count.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
-public function countOverdue()
-{
-    try {
-        $count = Borrow::where('status', 'Overdue')->count();
 
-        return response()->json([
-            'success' => true,
-            'total_overdue' => $count
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Error fetching overdue items count: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch overdue items count.',
-            'error' => $e->getMessage()
-        ], 500);
+    public function countOverdue()
+    {
+        try {
+            $count = Borrow::where('status', 'Overdue')->count();
+
+            return response()->json([
+                'success' => true,
+                'total_overdue' => $count
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching overdue items count: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch overdue items count.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
-
 }
