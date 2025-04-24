@@ -8,6 +8,7 @@ import {
     ChevronDown,
     LogOut,
     ArrowLeftRight,
+    RotateCcw,
 } from "lucide-react";
 import SimpleLightDarkToggle from "@/Components/SimpleLightDarkToggle";
 import { Link, usePage } from "@inertiajs/react";
@@ -247,7 +248,72 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
                         )}
                     </div>
+
+
+ {/* Returned Items Dropdown */}
+ <button
+                        onClick={() => toggleDropdown("returned")}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                            isActive(["returned-items", "return-history"]) || activeDropdown === "returned"
+                                ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                : ""
+                        }`}
+                    >
+                        <div className="flex items-center">
+                            <RotateCcw className="w-5 h-5 min-w-[20px]" />
+                            <span
+                                className={`ml-3 ${isSidebarOpen ? "" : "hidden"}`}
+                            >
+                                Returned Items
+                            </span>
+                        </div>
+                        <ChevronDown
+                            className={`w-4 h-4 transition-transform ${
+                                activeDropdown === "returned" ? "rotate-180" : ""
+                            } ${isSidebarOpen ? "opacity-100" : "opacity-0 w-0"}`}
+                        />
+                    </button>
+
+                    {activeDropdown === "returned" && isSidebarOpen && (
+                        <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
+                            {/* <Link
+                                href={route("returned-items")}
+                                className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                    isActive("returned-items")
+                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                        : ""
+                                } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                            >
+                                Inspect Item
+                            </Link> */}
+
+                            <Link
+                                href={route("return-history")}
+                                className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                    isActive("return-history")
+                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                        : ""
+                                } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                            >
+                                Returned Item List
+                            </Link>
+
+                            <Link
+                                href={route("inspect-report")}
+                                className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                    isActive("inspect-report")
+                                        ? "bg-blue-100 text-blue-500 dark:bg-indigo-900/50 dark:text-indigo-400"
+                                        : ""
+                                } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
+                            >
+                                Unservices Item
+                            </Link>
+                        </div>
+                    )}
+
                 </nav>
+
+                                   
 
                 {/* Footer - Profile and Logout */}
                 <div className="border-t dark:border-gray-700 p-4 space-y-2">

@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Carbon;
 use App\Models\Item;
 use Inertia\Inertia;
+use App\Http\Controllers\ReturnedItemController;
 
 // Public Routes
 Route::get('/', function () {
@@ -206,6 +207,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
             Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
         });
+
+
+        // Returned Items Routes
+    Route::get('/returned-items', [ReturnedItemController::class, 'create'])->name('returned-items');
+    Route::get('/return-history', [ReturnedItemController::class, 'returnHistory'])->name('return-history');
+    Route::post('/returned-items', [ReturnedItemController::class, 'store'])->name('returned-items.store');
+    Route::get('/returned-items/{id}/edit', [ReturnedItemController::class, 'edit'])->name('returned-items.edit');
+    Route::put('/returned-items/{id}', [ReturnedItemController::class, 'update'])->name('returned-items.update');
+    Route::delete('/returned-items/{id}', [ReturnedItemController::class, 'destroy'])->name('returned-items.destroy');
+    Route::get('/api/returned-items/total-count', [ReturnedItemController::class, 'getTotalCount']);
+    Route::get('/inspect-report', [ReturnedItemController::class, 'inspectReport'])->name('inspect-report');
+
+
     });
 });
 
