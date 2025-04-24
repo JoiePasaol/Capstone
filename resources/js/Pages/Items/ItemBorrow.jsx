@@ -91,11 +91,10 @@ export default function ItemBorrow() {
         const today = new Date();
         const searchLower = searchTerm.toLowerCase();
     
-        return borrowedItems
+        // Create a copy of the array before sorting to avoid mutating the original
+        const result = [...borrowedItems]
             .map(item => {
-                // Check if it's overdue (return_date < today && status is "Borrowed")
                 const isOverdue = item.status === "Borrowed" && new Date(item.return_date) < today;
-    
                 return {
                     ...item,
                     status: isOverdue ? "Overdue" : item.status
@@ -112,7 +111,18 @@ export default function ItemBorrow() {
             .filter((item) =>
                 statusFilter === "All" || item.status === statusFilter
             )
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            .sort((a, b) => {
+                // Debug logging
+                console.log('Sorting:', {
+                    a: { id: a.id, created_at: a.created_at, date: new Date(a.created_at) },
+                    b: { id: b.id, created_at: b.created_at, date: new Date(b.created_at) },
+                    comparison: new Date(b.created_at) - new Date(a.created_at)
+                });
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+    
+        console.log('Sorted result:', result);
+        return result;
     }, [borrowedItems, searchTerm, statusFilter]);
     
 
