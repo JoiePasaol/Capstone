@@ -104,26 +104,45 @@ export default function TransferredItems({ items = [] }) {
             ? JSON.parse(item.approval_status)
             : item.approval_status || {};
 
+        const getStatusBadge = (status, type) => {
+            if (!status) return (
+<span className="text-xs p-1 rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+    {type}: Pending
+</span>
+            );
+
+            if (status.approved === true) return (
+                <span className="text-xs p-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    {type}: Approved
+                </span>
+            );
+
+            if (status.approved === false) return (
+                <span className="text-xs p-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    {type}: Declined
+                    {status.decline_reason && (
+                        <span title={status.decline_reason} className="ml-1">ⓘ</span>
+                    )}
+                </span>
+            );
+
+            return (
+                <span className="text-xs p-1 rounded bg-gray-100 dark:bg-gray-700">
+                    {type}: Pending
+                </span>
+            );
+        };
+
         return (
             <div className="flex flex-col gap-1">
                 <div className="flex gap-2">
-                    <span className={`text-xs p-1 rounded ${approvalStatus?.recommended?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
-                        GSO: {approvalStatus?.recommended?.approved ? '✓' : 'Pending'}
-                    </span>
-                    <span className={`text-xs p-1 rounded ${approvalStatus?.approved?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
-                        Mayor: {approvalStatus?.approved?.approved ? '✓' : 'Pending'}
-                    </span>
+                    {getStatusBadge(approvalStatus?.recommended, 'GSO')}
+                    {getStatusBadge(approvalStatus?.approved, 'Mayor')}
                 </div>
                 <div className="flex gap-2">
-                    <span className={`text-xs p-1 rounded ${approvalStatus?.witnessed?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
-                        Witness: {approvalStatus?.witnessed?.approved ? '✓' : 'Pending'}
-                    </span>
-                    <span className={`text-xs p-1 rounded ${approvalStatus?.name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
-                        Office Head: {approvalStatus?.name_designation?.approved ? '✓' : 'Pending'}
-                    </span>
-                    <span className={`text-xs p-1 rounded ${approvalStatus?.office_name_designation?.approved ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
-                        Office Head: {approvalStatus?.office_name_designation?.approved ? '✓' : 'Pending'}
-                    </span>
+                    {getStatusBadge(approvalStatus?.witnessed, 'Witness')}
+                    {getStatusBadge(approvalStatus?.name_designation, 'Office Head')}
+                    {getStatusBadge(approvalStatus?.office_name_designation, 'Office Rep')}
                 </div>
             </div>
         );
@@ -625,25 +644,37 @@ export default function TransferredItems({ items = [] }) {
         approval_status: <ApprovalStatus item={item} />,
         actions: (
             <div className="relative">
-                <Dropdown>
-                    <Dropdown.Trigger>
-                        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <Settings className="w-5 h-5" />
-                        </button>
-                    </Dropdown.Trigger>
-                    <Dropdown.Content className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                        <Dropdown.Link
-                            onClick={(e) => {
-                                e.preventDefault();
-                                setTransferItemId(item.id);
-                                setIsTransferModalOpen(true);
-                            }}
-                            className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                            Transfer Item
-                        </Dropdown.Link>
-                    </Dropdown.Content>
-                </Dropdown>
+        <Dropdown>
+            <Dropdown.Trigger>
+                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <Settings className="w-5 h-5" />
+                </button>
+            </Dropdown.Trigger>
+            <Dropdown.Content className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <Dropdown.Link
+                    onClick={(e) => {
+                        e.preventDefault();
+                        const itemToTransfer = items.find(i => i.id === item.id);
+
+                        if (!itemToTransfer.is_fully_approved) {
+                            setSuccessMessage("Cannot transfer item. Original transfer must be fully approved first.");
+                            setIsSuccessDialogOpen(true);
+                            return;
+                        }
+
+                        setTransferItemId(item.id);
+                        setIsTransferModalOpen(true);
+                    }}
+                    className={`block px-4 py-2 text-sm ${
+                        !item.is_fully_approved
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                >
+                    Transfer Item
+                </Dropdown.Link>
+            </Dropdown.Content>
+        </Dropdown>
             </div>
         )
     }));

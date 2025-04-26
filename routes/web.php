@@ -46,10 +46,12 @@ Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
 
 Route::get('/transferred-items/{id}/approve', [TransferredItemsController::class, 'approve'])
     ->name('transfer.approve');
-
+    Route::get('/transferred-items/{id}/decline', [TransferredItemsController::class, 'decline'])
+    ->name('transfer.decline');
 Route::post('/transferred-items/{id}/approve', [TransferredItemsController::class, 'approve'])
     ->name('transfer.approve');
-
+    Route::match(['get', 'post'], '/transferred-items/{id}/decline', [TransferredItemsController::class, 'decline'])
+    ->name('transfer.decline');
 Route::get('/transferred-items/{id}/status', [TransferredItemsController::class, 'approvalStatus'])
     ->name('transfer.status');
 
@@ -151,10 +153,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $startDate = $request->query('start_date');
             $endDate = $request->query('end_date');
             $department = $request->query('department');
-        
+
             $query = Item::query();
 
-        
+
             if ($startDate && $endDate) {
                 $startDate = Carbon::parse($startDate)->startOfDay();
                 $endDate = Carbon::parse($endDate)->endOfDay();
@@ -164,14 +166,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             if ($department) {
                 $query->where('department', $department);
             }
-        
+
             return $query->select(
-                'items as item', 
-                'description', 
-                'estimated_life', 
-                'quantity', 
-                'price as amount', 
-                'department', 
+                'items as item',
+                'description',
+                'estimated_life',
+                'quantity',
+                'price as amount',
+                'department',
                 'created_at'
             )->get();
         });
@@ -189,7 +191,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/borrowed-items/total-overdue', [BorrowController::class, 'countOverdue']);
         Route::get('/item/{id}', [ItemController::class, 'show']);
 
-        
+
 
         // Supplier Routes
         Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');

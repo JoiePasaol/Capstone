@@ -24,16 +24,21 @@ class TransferApprovalRequest extends Mailable
         $this->signatory = $signatory;
     }
 
-    public function build()
-    {
-        return $this->subject('Item Transfer Approval Request')
-            ->markdown('emails.transfer-approval', [
-                'transferredItem' => $this->transferredItem,
-                'type' => $this->type,
-                'signatory' => $this->signatory,
-                'url' => url('/transferred-items/'.$this->transferredItem->id.'/approve?signatory_type='.$this->type)
-            ]);
-    }
+// Mail/TransferApprovalRequest.php
+public function build()
+{
+    $approveUrl = url('/transferred-items/'.$this->transferredItem->id.'/approve?signatory_type='.$this->type);
+    $declineUrl = url('/transferred-items/'.$this->transferredItem->id.'/decline?signatory_type='.$this->type);
+
+    return $this->subject('Item Transfer Approval Request')
+        ->markdown('emails.transfer-approval', [
+            'transferredItem' => $this->transferredItem,
+            'type' => $this->type,
+            'signatory' => $this->signatory,
+            'url' => $approveUrl,
+            'declineUrl' => $declineUrl
+        ]);
+}
 
     public function envelope(): Envelope
     {

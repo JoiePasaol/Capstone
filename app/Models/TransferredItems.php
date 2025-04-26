@@ -11,6 +11,7 @@ class TransferredItems extends Model
 
     protected $fillable = [
         'original_item_id',
+        'source_transferred_item_id',
         'quantity',
         'transfer_to',
         'name_designation',
@@ -32,17 +33,33 @@ class TransferredItems extends Model
         'classification_no',
         'amount',
         'date_purchase',
-        'transferred_at'
+        'transferred_at',
+        'approval_status',
+        'is_fully_approved'
     ];
+
     protected $casts = [
         'transferred_at' => 'datetime',
         'date_purchase' => 'date',
         'amount' => 'decimal:2',
         'approval_status' => 'array',
+        'is_fully_approved' => 'boolean',
+        'quantity' => 'integer',
+        'remaining_quantity' => 'integer'
     ];
 
     public function originalItem()
     {
         return $this->belongsTo(Item::class, 'original_item_id');
+    }
+
+    public function sourceTransferredItem()
+    {
+        return $this->belongsTo(TransferredItems::class, 'source_transferred_item_id');
+    }
+
+    public function childTransfers()
+    {
+        return $this->hasMany(TransferredItems::class, 'source_transferred_item_id');
     }
 }
