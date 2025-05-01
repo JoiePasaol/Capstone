@@ -11,7 +11,19 @@ class BorrowController extends Controller
 {
     public function index()
     {
-        $borrows = Borrow::orderBy('created_at', 'desc')->get()->map(function ($borrow) {
+        $now = Carbon::now();
+    
+        $borrows = Borrow::orderBy('created_at', 'desc')->get()->map(function ($borrow) use ($now) {
+            // Auto update status to 'Overdue' if current date is past return_date
+            if (
+                $borrow->status === 'Borrowed' &&
+                $borrow->return_date &&
+                Carbon::parse($borrow->return_date)->isBefore($now)
+            ) {
+                $borrow->status = 'Overdue';
+                $borrow->save();
+            }
+    
             return [
                 'id' => $borrow->id,
                 'name' => $borrow->name,

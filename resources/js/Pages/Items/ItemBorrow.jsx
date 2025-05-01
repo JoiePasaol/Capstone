@@ -87,9 +87,20 @@ export default function ItemBorrow() {
     };
     const filteredBorrowedItems = useMemo(() => {
         if (!Array.isArray(borrowedItems) || borrowedItems.length === 0) return [];
-        
+    
+        const today = new Date();
         const searchLower = searchTerm.toLowerCase();
+    
         return borrowedItems
+            .map(item => {
+                // Check if it's overdue (return_date < today && status is "Borrowed")
+                const isOverdue = item.status === "Borrowed" && new Date(item.return_date) < today;
+    
+                return {
+                    ...item,
+                    status: isOverdue ? "Overdue" : item.status
+                };
+            })
             .filter((item) => item && item.name)
             .filter(
                 (item) =>
@@ -98,11 +109,12 @@ export default function ItemBorrow() {
                         ? item.item_names.some(name => name.toLowerCase().includes(searchLower))
                         : false)
             )
-            .filter((item) => 
+            .filter((item) =>
                 statusFilter === "All" || item.status === statusFilter
             )
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }, [borrowedItems, searchTerm, statusFilter]);
+    
 
     const fetchBorrowedItems = async () => {
         try {
