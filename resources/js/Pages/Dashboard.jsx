@@ -14,12 +14,12 @@ import axios from "axios";
 export default function Dashboard({ successMessage }) {
     const [totalItems, setTotalItems] = useState(0);
     const [totalCategories, setTotalCategories] = useState(0);
-    const [totalSuppliers, setTotalSuppliers] = useState(0); 
+    const [totalSuppliers, setTotalSuppliers] = useState(0);
     const [totalBorrowed, setTotalBorrowed] = useState(0);
     const [totalOverdue, setTotalOverdue] = useState(0);
     const [totalTransferred, setTotalTransferred] = useState(0);
 
-    
+
 
 
     useEffect(() => {
@@ -54,7 +54,7 @@ export default function Dashboard({ successMessage }) {
                 // Keep existing values on error
             }
         };
-        
+
         fetchCounts();
     }, []);
 
@@ -94,7 +94,7 @@ export default function Dashboard({ successMessage }) {
             <Toaster />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <DashboardCard
-                    title="Total Categories"
+                    title="Total Categasdasdories"
                     value={totalCategories} // Display the total count
                     icon={
                         <CategoryIcon
