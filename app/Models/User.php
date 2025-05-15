@@ -9,7 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Auth\Notifications\ResetPassword;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable // Removed MustVerifyEmail interface
 {
     use HasFactory, Notifiable;
 
@@ -34,10 +34,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
     ];
 
-    public function sendEmailVerificationNotification()
-    {
-        $this->notify(new CustomVerifyEmail());
-    }
+    // Email verification notification is no longer needed
+    // public function sendEmailVerificationNotification()
+    // {
+    //     $this->notify(new CustomVerifyEmail());
+    // }
 
     /**
      * Get the email address for password reset.

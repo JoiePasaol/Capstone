@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { toast } from 'react-hot-toast';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -22,7 +23,15 @@ export default function UpdateProfileInformation({
     const submit = (e) => {
         e.preventDefault();
 
-        patch(route('profile.update'));
+        patch(route('profile.update'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Profile updated successfully!');
+            },
+            onError: () => {
+                toast.error('Failed to update profile.');
+            },
+        });
     };
 
     return (
@@ -42,34 +51,32 @@ export default function UpdateProfileInformation({
                     <InputLabel htmlFor="firstname" value="First Name" />
 
                     <TextInput
-                        id="name"
+                        id="firstname"
                         className="mt-1 block w-full"
                         value={data.firstname}
-                        onChange={(e) => setData('name', e.target.value)}
+                        onChange={(e) => setData('firstname', e.target.value)}
                         required
                         isFocused
-                        autoComplete="name"
+                        autoComplete="given-name"
                     />
 
-                    <InputError className="mt-2" message={errors.name} />
+                    <InputError className="mt-2" message={errors.firstname} />
                 </div>
 
                 <div>
                     <InputLabel htmlFor="lastname" value="Last Name" />
 
                     <TextInput
-                        id="name"
+                        id="lastname"
                         className="mt-1 block w-full"
                         value={data.lastname}
-                        onChange={(e) => setData('name', e.target.value)}
+                        onChange={(e) => setData('lastname', e.target.value)}
                         required
-                        isFocused
-                        autoComplete="name"
+                        autoComplete="family-name"
                     />
 
-                    <InputError className="mt-2" message={errors.name} />
+                    <InputError className="mt-2" message={errors.lastname} />
                 </div>
-
 
                 <div>
                     <InputLabel htmlFor="email" value="Email" />
@@ -86,29 +93,6 @@ export default function UpdateProfileInformation({
 
                     <InputError className="mt-2" message={errors.email} />
                 </div>
-
-                {mustVerifyEmail && user.email_verified_at === null && (
-                    <div>
-                        <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
-                            Your email address is unverified.
-                            <Link
-                                href={route('verification.send')}
-                                method="post"
-                                as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                            >
-                                Click here to re-send the verification email.
-                            </Link>
-                        </p>
-
-                        {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                                A new verification link has been sent to your
-                                email address.
-                            </div>
-                        )}
-                    </div>
-                )}
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>

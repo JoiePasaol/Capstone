@@ -94,7 +94,7 @@ export default function Dashboard({ successMessage }) {
             <Toaster />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <DashboardCard
-                    title="Total Categasdasdories"
+                    title="Total Categories"
                     value={totalCategories} // Display the total count
                     icon={
                         <CategoryIcon
