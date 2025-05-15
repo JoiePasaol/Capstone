@@ -138,6 +138,12 @@ class BorrowController extends Controller
 
     public function update(Request $request, $id)
     {
+        // Check if this is a status-only update
+        if ($request->has('status_only') && $request->input('status_only') === true) {
+            return $this->handleStatusUpdate($request, $id);
+        }
+    
+        // Handle full update
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'item_ids' => 'required|array',
@@ -146,13 +152,14 @@ class BorrowController extends Controller
             'item_names.*' => 'string|max:255',
             'borrowed_date' => 'required|date',
             'return_date' => 'required|date',
-            'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
+            'status' => 'required|string|max:50|in:Borrowed,Overdue,Returned',
             'quantity' => 'required|integer|min:1'
         ], [
             'name.required' => 'The name field is required.',
             'item_ids.required' => 'Please select at least one item.',
             'borrowed_date.required' => 'The borrowed date is required.',
             'return_date.required' => 'The return date is required.',
+            'status.required' => 'Status is required.',
             'quantity.required' => 'Quantity is required.',
             'quantity.min' => 'Quantity must be at least 1.',
         ]);
@@ -165,7 +172,7 @@ class BorrowController extends Controller
             $originalQuantity = $borrow->quantity;
             $originalItemIds = $borrow->item_ids;
             
-            $newStatus = $validated['status'] ?? $borrow->status;
+            $newStatus = $validated['status'];
             $newQuantity = $validated['quantity'];
             $newItemIds = $validated['item_ids'];
     
@@ -261,6 +268,73 @@ class BorrowController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update record. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Handle status-only updates
+     */
+    protected function handleStatusUpdate(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|max:50|in:Borrowed,Overdue,Returned',
+        ]);
+    
+        \DB::beginTransaction();
+    
+        try {
+            $borrow = Borrow::findOrFail($id);
+            $originalStatus = $borrow->status;
+            $newStatus = $validated['status'];
+    
+            // Handle status change to Returned (add back quantity)
+            if ($newStatus === 'Returned') {
+                foreach ($borrow->item_ids as $itemId) {
+                    $item = Item::find($itemId);
+                    if ($item) {
+                        $item->remaining_quantity += $borrow->quantity;
+                        $item->save();
+                    }
+                }
+            }
+            // Handle status change from Returned to Borrowed/Overdue (deduct quantity)
+            elseif ($originalStatus === 'Returned' && ($newStatus === 'Borrowed' || $newStatus === 'Overdue')) {
+                foreach ($borrow->item_ids as $itemId) {
+                    $item = Item::find($itemId);
+                    if ($item) {
+                        if ($item->remaining_quantity < $borrow->quantity) {
+                            throw new \Exception("Not enough stock to mark as borrowed/overdue again.");
+                        }
+                        $item->remaining_quantity -= $borrow->quantity;
+                        $item->save();
+                    }
+                }
+            }
+            // Handle status change between Borrowed and Overdue (no quantity change)
+            elseif (($originalStatus === 'Borrowed' || $originalStatus === 'Overdue') && 
+                   ($newStatus === 'Borrowed' || $newStatus === 'Overdue')) {
+                // No quantity adjustment needed
+            }
+    
+            $borrow->status = $newStatus;
+            $borrow->save();
+    
+            \DB::commit();
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated successfully.',
+                'data' => $borrow
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error updating status: ' . $e->getMessage());
+    
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update status. Please try again.',
                 'error' => $e->getMessage()
             ], 500);
         }
