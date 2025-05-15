@@ -250,8 +250,8 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
 
 
- {/* Returned Items Dropdown */}
- <button
+                    {/* Returned Items Dropdown */}
+                    {/* <button
                         onClick={() => toggleDropdown("returned")}
                         className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
                             isActive(["returned-items", "return-history"]) || activeDropdown === "returned"
@@ -272,11 +272,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                 activeDropdown === "returned" ? "rotate-180" : ""
                             } ${isSidebarOpen ? "opacity-100" : "opacity-0 w-0"}`}
                         />
-                    </button>
+                    </button> */}
 
-                    {activeDropdown === "returned" && isSidebarOpen && (
+                    {/* {activeDropdown === "returned" && isSidebarOpen && (
                         <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
-                            {/* <Link
+                           <Link
                                 href={route("returned-items")}
                                 className={`relative block px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ${
                                     isActive("returned-items")
@@ -285,7 +285,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 } before:absolute before:-left-4 before:top-1/2 before:h-0.5 before:w-3 before:bg-gray-300 dark:before:bg-gray-600`}
                             >
                                 Inspect Item
-                            </Link> */}
+                            </Link> 
 
                             <Link
                                 href={route("return-history")}
@@ -309,7 +309,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 Unservices Item
                             </Link>
                         </div>
-                    )}
+                    )} */}
 
                 </nav>
 
