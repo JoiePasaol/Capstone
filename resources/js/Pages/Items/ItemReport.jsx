@@ -78,12 +78,12 @@ export default function ItemReport() {
         fetchData();
     }, [selectedDepartment, selectedYear, selectedMonth, startDate, endDate]);
 
-    // Generate years list
+  
     useEffect(() => {
         const currentYear = new Date().getFullYear();
         const yearsList = Array.from(
             { length: currentYear - 2000 + 1 },
-            (_, i) => i + 2000
+            (_, i) => currentYear - i 
         );
         setYears(yearsList);
     }, []);

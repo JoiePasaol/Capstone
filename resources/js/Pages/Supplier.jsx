@@ -29,12 +29,13 @@ export default function Supplier() {
     const [confirmMessage, setConfirmMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
-    const { data, setData, post, reset, errors, setError } = useForm({
-        name: "",
-        address: "",
-        mobile_number: "",
-        email: "",
-    });
+    const { data, setData, post, reset, errors, setError, clearErrors } =
+        useForm({
+            name: "",
+            address: "",
+            mobile_number: "",
+            email: "",
+        });
 
     const [processing, setProcessing] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -71,11 +72,13 @@ export default function Supplier() {
         }
 
         const searchLower = searchTerm.toLowerCase();
-        const filtered = suppliers.filter(supplier => {
+        const filtered = suppliers.filter((supplier) => {
             if (!supplier) return false;
 
-            const nameMatch = supplier.name?.toLowerCase().includes(searchLower) || false;
-            const emailMatch = supplier.email?.toLowerCase().includes(searchLower) || false;
+            const nameMatch =
+                supplier.name?.toLowerCase().includes(searchLower) || false;
+            const emailMatch =
+                supplier.email?.toLowerCase().includes(searchLower) || false;
 
             return nameMatch || emailMatch;
         });
@@ -100,71 +103,51 @@ export default function Supplier() {
             } else {
                 reset();
             }
+            // Clear errors when opening drawer
+            clearErrors();
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
+        clearErrors(); // Clear previous errors before submitting
 
-        if (!data.id) {
-            // Create new supplier
-            axios
-                .post(route("suppliers.store"), data)
-                .then((response) => {
-                    setSuppliers((prev) => [...prev, response.data.supplier]);
-                    setFilteredSuppliers((prev) => [
-                        ...prev,
-                        response.data.supplier,
-                    ]);
-                    toggleDrawer(false);
-                    reset();
-                    setSuccessMessage("Supplier successfully added!");
-                    setIsSuccessDialogOpen(true);
-                })
-                .catch((error) => {
-                    if (error.response?.status === 422) {
-                        setError(error.response.data.errors);
+        try {
+            let response;
+            if (!data.id) {
+                // Create new supplier
+                response = await axios.post(route("suppliers.store"), data);
+            } else {
+                // Update supplier
+                response = await axios.put(
+                    route("suppliers.update", { id: data.id }),
+                    {
+                        ...data,
+                        _method: "PUT",
                     }
-                })
-                .finally(() => {
-                    setProcessing(false);
+                );
+            }
+
+            // Success handling
+            setSuppliers((prev) => [...prev, response.data.supplier]);
+            setFilteredSuppliers((prev) => [...prev, response.data.supplier]);
+            toggleDrawer(false);
+            reset();
+            setSuccessMessage(
+                data.id ? "Supplier updated!" : "Supplier added!"
+            );
+            setIsSuccessDialogOpen(true);
+        } catch (error) {
+            if (error.response?.status === 422) {
+                // Set validation errors from backend
+                const backendErrors = error.response.data.errors;
+                Object.keys(backendErrors).forEach((key) => {
+                    setError(key, backendErrors[key][0]);
                 });
-        } else {
-            // Update supplier
-            axios
-                .put(route("suppliers.update", { id: data.id }), {
-                    ...data,
-                    _method: "PUT",
-                })
-                .then((response) => {
-                    setSuppliers((prev) =>
-                        prev.map((s) =>
-                            s.id === response.data.supplier.id
-                                ? response.data.supplier
-                                : s
-                        )
-                    );
-                    setFilteredSuppliers((prev) =>
-                        prev.map((s) =>
-                            s.id === response.data.supplier.id
-                                ? response.data.supplier
-                                : s
-                        )
-                    );
-                    toggleDrawer(false);
-                    reset();
-                    setSuccessMessage("Supplier successfully updated!");
-                    setIsSuccessDialogOpen(true);
-                })
-                .catch((error) => {
-                    if (error.response?.status === 422) {
-                        setError(error.response.data.errors);
-                    }
-                })
-                .finally(() => {
-                    setProcessing(false);
-                });
+            }
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -268,10 +251,10 @@ export default function Supplier() {
             />
         ),
         index: index + 1 + (currentPage - 1) * itemsPerPage,
-        name: supplier.name || "-",
-        address: supplier.address || "-",
-        mobile_number: supplier.mobile_number || "-",
-        email: supplier.email || "-",
+        name: supplier.name || "N/A",
+        address: supplier.address || "N/A",
+        mobile_number: supplier.mobile_number || "N/A",
+        email: supplier.email || "N/A",
     }));
 
     const actions = (row) => (
@@ -336,11 +319,7 @@ export default function Supplier() {
                     </div>
                 </div>
                 <div className="text-gray-900 dark:text-gray-100">
-                    <Table
-                        headers={headers}
-                        rows={rows}
-                        actions={actions}
-                    />
+                    <Table headers={headers} rows={rows} actions={actions} />
                 </div>
                 {totalPages > 1 && (
                     <Pagination
@@ -359,23 +338,25 @@ export default function Supplier() {
             >
                 <form onSubmit={handleSubmit}>
                     <div className="mt-2">
-                        <InputLabel htmlFor="name" value="Name" />
+                        <InputLabel htmlFor="name" value="Name *" />
                         <TextInput
                             id="name"
                             className="mt-2 block w-full h-10 rounded-sm text-sm"
                             value={data.name}
                             onChange={(e) => setData("name", e.target.value)}
+                      
                         />
                         <InputError message={errors.name} className="mt-2" />
                     </div>
 
                     <div className="mt-4">
-                        <InputLabel htmlFor="address" value="Address" />
+                        <InputLabel htmlFor="address" value="Address *" />
                         <TextInput
                             id="address"
                             className="mt-2 block w-full h-10 rounded-sm text-sm"
                             value={data.address}
                             onChange={(e) => setData("address", e.target.value)}
+                        
                         />
                         <InputError message={errors.address} className="mt-2" />
                     </div>
@@ -418,11 +399,7 @@ export default function Supplier() {
                             className="w-full h-10 rounded-sm"
                             disabled={processing}
                         >
-                            {processing
-                                ? "Saving..."
-                                : isEditMode
-                                ? "SAVE"
-                                : "SAVE"}
+                            {processing ? "Saving..." : "SAVE"}
                         </SecondaryButton>
                     </div>
                 </form>

@@ -12,9 +12,9 @@ class BorrowController extends Controller
     public function index()
     {
         $now = Carbon::now();
-
+    
         $borrows = Borrow::orderBy('created_at', 'desc')->get()->map(function ($borrow) use ($now) {
-            // Auto update status to 'Overdue' if current date is past return_date
+            
             if (
                 $borrow->status === 'Borrowed' &&
                 $borrow->return_date &&
@@ -23,7 +23,7 @@ class BorrowController extends Controller
                 $borrow->status = 'Overdue';
                 $borrow->save();
             }
-
+    
             return [
                 'id' => $borrow->id,
                 'name' => $borrow->name,
@@ -33,11 +33,11 @@ class BorrowController extends Controller
                 'borrowed_date' => $borrow->borrowed_date ? Carbon::parse($borrow->borrowed_date)->format('Y-m-d') : null,
                 'return_date' => $borrow->return_date ? Carbon::parse($borrow->return_date)->format('Y-m-d') : null,
                 'status' => $borrow->status,
-                'created_at' => $borrow->created_at->toISOString(),
+                'created_at' => $borrow->created_at->toISOString(), 
                 'updated_at' => $borrow->updated_at->toISOString()
             ];
         });
-
+    
         return response()->json($borrows);
     }
 
@@ -73,8 +73,17 @@ class BorrowController extends Controller
             'borrowed_date' => 'required|date',
             'return_date' => 'required|date',
             'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1'
+        ], [
+            'name.required' => 'The name field is required.',
+            'item_ids.required' => 'Please select at least one item.',
+            'borrowed_date.required' => 'The borrowed date is required.',
+            'return_date.required' => 'The return date is required.',
+            'return_date.after_or_equal' => 'Return date must be after or equal to borrowed date.',
+            'quantity.required' => 'Quantity is required.',
+            'quantity.min' => 'Quantity must be at least 1.',
         ]);
+    
 
         \DB::beginTransaction();
 
@@ -130,100 +139,19 @@ class BorrowController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'item_ids' => 'required|array',
-            'item_ids.*' => 'exists:items,id',
-            'item_names' => 'required|array',
-            'item_names.*' => 'string|max:255',
-            'borrowed_date' => 'required|date',
-            'return_date' => 'required|date',
-            'status' => 'required|string|max:50|in:Borrowed,Overdue,Returned',
-            'quantity' => 'required|integer|min:1',
+            'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
+            // ... keep your other validation rules
         ]);
-
+    
         \DB::beginTransaction();
-
+    
         try {
             $borrow = Borrow::findOrFail($id);
             $originalStatus = $borrow->status;
-            $originalQuantity = $borrow->quantity;
-            $newQuantity = $validated['quantity'];
-
-            $quantityDifference = $originalQuantity - $newQuantity;
-
-            foreach ($validated['item_ids'] as $itemId) {
-                $item = Item::find($itemId);
-
-                if (!$item) {
-                    throw new \Exception("Item with ID {$itemId} not found.");
-                }
-
-                if ($originalStatus !== 'Returned' && $validated['status'] === 'Returned') {
-                    // If item is being returned now
-                    $item->remaining_quantity += $originalQuantity;
-                } elseif ($originalStatus === 'Returned' && $validated['status'] !== 'Returned') {
-                    // If previously returned and now marked as borrowed again
-                    if ($item->remaining_quantity < $newQuantity) {
-                        throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Requested: {$newQuantity})");
-                    }
-                    $item->remaining_quantity -= $newQuantity;
-                } elseif ($validated['status'] === 'Borrowed') {
-                    // Just a quantity update while still in borrowed status
-                    if ($quantityDifference > 0) {
-                        // Returning some quantity
-                        $item->remaining_quantity += $quantityDifference;
-                    } elseif ($quantityDifference < 0) {
-                        // Borrowing more
-                        $extraNeeded = abs($quantityDifference);
-                        if ($item->remaining_quantity < $extraNeeded) {
-                            throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Additional Requested: {$extraNeeded})");
-                        }
-                        $item->remaining_quantity -= $extraNeeded;
-                    }
-                }
-
-                $item->save();
-            }
-
-            $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
-            $borrowDate = Carbon::parse($validated['borrowed_date'])->format('Y-m-d');
-
-            $borrow->update([
-                'name' => $validated['name'],
-                'item_ids' => $validated['item_ids'],
-                'item_names' => $validated['item_names'],
-                'borrowed_date' => $borrowDate,
-                'return_date' => $returnDate,
-                'status' => $validated['status'],
-                'quantity' => $validated['quantity'],
-            ]);
-
-            \DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Borrow record updated successfully.',
-                'data' => $borrow
-            ]);
-        } catch (\Exception $e) {
-            \DB::rollBack();
-            \Log::error('Error updating borrow record: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update record. Please try again.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function destroy($id)
-    {
-        try {
-            $borrow = Borrow::findOrFail($id);
-
-            // If the item was borrowed and not returned, restore the quantity
-            if ($borrow->status === 'Borrowed' || $borrow->status === 'Overdue') {
+            $newStatus = $validated['status'] ?? $borrow->status;
+    
+            // Handle status change to Returned
+            if ($originalStatus !== 'Returned' && $newStatus === 'Returned') {
                 foreach ($borrow->item_ids as $itemId) {
                     $item = Item::find($itemId);
                     if ($item) {
@@ -232,14 +160,70 @@ class BorrowController extends Controller
                     }
                 }
             }
-
+            // Handle status change from Returned to Borrowed
+            elseif ($originalStatus === 'Returned' && $newStatus !== 'Returned') {
+                foreach ($borrow->item_ids as $itemId) {
+                    $item = Item::find($itemId);
+                    if ($item) {
+                        if ($item->remaining_quantity < $borrow->quantity) {
+                            throw new \Exception("Not enough stock to mark as borrowed again.");
+                        }
+                        $item->remaining_quantity -= $borrow->quantity;
+                        $item->save();
+                    }
+                }
+            }
+    
+            // Update the borrow record
+            $borrow->status = $newStatus;
+            $borrow->save();
+    
+            \DB::commit();
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated successfully.',
+                'data' => $borrow
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error updating status: ' . $e->getMessage());
+    
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update status. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function destroy($id)
+    {
+        \DB::beginTransaction();
+    
+        try {
+            $borrow = Borrow::findOrFail($id);
+    
+            // If the item was borrowed and not returned, restore the quantity
+            if ($borrow->status === 'Borrowed' || $borrow->status === 'Overdue') {
+                foreach ($borrow->item_ids as $itemId) {
+                    $item = Item::find($itemId);
+                    if ($item) {
+                        $item->remaining_quantity += $borrow->quantity;
+                        $item->save();
+                        \Log::info("Restored {$borrow->quantity} items to item ID {$itemId} (now has {$item->remaining_quantity})");
+                    }
+                }
+            }
+    
             $borrow->delete();
-
+            \DB::commit();
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Borrow record deleted successfully.'
             ]);
         } catch (\Exception $e) {
+            \DB::rollBack();
             \Log::error('Error deleting borrow record: '.$e->getMessage());
             return response()->json([
                 'success' => false,
@@ -297,6 +281,7 @@ class BorrowController extends Controller
             ], 500);
         }
     }
+
 
     public function countBorrowed()
     {

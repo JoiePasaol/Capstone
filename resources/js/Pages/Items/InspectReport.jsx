@@ -322,13 +322,13 @@ export default function InspectReport({ damagedItems }) {
                         </tr>
                         ${filteredItems.map(item => `
                             <tr>
-                                <td>${item.item_name || '-'}</td>
-                                <td>${item.quantity_returned || '-'}</td>
-                                <td>${item.unit_of_measures || '-'}</td>
-                                <td>${item.description || '-'}</td>
-                                <td>${item.property_no || '-'}</td>
-                                <td>${item.purchased_date || '-'}</td>
-                                <td>${item.amount ? Number(item.amount).toFixed(2) : '-'}</td>
+                                <td>${item.item_name || 'N/A'}</td>
+                                <td>${item.quantity_returned || 'N/A'}</td>
+                                <td>${item.unit_of_measures || 'N/A'}</td>
+                                <td>${item.description || 'N/A'}</td>
+                                <td>${item.property_no || 'N/A'}</td>
+                                <td>${item.purchased_date || 'N/A'}</td>
+                                <td>${item.amount ? Number(item.amount).toFixed(2) : 'N/A'}</td>
                             </tr>
                         `).join('')}
                         
@@ -556,13 +556,13 @@ export default function InspectReport({ damagedItems }) {
                             <td>Amount</td>
                         </tr>
                         <tr>
-                            <td>${item.item_name || '-'}</td>
-                            <td>${item.quantity_returned || '-'}</td>
-                            <td>${item.unit_of_measures || '-'}</td>
-                            <td>${item.description || '-'}</td>
-                            <td>${item.property_no || '-'}</td>
-                            <td>${item.purchased_date || '-'}</td>
-                            <td>${item.amount || '-'}</td>
+                            <td>${item.item_name || 'N/A'}</td>
+                            <td>${item.quantity_returned || 'N/A'}</td>
+                            <td>${item.unit_of_measures || 'N/A'}</td>
+                            <td>${item.description || 'N/A'}</td>
+                            <td>${item.property_no || 'N/A'}</td>
+                            <td>${item.purchased_date || 'N/A'}</td>
+                            <td>${item.amount ? Number(item.amount).toFixed(2) : 'N/A'}</td>
                         </tr>
                         
                         <!-- SIGNATURE SECTION 1 -->
@@ -651,7 +651,7 @@ export default function InspectReport({ damagedItems }) {
 
     return (
         <AuthenticatedLayout>
-            <Head title="Unservices Item" />
+            <Head title="Unserviceable Item" />
             
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -660,7 +660,7 @@ export default function InspectReport({ damagedItems }) {
                             <div className="flex justify-between items-center mb-6">
                                 <div>
                                     <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
-                                        Unservices Item
+                                        Unserviceable Item
                                     </h2>
                                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                                         View and generate reports for damaged and waste materials
@@ -689,7 +689,7 @@ export default function InspectReport({ damagedItems }) {
                                             value={searchTerm}
                                             onChange={(e) => handleSearch(e.target.value)}
                                             placeholder="Search items..."
-                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-700 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-700 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:text-gray-100"
                                         />
                                     </div>
                                 </div>
@@ -700,16 +700,11 @@ export default function InspectReport({ damagedItems }) {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             handleYearChange(value);
-                                            
-                                            // Clear any custom date range when selecting a year
                                             if (value && (dateRange.start || dateRange.end)) {
-                                                // We'll set the date range in handleYearChange
-                                                // This is just to inform the user that the year selection
-                                                // takes precedence over manual date range selection
                                                 console.log('Year selection overrides custom date range');
                                             }
                                         }}
-                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500 dark:text-gray-100"
                                     >
                                         <option value="">All Years</option>
                                         {years.map((year) => (
@@ -729,13 +724,12 @@ export default function InspectReport({ damagedItems }) {
                                                 const newStartDate = e.target.value;
                                                 const newDateRange = { ...dateRange, start: newStartDate };
                                                 setDateRange(newDateRange);
-                                                // Year filter is overridden by manual date selection
                                                 if (newStartDate && selectedYear) {
                                                     setSelectedYear('');
                                                 }
                                                 applyFilters(searchTerm, '', newStartDate, dateRange.end);
                                             }}
-                                            className="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+                                            className="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500 dark:text-gray-100"
                                         />
                                         <span className="text-gray-500 dark:text-gray-400 self-center">to</span>
                                         <input
@@ -745,13 +739,12 @@ export default function InspectReport({ damagedItems }) {
                                                 const newEndDate = e.target.value;
                                                 const newDateRange = { ...dateRange, end: newEndDate };
                                                 setDateRange(newDateRange);
-                                                // Year filter is overridden by manual date selection
                                                 if (newEndDate && selectedYear) {
                                                     setSelectedYear('');
                                                 }
                                                 applyFilters(searchTerm, '', dateRange.start, newEndDate);
                                             }}
-                                            className="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+                                            className="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500 dark:text-gray-100"
                                         />
                                     </div>
                                 </div>
@@ -760,28 +753,28 @@ export default function InspectReport({ damagedItems }) {
                             {/* Table */}
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead className="bg-gray-50 dark:bg-gray-800">
+                                    <thead className="bg-blue-600">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Item</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quantity</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit of Measures</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Property No.</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Purchased Date</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Item</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Quantity</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Unit of Measures</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Description</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Property No.</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Purchased Date</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Amount</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         {paginatedItems.map((item) => (
                                             <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.item_name || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.quantity_returned || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.unit_of_measures || '-'}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{item.description || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.property_no || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.purchased_date || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.amount ? Number(item.amount).toFixed(2) : '-'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.item_name || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.quantity_returned || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.unit_of_measures || 'N/A'}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{item.description || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.property_no || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.purchased_date || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.amount ? Number(item.amount).toFixed(2) : 'N/A'}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                     <button
                                                         onClick={() => handlePrint(item)}

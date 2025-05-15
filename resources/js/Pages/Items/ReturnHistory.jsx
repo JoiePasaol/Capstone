@@ -59,6 +59,14 @@ export default function ReturnHistory({ returns }) {
     const [showAllPossibleIssues, setShowAllPossibleIssues] = useState(false);
     const [issueSolved, setIssueSolved] = useState(false);
 
+    // New state for guided troubleshooting
+    const [issueSearchTerm, setIssueSearchTerm] = useState('');
+    const [filteredIssues, setFilteredIssues] = useState([]);
+    const [selectedIssue, setSelectedIssue] = useState(null);
+    const [guidedSteps, setGuidedSteps] = useState([]);
+    const [currentGuidedStep, setCurrentGuidedStep] = useState(0);
+    const [recommendedAction, setRecommendedAction] = useState('');
+
     const { data, setData, post, processing, reset, errors } = useForm({
         item_name: '',
         person_name: '',
@@ -723,7 +731,7 @@ export default function ReturnHistory({ returns }) {
                     </table>
                     
                     <div class="report-footer">
-                        © ${new Date().getFullYear()} LGU Equipment Monitoring System
+                        © ${new Date().getFullYear()} LGU Magallanes
                     </div>
 
                     <script>
@@ -1192,222 +1200,1061 @@ export default function ReturnHistory({ returns }) {
     // Helper function to get printer repair solutions with interactive steps
     const getPrinterSolution = (damage) => {
         // Convert damage to lowercase for case-insensitive matching
-        const damageLower = damage.toLowerCase();
+        const damageLower = damage ? damage.toLowerCase() : '';
         
-        let title = "Printer Troubleshooting";
-        let steps = [];
-        let possibleIssues = [];
+        // Common printer issues
+        const commonIssues = [
+            {
+                id: 'no_power',
+                title: 'Printer Offline / No Power',
+                keywords: ['power', 'offline', 'dead', 'not turning on', 'no lights', 'unresponsive'],
+                guidedTroubleshooting: [
+                    {
+                        question: 'Is the power cable securely plugged into the printer and the power outlet?',
+                        yesStep: 1,
+                        noAction: 'Firmly plug the power cable into both the printer and the wall outlet. Remove and re-insert both ends to ensure a solid connection. If using a power strip, try plugging directly into the wall.',
+                        helpText: 'Loose connections are a common cause of power issues. Double-check both ends of the cable.'
+                    },
+                    {
+                        question: 'Is the power outlet working? (Try plugging in another device to verify)',
+                        yesStep: 2,
+                        noAction: 'Test the outlet with a lamp or phone charger. If it does not work, try a different outlet or reset the circuit breaker.',
+                        helpText: 'Sometimes outlets or power strips fail. Always verify with another device.'
+                    },
+                    {
+                        question: 'Is the printer power button turned on? (Press and hold for 3-5 seconds)',
+                        yesStep: 3,
+                        noAction: 'Locate the power button (often marked with a circle and line symbol). Press and hold for 3-5 seconds. Watch for any lights or sounds.',
+                        helpText: 'Some printers require a long press to power on.'
+                    },
+                    {
+                        question: 'Are there any lights or indicators on the printer that show it\'s receiving power?',
+                        yesStep: 4,
+                        noAction: 'Look for any LED lights, display screens, or sounds. If none, check for a secondary power switch on the back or side.',
+                        helpText: 'Even a faint light or display means the printer is getting power.'
+                    },
+                    {
+                        question: 'Have you tried power cycling the printer? (Turn off, unplug for 60 seconds, plug in, turn on)',
+                        yesStep: 5,
+                        noAction: 'Turn off the printer, unplug it from the wall, wait 60 seconds, then plug it back in and turn it on.',
+                        helpText: 'This resets the printer\'s internal electronics.'
+                    },
+                    {
+                        question: 'Have you checked for a tripped circuit breaker or blown fuse?',
+                        yesStep: 6,
+                        noAction: 'Check your home\'s breaker panel for any tripped breakers. If your printer has a user-accessible fuse, check and replace it if needed.',
+                        helpText: 'Power surges can trip breakers or blow fuses.'
+                    },
+                    {
+                        question: 'Have you inspected the power cable for any visible damage?',
+                        yesStep: 7,
+                        noAction: 'Look for cuts, frays, or bent connectors. Replace the cable if any damage is found.',
+                        helpText: 'Damaged cables are a safety hazard and can prevent power delivery.'
+                    },
+                    {
+                        question: 'Is the printer showing up in your computer\'s printer list?',
+                        yesStep: 8,
+                        noAction: 'Check your computer\'s printer settings. If not listed, reinstall the printer drivers or check the connection.',
+                        helpText: 'A printer may be powered but not communicating with the computer.'
+                    },
+                    {
+                        question: 'Have you tried resetting the printer to factory defaults?',
+                        yesStep: 9,
+                        noAction: 'Consult your printer\'s manual for reset instructions. This usually involves holding specific buttons while powering on.',
+                        helpText: 'A factory reset can resolve persistent issues but will erase all settings.'
+                    },
+                    {
+                        question: 'Is the issue resolved?',
+                        yesStep: -1,
+                        noAction: 'If the issue persists after all steps, please contact a technician or service center for further assistance.',
+                        helpText: 'If you answered "No", further troubleshooting or professional repair may be needed.',
+                        solution: 'If the device is now working, the issue has been resolved. If not, further service is required.'
+                    }
+                ],
+                solutions: [
+                    {
+                        title: 'Check Power Connection',
+                        description: 'Ensure the printer is properly connected to power.',
+                        steps: [
+                            'Verify power cable is securely connected to the printer',
+                            'Check that the power cable is plugged into a working outlet',
+                            'Ensure the printer\'s power button is turned on',
+                            'Check if there\'s a separate power switch on the back or side of the printer',
+                            'Look for indicator lights that show the printer is receiving power',
+                            'Inspect the power cable for any visible damage or fraying',
+                            'Try a different power outlet if available',
+                            'If using a power strip or surge protector, try connecting directly to wall outlet',
+                            'Make sure the power cable is fully inserted on both ends'
+                        ]
+                    },
+                    {
+                        title: 'Power Cycle the Printer',
+                        description: 'A complete power reset can resolve many electronic issues.',
+                        steps: [
+                            'Turn off the printer using the power button',
+                            'Unplug the power cable from the outlet',
+                            'Wait at least 60 seconds to fully discharge internal components',
+                            'While waiting, press and hold the power button for 5 seconds to drain residual power',
+                            'Plug the power cable back in, ensuring a firm connection',
+                            'Turn on the printer and wait for it to fully initialize',
+                            'Listen for startup sounds and watch for lights or display activation',
+                            'Wait at least 2 minutes for the printer to complete its startup sequence',
+                            'Check if the printer appears in your computer\'s device list after startup'
+                        ]
+                    },
+                    {
+                        title: 'Check for Hardware Issues',
+                        description: 'Identify possible hardware problems causing power issues.',
+                        steps: [
+                            'Check if your home\'s circuit breaker for that outlet is tripped',
+                            'Inspect for blown fuses in the printer (if accessible according to manual)',
+                            'Look for any burnt smell or visible damage on the printer',
+                            'Test the power outlet with another device to confirm it works',
+                            'Try a different power cable if you have a compatible one',
+                            'Check if there\'s an emergency reset button (small pinhole) on the printer',
+                            'Remove and reinsert ink or toner cartridges as they might trigger safety locks',
+                            'Ensure paper trays are properly closed and detected by the printer',
+                            'Check for paper jams that might cause the printer to enter error mode',
+                            'Consult the printer manual for model-specific troubleshooting tips'
+                        ]
+                    },
+                    {
+                        title: 'Check Network Connection',
+                        description: 'For network printers that appear powered off but may be in sleep mode.',
+                        steps: [
+                            'Ensure the network cable is securely connected (for wired connections)',
+                            'Check that WiFi is enabled on the printer (for wireless connections)',
+                            'Verify the printer is connected to the correct network',
+                            'Restart your router and wait for it to fully initialize',
+                            'Check if the printer has a dedicated IP address in your router settings',
+                            'Try printing a network configuration page from the printer\'s control panel',
+                            'Check if the printer responds to ping commands from your computer',
+                            'Try resetting the printer\'s network settings if all else fails',
+                            'Update printer firmware if available',
+                            'Check if the printer is in power-saving or deep sleep mode'
+                        ]
+                    },
+                    {
+                        title: 'Check for Internal Fuse or Power Supply Issues',
+                        description: 'Advanced troubleshooting for persistent power problems.',
+                        steps: [
+                            'Consult your printer manual to locate any user-serviceable fuses',
+                            'Check if the fuse can be safely inspected or replaced (professional help recommended)',
+                            'Look for signs of power supply failure such as no lights at all when plugged in',
+                            'Check if the power supply is internal or external (power brick)',
+                            'For external power supplies, check for indicator lights on the power brick',
+                            'Measure voltage output with a multimeter if you have the skills and tools',
+                            'Check online for known power issues with your specific printer model',
+                            'Consider contacting the manufacturer for support if under warranty',
+                            'For older printers, weigh repair costs against replacement costs',
+                            'If all else fails, consider professional repair service'
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'ink_smudging',
+                title: 'Ink Smudging',
+                keywords: ['smudge', 'smear', 'ink', 'bleed', 'streaks', 'wet ink'],
+                guidedTroubleshooting: [
+                    {
+                        question: 'Does the smudging occur immediately after printing?',
+                        yesStep: 1,
+                        noAction: 'Try waiting 30-60 seconds before handling printed documents to allow ink to dry completely.',
+                        helpText: 'Touching pages before ink is dry is a common cause of smudging.'
+                    },
+                    {
+                        question: 'Are you using the correct paper type settings for your print job?',
+                        yesStep: 2,
+                        noAction: 'Adjust your printer settings to match the paper type you\'re using (e.g., regular, photo, glossy).',
+                        helpText: 'Using incorrect paper settings can cause the printer to apply too much ink.'
+                    },
+                    {
+                        question: 'Are you using high-quality paper suitable for your printer?',
+                        yesStep: 3,
+                        noAction: 'Switch to paper that\'s designed for your printer type (inkjet/laser) and the specific print job.',
+                        helpText: 'Low-quality paper may not properly absorb ink, leading to smudging.'
+                    },
+                    {
+                        question: 'Have you run a print head cleaning cycle recently?',
+                        yesStep: 4,
+                        noAction: 'Run a print head cleaning cycle from your printer\'s maintenance menu.',
+                        helpText: 'Clogged print heads can cause uneven ink distribution.'
+                    },
+                    {
+                        question: 'Are you using genuine ink cartridges?',
+                        yesStep: 5,
+                        noAction: 'Consider switching to manufacturer-recommended ink cartridges.',
+                        helpText: 'Third-party cartridges may not perform as well with your specific printer.'
+                    },
+                    {
+                        question: 'Have you tried reducing the print density or quality settings?',
+                        yesStep: 6,
+                        noAction: 'Adjust your printer settings to reduce ink density or use a lower quality setting for drafts.',
+                        helpText: 'Sometimes using too much ink can lead to smudging.'
+                    },
+                    {
+                        question: 'Is the printer in a humid environment?',
+                        yesStep: 7,
+                        noAction: 'Move the printer to a less humid area or use a dehumidifier. High humidity can slow ink drying.',
+                        helpText: 'Humidity can prevent ink from drying quickly.'
+                    },
+                    {
+                        question: 'Have you checked for firmware or driver updates for your printer?',
+                        yesStep: -1,
+                        noAction: 'Update your printer\'s firmware and drivers from the manufacturer\'s website.',
+                        helpText: 'Updates can resolve compatibility and print quality issues.',
+                        solution: 'You have verified key factors affecting ink smudging. For persistent issues, consider contacting the manufacturer for service or cartridge replacement.'
+                    }
+                ],
+                solutions: [
+                    {
+                        title: 'Allow Ink to Dry Completely',
+                        description: 'After printing, avoid touching the paper immediately. Some inkjet printers require extra drying time, especially when printing on glossy or thick paper.',
+                        steps: [
+                            'Wait at least 30 seconds after printing before handling documents',
+                            'For high-quality photo printing, allow 2-3 minutes drying time',
+                            'Consider using quick-dry ink if available for your printer model',
+                            'Place printed pages on a flat, open surface to dry',
+                            'Avoid stacking freshly printed pages',
+                            'Use a fan or gentle airflow to speed up drying',
+                            'Store paper in a dry environment',
+                            'Check for excess humidity in the room',
+                            'If possible, use specialty paper designed for fast drying'
+                        ]
+                    },
+                    {
+                        title: 'Check Paper Type Settings',
+                        description: 'Using incorrect paper type settings can cause excess ink application.',
+                        steps: [
+                            'Verify paper type matches printer settings',
+                            'For glossy paper, ensure "Photo" or "Glossy" setting is selected',
+                            'Adjust print quality settings if needed',
+                            'Check if the paper is loaded correctly in the tray',
+                            'Use the recommended paper weight for your printer',
+                            'Avoid using damp or wrinkled paper',
+                            'Test with a different brand of paper',
+                            'Check for paper jams or misfeeds',
+                            'Consult the printer manual for supported paper types'
+                        ]
+                    },
+                    {
+                        title: 'Clean Print Heads',
+                        description: 'Clogged print heads can cause uneven ink distribution.',
+                        steps: [
+                            'Access printer maintenance menu',
+                            'Select "Clean Print Heads" option',
+                            'Run the cleaning cycle',
+                            'Print a test page to verify improvement',
+                            'Repeat cleaning if necessary',
+                            'Manually clean print heads if automatic cleaning fails',
+                            'Check for dried ink on print head nozzles',
+                            'Use manufacturer-recommended cleaning kits',
+                            'Replace print head if cleaning does not resolve issue'
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'wifi_connection',
+                title: 'Printer Not Connecting to Wi-Fi',
+                keywords: ['wifi', 'wireless', 'network', 'connection', 'not connecting', 'offline'],
+                guidedTroubleshooting: [
+                    {
+                        question: 'Is your Wi-Fi network working properly? (Can other devices connect to it?)',
+                        yesStep: 1,
+                        noAction: 'Troubleshoot your Wi-Fi network first. Try restarting your router.',
+                        helpText: 'Make sure your network is operational before troubleshooting the printer connection.'
+                    },
+                    {
+                        question: 'Is the printer within range of your Wi-Fi router?',
+                        yesStep: 2,
+                        noAction: 'Move the printer closer to your Wi-Fi router or consider using a Wi-Fi extender.',
+                        helpText: 'Walls and distance can significantly reduce Wi-Fi signal strength.'
+                    },
+                    {
+                        question: 'Is your printer\'s Wi-Fi feature turned on?',
+                        yesStep: 3,
+                        noAction: 'Enable Wi-Fi on your printer through its control panel settings.',
+                        helpText: 'Check the printer\'s control panel for network or wireless settings.'
+                    },
+                    {
+                        question: 'Do you know the correct Wi-Fi password?',
+                        yesStep: 4,
+                        noAction: 'Verify your Wi-Fi password and re-enter it on the printer.',
+                        helpText: 'Make sure you\'re entering the correct password, respecting uppercase/lowercase letters.'
+                    },
+                    {
+                        question: 'Have you tried restarting the printer?',
+                        yesStep: 5,
+                        noAction: 'Turn off the printer, wait 30 seconds, then turn it back on.',
+                        helpText: 'A simple restart can often resolve connection issues.'
+                    },
+                    {
+                        question: 'Have you tried forgetting the network and reconnecting the printer to Wi-Fi?',
+                        yesStep: 6,
+                        noAction: 'Try removing the saved network from your printer and setting up the connection again from scratch.',
+                        helpText: 'This process varies by printer model, but usually involves going to network settings.'
+                    },
+                    {
+                        question: 'Are there any firmware updates available for your printer?',
+                        yesStep: 7,
+                        noAction: 'Check the manufacturer\'s website for firmware updates and install if available.',
+                        helpText: 'Firmware updates can resolve connectivity issues.'
+                    },
+                    {
+                        question: 'Is your router using MAC address filtering or other security features?',
+                        yesStep: 8,
+                        noAction: 'Disable MAC address filtering or add your printer\'s MAC address to the allowed list.',
+                        helpText: 'Some routers block new devices by default.'
+                    },
+                    {
+                        question: 'Have you tried assigning a static IP address to the printer?',
+                        yesStep: -1,
+                        noAction: 'Assign a static IP address to the printer through the control panel or router settings.',
+                        helpText: 'Static IPs can help avoid network conflicts.',
+                        solution: 'You have verified all the main Wi-Fi connection factors. For persistent issues, check if there\'s a firmware update for your printer or contact the manufacturer\'s support.'
+                    }
+                ],
+                solutions: [
+                    {
+                        title: 'Check Wi-Fi Status',
+                        description: 'Ensure the printer\'s Wi-Fi is enabled and functioning.',
+                        steps: [
+                            'Access the printer\'s control panel',
+                            'Navigate to network or wireless settings',
+                            'Verify Wi-Fi is turned on',
+                            'Check for Wi-Fi signal strength indicators',
+                            'Restart the printer\'s Wi-Fi module if possible',
+                            'Check for error messages on the printer display',
+                            'Ensure airplane mode is off',
+                            'Test with a different Wi-Fi network',
+                            'Consult the manual for model-specific Wi-Fi instructions'
+                        ]
+                    },
+                    {
+                        title: 'Reconnect to Network',
+                        description: 'Re-establish the connection to your Wi-Fi network.',
+                        steps: [
+                            'Access network settings on the printer',
+                            'Select "Forget" or "Remove" the current network (if applicable)',
+                            'Select your Wi-Fi network from the list of available networks',
+                            'Enter your Wi-Fi password carefully',
+                            'Wait for the connection to be established',
+                            'Check for confirmation or error messages',
+                            'Restart the printer after reconnecting',
+                            'Test printing a network configuration page',
+                            'If needed, reset network settings and try again'
+                        ]
+                    },
+                    {
+                        title: 'Restart Network Equipment',
+                        description: 'Refresh all network connections.',
+                        steps: [
+                            'Turn off your printer',
+                            'Restart your Wi-Fi router (unplug, wait 30 seconds, plug back in)',
+                            'Once the router is fully restarted, turn on the printer',
+                            'Wait for all connections to be re-established',
+                            'Check if other devices can connect to the network',
+                            'Move the printer closer to the router',
+                            'Check for interference from other electronics',
+                            'Update router firmware if available',
+                            'Contact your ISP if network issues persist'
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'paper_jam',
+                title: 'Paper Jam',
+                keywords: ['jam', 'stuck', 'feed', 'paper', 'not taking paper'],
+                guidedTroubleshooting: [
+                    {
+                        question: 'Is the printer showing a paper jam error?',
+                        yesStep: 1,
+                        noAction: 'Check the printer display or software for specific error details.',
+                        helpText: 'The error message might indicate where the jam is located.'
+                    },
+                    {
+                        question: 'Have you turned off the printer before attempting to clear the jam?',
+                        yesStep: 2,
+                        noAction: 'Turn off the printer and unplug it before attempting to remove jammed paper.',
+                        helpText: 'This is an important safety step to prevent damage to the printer or injury.'
+                    },
+                    {
+                        question: 'Can you see the jammed paper?',
+                        yesStep: 3,
+                        noAction: 'Open all access doors and carefully look for jammed paper in the paper path.',
+                        helpText: 'Check input trays, output trays, and any access panels.'
+                    },
+                    {
+                        question: 'Have you gently pulled the jammed paper in the direction of the paper path?',
+                        yesStep: 4,
+                        noAction: 'Carefully pull the jammed paper in the direction it would normally move, not against it.',
+                        helpText: 'Pulling paper against its intended direction can damage the printer.'
+                    },
+                    {
+                        question: 'Have you checked for and removed any torn pieces of paper?',
+                        yesStep: 5,
+                        noAction: 'Ensure you\'ve removed all paper fragments, which can cause additional jams.',
+                        helpText: 'Use a flashlight if necessary to spot small pieces of torn paper.'
+                    },
+                    {
+                        question: 'Have you checked the rollers and feed mechanisms for debris or wear?',
+                        yesStep: 6,
+                        noAction: 'Inspect rollers for dust, debris, or wear. Clean or replace if needed.',
+                        helpText: 'Worn or dirty rollers can cause repeated jams.'
+                    },
+                    {
+                        question: 'Are you using the correct paper type and loading it properly?',
+                        yesStep: 7,
+                        noAction: 'Use only recommended paper types and do not overfill the tray.',
+                        helpText: 'Incorrect paper or overfilling can cause jams.'
+                    },
+                    {
+                        question: 'Have you checked for foreign objects in the paper path?',
+                        yesStep: 8,
+                        noAction: 'Remove any paper clips, staples, or other objects from the paper path.',
+                        helpText: 'Foreign objects are a common cause of jams.'
+                    },
+                    {
+                        question: 'After clearing the jam, have you properly loaded paper in the tray?',
+                        yesStep: -1,
+                        noAction: 'Make sure paper is properly aligned, not overfilled, and the correct size for your tray.',
+                        helpText: 'Improper paper loading is a common cause of jams.',
+                        solution: 'You have successfully cleared the paper jam. To prevent future jams, use recommended paper types, don\'t overfill the tray, and keep paper stored in a dry place.'
+                    }
+                ],
+                solutions: [
+                    {
+                        title: 'Clear the Paper Jam',
+                        description: 'Safely remove jammed paper from the printer.',
+                        steps: [
+                            'Turn off the printer and unplug if possible',
+                            'Open all access doors and paper trays',
+                            'Locate the jammed paper',
+                            'Gently pull the paper in the direction of the normal paper path',
+                            'Remove any torn pieces of paper',
+                            'Check for paper fragments with a flashlight',
+                            'Inspect rollers and feed mechanisms for debris or wear',
+                            'Remove any foreign objects from the paper path',
+                            'Close all doors and reconnect power',
+                            'Turn the printer back on'
+                        ]
+                    },
+                    {
+                        title: 'Properly Load Paper',
+                        description: 'Ensure paper is loaded correctly to prevent future jams.',
+                        steps: [
+                            'Remove all paper from the tray',
+                            'Fan the stack to separate sheets',
+                            'Align the edges on a flat surface',
+                            'Load paper according to the tray\'s capacity limits',
+                            'Adjust paper guides to fit the paper size snugly but not too tight',
+                            'Use only recommended paper types and sizes',
+                            'Avoid using wrinkled or curled paper',
+                            'Store paper in a dry place',
+                            'Do not overfill the tray'
+                        ]
+                    },
+                    {
+                        title: 'Check for Obstructions',
+                        description: 'Ensure the paper path is clear of foreign objects.',
+                        steps: [
+                            'Turn off and unplug the printer',
+                            'Open all access panels',
+                            'Inspect for paper clips, staples or torn paper',
+                            'Remove any foreign objects carefully',
+                            'Check for stuck labels or envelope glue residue',
+                            'Clean rollers with a lint-free cloth',
+                            'Check for small pieces of paper in hard-to-see areas',
+                            'Use compressed air to clear dust',
+                            'Consult the manual for jam-clearing tips'
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'not_scanning',
+                title: 'Printer Not Scanning',
+                keywords: ['scan', 'scanner', 'not scanning', 'scanning error'],
+                guidedTroubleshooting: [
+                    {
+                        question: 'Is the scanner lid completely closed?',
+                        yesStep: 1,
+                        noAction: 'Close the scanner lid completely.',
+                        helpText: 'An open or partially closed lid can prevent proper scanning.'
+                    },
+                    {
+                        question: 'Is the document placed correctly on the scanner glass?',
+                        yesStep: 2,
+                        noAction: 'Position the document face-down on the scanner glass, aligned with the reference marks.',
+                        helpText: 'The document should be face-down, aligned with the corner or guides indicated on the scanner.'
+                    },
+                    {
+                        question: 'Is the scanner glass clean and free of smudges?',
+                        yesStep: 3,
+                        noAction: 'Clean the scanner glass with a soft, lint-free cloth slightly dampened with water or glass cleaner.',
+                        helpText: 'Fingerprints, dust, or smudges can affect scan quality or prevent scanning.'
+                    },
+                    {
+                        question: 'Is the scanning software installed on your computer?',
+                        yesStep: 4,
+                        noAction: 'Install the printer\'s scanning software from the manufacturer\'s website.',
+                        helpText: 'Without the proper software, your computer may not be able to communicate with the scanner.'
+                    },
+                    {
+                        question: 'Is the printer properly connected to your computer (via USB, network, or Wi-Fi)?',
+                        yesStep: 5,
+                        noAction: 'Check and secure all connections between the printer and computer.',
+                        helpText: 'A loose or faulty connection can interrupt communication between devices.'
+                    },
+                    {
+                        question: 'Have you tried restarting both the printer and computer?',
+                        yesStep: 6,
+                        noAction: 'Restart both the printer and computer to reset the connection and software.',
+                        helpText: 'A simple restart can resolve many communication issues.'
+                    },
+                    {
+                        question: 'Have you checked for driver or firmware updates for your printer?',
+                        yesStep: 7,
+                        noAction: 'Update your printer\'s drivers and firmware from the manufacturer\'s website.',
+                        helpText: 'Updates can resolve compatibility and scanning issues.'
+                    },
+                    {
+                        question: 'Are you using the correct scan settings (e.g., file type, resolution)?',
+                        yesStep: 8,
+                        noAction: 'Adjust scan settings to match your document type and try again.',
+                        helpText: 'Incorrect settings can cause scan failures.'
+                    },
+                    {
+                        question: 'Have you tried scanning from a different device or app?',
+                        yesStep: -1,
+                        noAction: 'Try scanning from another computer or using a different scanning app.',
+                        helpText: 'This can help determine if the issue is with the printer or the computer.',
+                        solution: 'You have verified all common scanning issues. For persistent problems, consider updating your scanner drivers or contacting the manufacturer\'s support.'
+                    }
+                ],
+                solutions: [
+                    {
+                        title: 'Check Scanner Setup',
+                        description: 'Ensure the scanner is properly prepared for scanning.',
+                        steps: [
+                            'Clean the scanner glass with a soft, lint-free cloth',
+                            'Place the document face-down on the glass',
+                            'Align the document with the indicated corner or guides',
+                            'Close the scanner lid completely',
+                            'Check for obstructions or debris on the glass',
+                            'Ensure the scanner is not in use by another program',
+                            'Check for error messages on the printer display',
+                            'Test scanning a different document',
+                            'Consult the manual for scanner setup tips'
+                        ]
+                    },
+                    {
+                        title: 'Verify Software Installation',
+                        description: 'Ensure the necessary scanning software is installed and working.',
+                        steps: [
+                            'Check if scanning software is installed on your computer',
+                            'If missing, download from the manufacturer\'s website',
+                            'Install the software following the provided instructions',
+                            'Restart your computer after installation',
+                            'Check for software updates',
+                            'Ensure the software is compatible with your operating system',
+                            'Try reinstalling the software if issues persist',
+                            'Test scanning with a different app',
+                            'Contact support if software will not install'
+                        ]
+                    },
+                    {
+                        title: 'Check Connections',
+                        description: 'Verify all connections between scanner and computer.',
+                        steps: [
+                            'Ensure USB cable is securely connected (if applicable)',
+                            'Check that the printer is on the same network as your computer',
+                            'Restart the printer and computer',
+                            'Try a different USB port or cable if available',
+                            'Check for network issues or IP conflicts',
+                            'Disable VPN or firewall temporarily',
+                            'Test scanning from another device',
+                            'Check for loose or damaged cables',
+                            'Consult the manual for connection troubleshooting'
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'strange_noises',
+                title: 'Printer Making Strange Noises',
+                keywords: ['noise', 'loud', 'grinding', 'squeaking', 'clicking', 'banging'],
+                guidedTroubleshooting: [
+                    {
+                        question: 'Is the noise coming from the paper feed area?',
+                        yesStep: 1,
+                        noAction: 'Check the paper feed area for obstructions or damaged components.',
+                        helpText: 'Many printer noises originate from paper handling mechanisms.'
+                    },
+                    {
+                        question: 'Have you checked for foreign objects inside the printer?',
+                        yesStep: 2,
+                        noAction: 'Turn off the printer and check for foreign objects like paper clips, staples, or torn paper.',
+                        helpText: 'Small objects can create loud noises when they interfere with moving parts.'
+                    },
+                    {
+                        question: 'Is the printer on a stable, level surface?',
+                        yesStep: 3,
+                        noAction: 'Place the printer on a sturdy, level surface to reduce vibration.',
+                        helpText: 'An unstable surface can amplify normal operating sounds.'
+                    },
+                    {
+                        question: 'Are the ink or toner cartridges properly installed?',
+                        yesStep: 4,
+                        noAction: 'Remove and reseat the ink or toner cartridges to ensure they\'re properly installed.',
+                        helpText: 'Improperly seated cartridges can cause unusual noises during printing.'
+                    },
+                    {
+                        question: 'Have you tried printing a test page to see if the noise continues?',
+                        yesStep: 5,
+                        noAction: 'Print a test page to determine if the noise is related to specific functions.',
+                        helpText: 'This can help identify whether the noise is part of normal operation or a malfunction.'
+                    },
+                    {
+                        question: 'Is the printer making noise even when idle (not printing)?',
+                        yesStep: 6,
+                        noAction: 'If the printer makes noise when idle, it may indicate a mechanical issue that requires service.',
+                        helpText: 'Normal printers should be relatively quiet when not actively printing or preparing to print.'
+                    },
+                    {
+                        question: 'Have you checked for worn or damaged gears or belts?',
+                        yesStep: 7,
+                        noAction: 'Inspect gears and belts for wear or damage. Replace if necessary.',
+                        helpText: 'Worn gears or belts can cause grinding or squeaking noises.'
+                    },
+                    {
+                        question: 'Have you lubricated moving parts as recommended by the manufacturer?',
+                        yesStep: 8,
+                        noAction: 'Apply manufacturer-recommended lubricant to moving parts if allowed.',
+                        helpText: 'Lack of lubrication can cause squeaking or grinding.'
+                    },
+                    {
+                        question: 'Have you checked for firmware updates that address noise issues?',
+                        yesStep: -1,
+                        noAction: 'Update your printer\'s firmware from the manufacturer\'s website.',
+                        helpText: 'Firmware updates can resolve some mechanical issues.',
+                        solution: 'You\'ve checked the common causes of printer noise. If the noise persists and is unusually loud or different from normal operation, consider contacting the manufacturer for service.'
+                    }
+                ],
+                solutions: [
+                    {
+                        title: 'Check for Obstructions',
+                        description: 'Foreign objects can cause unusual noises.',
+                        steps: [
+                            'Power off and unplug the printer',
+                            'Open all access panels',
+                            'Inspect for paper clips, staples or torn paper',
+                            'Remove any foreign objects carefully',
+                            'Check for stuck labels or debris',
+                            'Inspect rollers and gears for obstructions',
+                            'Use a flashlight to check hard-to-see areas',
+                            'Test printer after removing obstructions',
+                            'Consult the manual for noise troubleshooting'
+                        ]
+                    },
+                    {
+                        title: 'Inspect Carriage Movement',
+                        description: 'Restricted carriage movement can cause grinding sounds.',
+                        steps: [
+                            'Power off the printer',
+                            'Manually move print carriage (if accessible)',
+                            'Check for smooth movement',
+                            'Clear any obstructions in the carriage path',
+                            'Check for worn or damaged belts',
+                            'Lubricate moving parts if recommended',
+                            'Check for loose screws or parts',
+                            'Test carriage movement after adjustments',
+                            'Contact support if carriage is stuck'
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'poor_quality',
+                title: 'Poor Print Quality',
+                keywords: ['quality', 'blurry', 'faded', 'streaks', 'lines', 'dots', 'spotty'],
+                guidedTroubleshooting: [
+                    {
+                        question: 'Are your ink or toner levels sufficient?',
+                        yesStep: 1,
+                        noAction: 'Replace low ink or toner cartridges.',
+                        helpText: 'Low supplies are the most common cause of poor print quality.'
+                    },
+                    {
+                        question: 'Have you run a print head cleaning cycle recently?',
+                        yesStep: 2,
+                        noAction: 'Run a print head cleaning cycle from your printer\'s maintenance menu.',
+                        helpText: 'Clogged nozzles can cause streaks or missing colors.'
+                    },
+                    {
+                        question: 'Have you run a print head alignment?',
+                        yesStep: 3,
+                        noAction: 'Run a print head alignment from the printer\'s maintenance menu.',
+                        helpText: 'Misaligned print heads can cause blurry or offset printing.'
+                    },
+                    {
+                        question: 'Are you using high-quality paper appropriate for your printer type?',
+                        yesStep: 4,
+                        noAction: 'Use paper recommended for your printer type (inkjet/laser) and the specific print job.',
+                        helpText: 'Paper quality significantly affects the final print result.'
+                    },
+                    {
+                        question: 'Are you using the correct print quality settings in your print dialog?',
+                        yesStep: 5,
+                        noAction: 'Select higher quality settings in your print dialog for better output.',
+                        helpText: 'Draft or fast print modes sacrifice quality for speed.'
+                    },
+                    {
+                        question: 'Have you updated your printer drivers recently?',
+                        yesStep: 6,
+                        noAction: 'Download and install the latest printer drivers from the manufacturer\'s website.',
+                        helpText: 'Outdated drivers can cause various print quality issues.'
+                    },
+                    {
+                        question: 'Have you checked for firmware updates for your printer?',
+                        yesStep: 7,
+                        noAction: 'Update your printer\'s firmware from the manufacturer\'s website.',
+                        helpText: 'Firmware updates can resolve print quality issues.'
+                    },
+                    {
+                        question: 'Are you using genuine ink or toner cartridges?',
+                        yesStep: 8,
+                        noAction: 'Switch to manufacturer-recommended cartridges for best results.',
+                        helpText: 'Third-party cartridges may not perform as well.'
+                    },
+                    {
+                        question: 'Have you checked for clogged or dirty nozzles?',
+                        yesStep: -1,
+                        noAction: 'Clean the nozzles using the printer\'s maintenance menu or manually if needed.',
+                        helpText: 'Dirty nozzles can cause streaks or missing colors.',
+                        solution: 'You have verified all common factors affecting print quality. For persistent issues, consider servicing your printer or replacing worn components.'
+                    }
+                ],
+                solutions: [
+                    {
+                        title: 'Run Print Head Alignment',
+                        description: 'Misaligned print heads can cause poor quality prints.',
+                        steps: [
+                            'Access printer maintenance menu',
+                            'Select "Align Print Heads" option',
+                            'Follow on-screen instructions',
+                            'Print a test page to verify improvement',
+                            'Repeat alignment if necessary',
+                            'Check for error messages during alignment',
+                            'Consult the manual for alignment tips',
+                            'Replace print head if alignment fails',
+                            'Contact support if issue persists'
+                        ]
+                    },
+                    {
+                        title: 'Check Ink/Toner Levels',
+                        description: 'Low supplies can cause faded or streaky prints.',
+                        steps: [
+                            'Check ink or toner levels through printer software',
+                            'Replace low cartridges',
+                            'After replacement, run cleaning cycle',
+                            'Print test page to verify improvement',
+                            'Check for leaks or spills in the cartridge area',
+                            'Use only recommended cartridges',
+                            'Store cartridges in a cool, dry place',
+                            'Check expiration date on cartridges',
+                            'Dispose of empty cartridges properly'
+                        ]
+                    },
+                    {
+                        title: 'Update Printer Drivers',
+                        description: 'Outdated drivers can cause print quality issues.',
+                        steps: [
+                            'Visit manufacturer website',
+                            'Download latest drivers for your printer model',
+                            'Install updated drivers',
+                            'Restart computer and printer',
+                            'Check for firmware updates',
+                            'Uninstall old drivers if needed',
+                            'Test print after updating drivers',
+                            'Consult support if driver update fails',
+                            'Keep drivers up to date regularly'
+                        ]
+                    }
+                ]
+            }
+        ];
         
-        // Check for ink-related issues
-        if (damageLower.includes('ink') || damageLower.includes('smudge') || damageLower.includes('smear')) {
-            title = "Ink System Troubleshooting";
-            steps = [
-                {
-                    title: "Clean Print Heads",
-                    description: "Print head clogs or dirty nozzles can cause smudging or poor print quality.",
-                    instructions: "1. Access printer maintenance menu\n2. Select 'Clean Print Heads' or similar option\n3. Follow on-screen instructions\n4. Run a test print to verify improvement",
-                    expectedResult: "Print quality should improve with clean nozzles."
-                },
-                {
-                    title: "Check Ink Levels",
-                    description: "Low ink levels can cause streaking and poor quality.",
-                    instructions: "1. Access printer settings or status screen\n2. Check ink level indicators\n3. Replace low cartridges if necessary",
-                    expectedResult: "Ink levels should be sufficient for quality printing."
-                },
-                {
-                    title: "Replace Ink Cartridge",
-                    description: "If cleaning doesn't work, the cartridge may need replacement.",
-                    instructions: "1. Power on the printer\n2. Open the ink cartridge access door\n3. Wait for carriage to move to access position\n4. Remove old cartridge\n5. Insert new cartridge\n6. Close access door\n7. Run alignment if prompted",
-                    expectedResult: "New cartridge should resolve ink issues."
-                }
-            ];
-            possibleIssues = [
-                "Clogged print head nozzles",
-                "Low or empty ink cartridge",
-                "Incorrect paper type settings",
-                "Misaligned print heads",
-                "Old or expired ink cartridges"
-            ];
+        // If we have a specific damage description, try to match it
+        if (damageLower) {
+            if (damageLower.includes('ink') || damageLower.includes('smudge') || damageLower.includes('smear')) {
+                const steps = commonIssues.find(issue => issue.id === 'ink_smudging')?.solutions || [];
+                return {
+                    title: "Ink System Troubleshooting",
+                    steps: steps.map(solution => ({
+                        title: solution.title,
+                        description: solution.description,
+                        instructions: solution.steps.join('\n'),
+                        expectedResult: "Print quality should improve after these steps."
+                    })),
+                    possibleIssues: [
+                        "Clogged print nozzles",
+                        "Low quality ink cartridges",
+                        "Incompatible paper type",
+                        "Excessive ink application",
+                        "Humidity affecting ink drying"
+                    ]
+                };
+            } else if (damageLower.includes('jam') || damageLower.includes('feed') || damageLower.includes('paper')) {
+                const steps = commonIssues.find(issue => issue.id === 'paper_jam')?.solutions || [];
+                return {
+                    title: "Paper Feed Troubleshooting",
+                    steps: steps.map(solution => ({
+                        title: solution.title,
+                        description: solution.description,
+                        instructions: solution.steps.join('\n'),
+                        expectedResult: "Paper should feed properly after these steps."
+                    })),
+                    possibleIssues: [
+                        "Paper dust accumulation",
+                        "Worn feed rollers",
+                        "Damaged paper tray",
+                        "Foreign objects in paper path",
+                        "Incompatible paper weight or texture"
+                    ]
+                };
+            } else if (damageLower.includes('noise') || damageLower.includes('sound') || damageLower.includes('loud')) {
+                const steps = commonIssues.find(issue => issue.id === 'strange_noises')?.solutions || [];
+                return {
+                    title: "Printer Noise Troubleshooting",
+                    steps: steps.map(solution => ({
+                        title: solution.title,
+                        description: solution.description,
+                        instructions: solution.steps.join('\n'),
+                        expectedResult: "Printer should operate more quietly after these steps."
+                    })),
+                    possibleIssues: [
+                        "Foreign objects in printer mechanism",
+                        "Worn or damaged gears",
+                        "Loose belts or pulleys",
+                        "Damaged carriage assembly",
+                        "Aging mechanical components"
+                    ]
+                };
+            } else if (damageLower.includes('quality') || damageLower.includes('faded') || damageLower.includes('streak')) {
+                const steps = commonIssues.find(issue => issue.id === 'poor_quality')?.solutions || [];
+                return {
+                    title: "Print Quality Troubleshooting",
+                    steps: steps.map(solution => ({
+                        title: solution.title,
+                        description: solution.description,
+                        instructions: solution.steps.join('\n'),
+                        expectedResult: "Print quality should improve after these steps."
+                    })),
+                    possibleIssues: [
+                        "Clogged print nozzles",
+                        "Misaligned print heads",
+                        "Low ink or toner",
+                        "Outdated printer drivers",
+                        "Incorrect print settings"
+                    ]
+                };
+            }
         }
         
-        // Check for paper jam issues
-        else if (damageLower.includes('jam') || damageLower.includes('stuck') || damageLower.includes('feed')) {
-            title = "Paper Jam Troubleshooting";
-            steps = [
-                {
-                    title: "Clear Visible Paper Jams",
-                    description: "Paper is physically stuck in the printer path.",
-                    instructions: "1. Turn off the printer\n2. Open all access panels\n3. Gently pull jammed paper straight out (not at an angle)\n4. Check for and remove any torn pieces\n5. Close all panels\n6. Power on the printer",
-                    expectedResult: "Paper path should be clear of obstructions."
-                },
-                {
-                    title: "Check Paper Tray",
-                    description: "Improper paper loading can cause jams.",
-                    instructions: "1. Remove paper from tray\n2. Fan the stack to separate sheets\n3. Check for damaged or wrinkled paper\n4. Align paper edges before reinserting\n5. Don't overfill tray (observe max fill line)\n6. Adjust paper guides to fit paper size",
-                    expectedResult: "Paper should be properly aligned in tray."
-                },
-                {
-                    title: "Clear Internal Paper Path",
-                    description: "Paper debris might be hidden in rollers or paths.",
-                    instructions: "1. Turn off and unplug printer\n2. Open rear access panel if available\n3. Check for debris or obstructions in rollers\n4. Use tweezers to remove any debris\n5. Close panels and plug in printer\n6. Run a test print",
-                    expectedResult: "Internal components should be clean and free of paper debris."
-                }
-            ];
-            possibleIssues = [
-                "Damaged or wrinkled paper",
-                "Overfilled paper tray",
-                "Misaligned paper guides",
-                "Dirty or worn feed rollers",
-                "Foreign objects in paper path"
-            ];
-        }
-        
-        // Check for connectivity issues
-        else if (damageLower.includes('offline') || damageLower.includes('connect') || damageLower.includes('network')) {
-            title = "Printer Connectivity Troubleshooting";
-            steps = [
-                {
-                    title: "Check Physical Connections",
-                    description: "Loose cables can cause connectivity issues.",
-                    instructions: "1. Check power cable is securely connected to printer and outlet\n2. For USB printers: disconnect and reconnect USB cable at both ends\n3. For network printers: ensure ethernet cable is firmly connected\n4. Try different cables if available\n5. Restart printer after reconnecting",
-                    expectedResult: "All connections should be secure with no loose cables."
-                },
-                {
-                    title: "Restart Devices",
-                    description: "Temporary software glitches can cause connectivity issues.",
-                    instructions: "1. Turn off the printer\n2. Restart your computer\n3. If networked, restart your router/switch\n4. Turn the printer back on\n5. Wait for full initialization\n6. Try printing a test page",
-                    expectedResult: "Devices should reconnect after restart."
-                },
-                {
-                    title: "Check Network Settings",
-                    description: "Incorrect network settings can prevent connectivity.",
-                    instructions: "1. Print network configuration page from printer menu\n2. Verify IP address is assigned\n3. Check printer is on same network as computer\n4. For wireless: verify printer is connected to correct network\n5. Check for firewalls blocking printer communication",
-                    expectedResult: "Printer should have valid network configuration."
-                }
-            ];
-            possibleIssues = [
-                "Loose or damaged cables",
-                "Router/network issues",
-                "Wrong WiFi password",
-                "IP address conflicts",
-                "Firewall blocking printer communication",
-                "Outdated printer drivers"
-            ];
-        }
-        
-        // Check for print quality issues
-        else if (damageLower.includes('streak') || damageLower.includes('line') || damageLower.includes('quality') || damageLower.includes('faded')) {
-            title = "Print Quality Troubleshooting";
-            steps = [
-                {
-                    title: "Run Print Quality Diagnostic",
-                    description: "Built-in diagnostics can identify and fix quality issues.",
-                    instructions: "1. Access printer maintenance menu\n2. Select 'Print Quality Diagnostic' or similar\n3. Review the test page for issues\n4. Follow printer's recommended steps based on results",
-                    expectedResult: "Test pattern should identify specific quality problems."
-                },
-                {
-                    title: "Align Print Heads",
-                    description: "Misaligned print heads cause quality issues.",
-                    instructions: "1. Access printer maintenance menu\n2. Select 'Align Print Heads' option\n3. Follow on-screen instructions\n4. Allow alignment process to complete\n5. Print test page to verify improvement",
-                    expectedResult: "Properly aligned print heads should improve quality."
-                },
-                {
-                    title: "Check Paper Settings",
-                    description: "Incorrect media settings affect print quality.",
-                    instructions: "1. Check paper loaded matches printer settings\n2. In print dialog, select correct paper type\n3. Ensure paper quality is appropriate for job\n4. Adjust print quality settings (draft, normal, best)\n5. Test with higher quality paper if available",
-                    expectedResult: "Paper settings should match actual media being used."
-                }
-            ];
-            possibleIssues = [
-                "Clogged or dirty print heads",
-                "Low ink or toner levels",
-                "Misaligned print heads",
-                "Incorrect paper settings",
-                "Low quality paper",
-                "Aging printer components"
-            ];
-        }
-        
-        // Check for mechanical issues
-        else if (damageLower.includes('noise') || damageLower.includes('grind') || damageLower.includes('squeaking')) {
-            title = "Mechanical Issue Troubleshooting";
-            steps = [
-                {
-                    title: "Check for Foreign Objects",
-                    description: "Objects in the printer can cause unusual noises.",
-                    instructions: "1. Power off and unplug the printer\n2. Open all access panels and covers\n3. Look for paper clips, staples, torn paper pieces\n4. Remove any foreign objects carefully\n5. Check for obstructions in moving carriage\n6. Close all panels and test",
-                    expectedResult: "Printer should be free of foreign objects."
-                },
-                {
-                    title: "Inspect Moving Parts",
-                    description: "Worn components can cause grinding or squeaking.",
-                    instructions: "1. Power off and unplug the printer\n2. Open access panels to reveal mechanical components\n3. Gently move the print carriage (if allowed by manual)\n4. Listen for location of noise\n5. Check for worn gears or belts\n6. Consult manual for serviceable parts",
-                    expectedResult: "Mechanical components should move smoothly."
-                },
-                {
-                    title: "Apply Approved Lubricant",
-                    description: "If specified in manual, lubrication may help.",
-                    instructions: "1. Consult printer manual for lubrication points\n2. Use ONLY manufacturer-approved lubricant\n3. Apply minimal amount to specified points\n4. Move components to distribute lubricant\n5. Wipe excess lubricant\n6. Test printer operation",
-                    expectedResult: "Lubricated components should move quietly."
-                }
-            ];
-            possibleIssues = [
-                "Foreign objects in printer mechanism",
-                "Worn or damaged gears",
-                "Loose belts or pulleys",
-                "Damaged carriage assembly",
-                "Aging mechanical components"
-            ];
-        }
-        
-        // Default solution if no specific issue is identified
-        else {
-            title = "General Printer Troubleshooting";
-            steps = [
-                {
-                    title: "Power Cycle the Printer",
-                    description: "Simple restart can resolve many issues.",
-                    instructions: "1. Turn off the printer\n2. Unplug from power source\n3. Wait 60 seconds\n4. Plug back in\n5. Turn printer on\n6. Allow full initialization\n7. Test printer functionality",
-                    expectedResult: "Printer should initialize correctly after restart."
-                },
-                {
-                    title: "Check for Updates",
-                    description: "Outdated firmware or drivers can cause issues.",
-                    instructions: "1. Check manufacturer website for latest firmware\n2. Download and install printer firmware update if available\n3. Update printer drivers on computer\n4. Restart computer and printer\n5. Test printer functionality",
-                    expectedResult: "Printer should be running latest software versions."
-                },
-                {
-                    title: "Perform Factory Reset",
-                    description: "Reset to default settings can resolve configuration issues.",
-                    instructions: "1. Access printer settings menu\n2. Look for 'Factory Reset' or 'Restore Defaults' option\n3. Select and confirm reset\n4. Allow printer to restart\n5. Reconfigure necessary settings\n6. Test printer functionality",
-                    expectedResult: "Printer should return to default working state."
-                }
-            ];
-            possibleIssues = [
-                "Software or firmware issues",
-                "Incorrect configuration settings",
-                "Memory corruption",
-                "Temporary electronic glitch",
-                "Hardware component failure"
-            ];
-        }
-        
+        // For repairable items or if no specific match, return the full issue list
         return {
-            title: title,
-            steps: steps,
-            possibleIssues: possibleIssues
+            title: "Printer Repair Solutions",
+            issues: commonIssues
         };
     };
 
     // Handler to view solution
     const handleViewSolution = (item) => {
-        // Basic check if it might be a printer based on damage keywords
+        let solutionData;
+        
+        if (item.condition === 'repairable') {
+            // For repairable items, show the issues and solutions interface
+            const itemNameLower = item.item_name.toLowerCase();
+            
+            // Check if it's a printer-related item
+            if (itemNameLower.includes('printer') || 
+                itemNameLower.includes('scanner') || 
+                itemNameLower.includes('copier') || 
+                itemNameLower.includes('mfp')) {
+                solutionData = getPrinterSolution();
+            } else {
+                // Generic repairable solution for non-printer items
+                solutionData = {
+                    title: `Repair Solutions for ${item.item_name}`,
+                    issues: [
+                        {
+                            id: 'power_issues',
+                            title: 'Power or Startup Issues',
+                            keywords: ['power', 'startup', 'boot', 'on', 'off', 'dead'],
+                            guidedTroubleshooting: [
+                                {
+                                    question: 'Is the device properly connected to power?',
+                                    yesStep: 1,
+                                    noAction: 'Connect the device to a power source securely.',
+                                    helpText: 'Ensure the power cable is firmly connected to both the device and the power outlet.'
+                                },
+                                {
+                                    question: 'Is the power outlet working?',
+                                    yesStep: 2,
+                                    noAction: 'Try a different power outlet or check if the current outlet needs to be reset.',
+                                    helpText: 'Test the outlet with another device to confirm it\'s working.'
+                                },
+                                {
+                                    question: 'Is the power button working properly?',
+                                    yesStep: 3,
+                                    noAction: 'Check if the power button is stuck or damaged.',
+                                    helpText: 'Try pressing the power button firmly and holding it for a few seconds.'
+                                },
+                                {
+                                    question: 'Have you tried a power cycle (turning off, unplugging, waiting, plugging back in)?',
+                                    yesStep: -1,
+                                    noAction: 'Perform a complete power cycle: Turn off the device, unplug from power, wait 60 seconds, plug back in, turn on.',
+                                    helpText: 'This can reset internal electronics and clear temporary issues.',
+                                    solution: 'You\'ve checked all common power-related issues. If the device still won\'t power on, it may require internal repair or component replacement.'
+                                }
+                            ],
+                            solutions: [
+                                {
+                                    title: 'Check Power Connection',
+                                    description: 'Ensure the device is properly connected to power.',
+                                    steps: [
+                                        'Verify power cable is securely connected',
+                                        'Try a different power outlet',
+                                        'Check if power indicator lights are on',
+                                        'Ensure power switch is in the ON position'
+                                    ]
+                                },
+                                {
+                                    title: 'Perform Power Cycle',
+                                    description: 'A complete power reset can resolve many electronic issues.',
+                                    steps: [
+                                        'Turn off the device',
+                                        'Unplug from power source',
+                                        'Wait 60 seconds',
+                                        'Reconnect power and turn on'
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            id: 'physical_damage',
+                            title: 'Physical Damage',
+                            keywords: ['broken', 'cracked', 'damaged', 'dented', 'scratched'],
+                            guidedTroubleshooting: [
+                                {
+                                    question: 'Is the damage purely cosmetic (not affecting functionality)?',
+                                    yesStep: -1,
+                                    noAction: 'For cosmetic damage, consider using appropriate repair kits or protective covers.',
+                                    helpText: 'Cosmetic damage usually doesn\'t require functional repair unless it affects usage.',
+                                    solution: 'If the damage is purely cosmetic and doesn\'t affect functionality, the device can continue to be used normally.'
+                                },
+                                {
+                                    question: 'Does the damage affect critical components?',
+                                    yesStep: 1,
+                                    noAction: 'Identify which components are damaged and assess if they need replacement.',
+                                    helpText: 'Critical components might include screens, buttons, or internal hardware.'
+                                },
+                                {
+                                    question: 'Are there loose parts that can be reattached?',
+                                    yesStep: 2,
+                                    noAction: 'Carefully secure loose parts if possible, using appropriate adhesives or fasteners.',
+                                    helpText: 'Sometimes simple reattachment can restore functionality.'
+                                },
+                                {
+                                    question: 'Is the device still under warranty?',
+                                    yesStep: -1,
+                                    noAction: 'Contact the manufacturer for warranty service instead of attempting repairs yourself.',
+                                    helpText: 'Self-repair might void your warranty.',
+                                    solution: 'For significant physical damage affecting functionality, professional repair is recommended. Contact the manufacturer or an authorized service center.'
+                                }
+                            ],
+                            solutions: [
+                                {
+                                    title: 'Assess Damage Severity',
+                                    description: 'Determine if the damage can be repaired or needs replacement parts.',
+                                    steps: [
+                                        'Inspect for cracked components',
+                                        'Check for loose parts',
+                                        'Test basic functionality',
+                                        'Document damage for repair service'
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            id: 'general_maintenance',
+                            title: 'General Maintenance',
+                            keywords: ['maintenance', 'clean', 'update', 'slow', 'performance'],
+                            guidedTroubleshooting: [
+                                {
+                                    question: 'Is the device regularly cleaned?',
+                                    yesStep: 1,
+                                    noAction: 'Perform general cleaning following the manufacturer\'s guidelines.',
+                                    helpText: 'Dust and debris can cause performance issues over time.'
+                                },
+                                {
+                                    question: 'Is the device\'s software/firmware up to date?',
+                                    yesStep: 2,
+                                    noAction: 'Check for and install any available software or firmware updates.',
+                                    helpText: 'Updates often include performance improvements and bug fixes.'
+                                },
+                                {
+                                    question: 'Has the device been restarted recently?',
+                                    yesStep: 3,
+                                    noAction: 'Restart the device to clear temporary issues and refresh system resources.',
+                                    helpText: 'Regular restarts help maintain optimal performance.'
+                                },
+                                {
+                                    question: 'Are you following the manufacturer\'s maintenance schedule?',
+                                    yesStep: -1,
+                                    noAction: 'Review the user manual for recommended maintenance intervals and procedures.',
+                                    helpText: 'Most devices have specific maintenance recommendations.',
+                                    solution: 'You\'re following good maintenance practices. Regular cleaning, updates, and following the manufacturer\'s guidelines will help extend the life of your device.'
+                                }
+                            ],
+                            solutions: [
+                                {
+                                    title: 'Clean the Device',
+                                    description: 'Dust and debris can cause operational issues.',
+                                    steps: [
+                                        'Power off and unplug the device',
+                                        'Use compressed air to remove dust',
+                                        'Clean exterior with slightly damp cloth',
+                                        'Allow to dry completely before use'
+                                    ]
+                                },
+                                {
+                                    title: 'Update Software/Firmware',
+                                    description: 'Outdated software can cause compatibility issues.',
+                                    steps: [
+                                        'Check manufacturer website for updates',
+                                        'Download latest software/firmware',
+                                        'Follow installation instructions',
+                                        'Restart device after update'
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        } else if (item.condition === 'damaged') {
+            // For damaged items, use the existing troubleshooting flow
+            // Check if it's a printer based on damage keywords
         const potentialPrinterDamages = ['power', 'ink', 'smudge', 'smear', 'paper jam', 'toner', 'print quality'];
         const isPotentialPrinter = potentialPrinterDamages.some(keyword => 
             item.damage && item.damage.toLowerCase().includes(keyword)
         );
 
-        let solutionData;
         if (isPotentialPrinter) {
             solutionData = getPrinterSolution(item.damage);
         } else {
@@ -1427,14 +2274,54 @@ export default function ReturnHistory({ returns }) {
                     "Issue may require parts replacement or servicing"
                 ]
             };
+            }
         }
 
         setSolutionItem(item);
+        
+        // Initialize filteredIssues with all issues
+        if (solutionData.issues && solutionData.issues.length > 0) {
+            setFilteredIssues(solutionData.issues);
+            
+            // Set initial guided troubleshooting steps if available
+            if (solutionData.issues[0].guidedTroubleshooting) {
+                setGuidedSteps(solutionData.issues[0].guidedTroubleshooting);
+                setCurrentGuidedStep(0);
+            }
+            
+            // Set the first issue's solutions as initial steps
+            setSolutionSteps(solutionData.issues[0].solutions);
+        } else if (solutionData.steps) {
         setSolutionSteps(solutionData.steps);
-        setSolutionContent(solutionData);
+        } else {
+            setSolutionSteps([]);
+        }
+        
+        // Reset all states
+        setIssueSearchTerm('');
         setCurrentSolutionStep(0);
+        setSelectedIssue(solutionData.issues?.[0] || null);
+        setRecommendedAction('');
+        setSolutionContent(solutionData);
         setShowAllPossibleIssues(false);
+        setIssueSolved(false);
         setIsSolutionModalOpen(true);
+    };
+
+    // Handle issue search
+    const handleIssueSearch = (searchValue) => {
+        setIssueSearchTerm(searchValue);
+        if (!solutionContent.issues) return;
+        
+        if (searchValue.trim() === '') {
+            setFilteredIssues(solutionContent.issues);
+        } else {
+            const filtered = solutionContent.issues.filter(issue => 
+                issue.title.toLowerCase().includes(searchValue.toLowerCase()) ||
+                issue.keywords?.some(keyword => keyword.toLowerCase().includes(searchValue.toLowerCase()))
+            );
+            setFilteredIssues(filtered);
+        }
     };
 
     return (
@@ -1453,7 +2340,7 @@ export default function ReturnHistory({ returns }) {
                                             Returned Items List
                                         </h2>
                                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                            View and analyze inspected items
+                                            View and analyze returned items
                                         </p>
                                     </div>
                                     
@@ -1489,7 +2376,7 @@ export default function ReturnHistory({ returns }) {
                                         </div>
                                         <input
                                             type="text"
-                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-700 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-700 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:text-gray-100"
                                             placeholder="Search returns..."
                                             value={searchTerm}
                                             onChange={(e) => handleSearch(e.target.value)}
@@ -1502,7 +2389,7 @@ export default function ReturnHistory({ returns }) {
                                         <select
                                             value={selectedYear}
                                             onChange={(e) => handleYearChange(e.target.value)}
-                                            className="border border-gray-300 rounded-md text-sm dark:bg-gray-700 dark:border-gray-600 py-2 px-3"
+                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                                         >
                                             <option value="">Select Year</option>
                                             {years.map((year) => (
@@ -1519,7 +2406,7 @@ export default function ReturnHistory({ returns }) {
                                         <select
                                             value={selectedCondition}
                                             onChange={(e) => handleConditionChange(e.target.value)}
-                                            className="border border-gray-300 rounded-md text-sm dark:bg-gray-700 dark:border-gray-600 py-2 px-3"
+                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                                         >
                                             <option value="">All Conditions</option>
                                             <option value="good">Good</option>
@@ -1536,14 +2423,14 @@ export default function ReturnHistory({ returns }) {
                                                 type="date"
                                                 value={dateRange.start}
                                                 onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                                                className="border border-gray-300 rounded-md text-sm dark:bg-gray-700 dark:border-gray-600"
+                                                className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                             <span className="text-gray-500">to</span>
                                             <input
                                                 type="date"
                                                 value={dateRange.end}
                                                 onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                                                className="border border-gray-300 rounded-md text-sm dark:bg-gray-700 dark:border-gray-600"
+                                                className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         </div>
                                     </div>
@@ -1555,38 +2442,47 @@ export default function ReturnHistory({ returns }) {
                         <div className="p-6">
                             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead className="bg-gray-50 dark:bg-gray-800">
+                                    <thead className="bg-blue-500">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Item</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Person Name</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Office</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quantity</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Return Date</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Condition</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Damage</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Property No.</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Purchased Date</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit of Measures</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Item</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Description</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Person Name</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Office</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Quantity</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Return Date</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Condition</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Damage</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Property No.</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Purchased Date</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Amount</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Unit of Measures</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         {paginatedData.map((item) => (
                                             <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.item_name || (item.item && item.item.items)}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{item.description || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.person_name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.office_name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.quantity_returned}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.return_date}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 capitalize">{item.condition}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{item.damage || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.property_no || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.purchased_date || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.amount || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.unit_of_measures || '-'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.item_name || (item.item && item.item.items) || 'N/A'}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{item.description || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.person_name || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.office_name || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.quantity_returned || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.return_date || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 capitalize">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        item.condition === 'good' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                                        item.condition === 'damaged' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                        item.condition === 'repairable' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                        'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                                    }`}>
+                                                        {item.condition || 'N/A'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{item.damage || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.property_no || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.purchased_date || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.amount || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{item.unit_of_measures || 'N/A'}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                     <div className="flex space-x-3">
                                                         {item.condition === 'repairable' && (
@@ -1743,7 +2639,7 @@ export default function ReturnHistory({ returns }) {
                             <select
                                 value={selectedReport}
                                 onChange={(e) => setSelectedReport(e.target.value)}
-                                className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                             >
                                 <option value="most_returned">Most Returned Equipment</option>
                                 <option value="damage_summary">Damage Summary</option>
@@ -1807,7 +2703,7 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={data.item_name}
                                         onChange={e => setData('item_name', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         placeholder="Enter item name"
                                         required
                                     />
@@ -1824,7 +2720,7 @@ export default function ReturnHistory({ returns }) {
                                     <textarea
                                         value={data.description}
                                         onChange={e => setData('description', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         rows={3}
                                     />
                                     {errors.description && (
@@ -1841,7 +2737,7 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={data.person_name}
                                         onChange={e => setData('person_name', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         placeholder="Enter name of person returning"
                                         required
                                     />
@@ -1859,7 +2755,7 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={data.office_name}
                                         onChange={e => setData('office_name', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         placeholder="Enter office name"
                                         required
                                     />
@@ -1878,7 +2774,7 @@ export default function ReturnHistory({ returns }) {
                                         min="1"
                                         value={data.quantity_returned}
                                         onChange={e => setData('quantity_returned', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         required
                                     />
                                     {errors.quantity_returned && (
@@ -1895,7 +2791,7 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={data.property_no}
                                         onChange={e => setData('property_no', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     />
                                     {errors.property_no && (
                                         <p className="mt-1 text-sm text-red-600">{errors.property_no}</p>
@@ -1911,7 +2807,7 @@ export default function ReturnHistory({ returns }) {
                                         type="date"
                                         value={data.purchased_date}
                                         onChange={e => setData('purchased_date', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     />
                                     {errors.purchased_date && (
                                         <p className="mt-1 text-sm text-red-600">{errors.purchased_date}</p>
@@ -1929,7 +2825,7 @@ export default function ReturnHistory({ returns }) {
                                         step="0.01"
                                         value={data.amount}
                                         onChange={e => setData('amount', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         placeholder="Enter amount"
                                     />
                                     {errors.amount && (
@@ -1946,7 +2842,7 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={data.unit_of_measures}
                                         onChange={e => setData('unit_of_measures', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         placeholder="Enter unit of measures"
                                     />
                                     {errors.unit_of_measures && (
@@ -1963,7 +2859,7 @@ export default function ReturnHistory({ returns }) {
                                         type="date"
                                         value={data.return_date}
                                         onChange={e => setData('return_date', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         required
                                     />
                                     {errors.return_date && (
@@ -1978,8 +2874,15 @@ export default function ReturnHistory({ returns }) {
                                     </label>
                                     <select
                                         value={data.condition}
-                                        onChange={e => setData('condition', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        onChange={e => {
+                                            const newCondition = e.target.value;
+                                            setData(prevData => ({
+                                                ...prevData,
+                                                condition: newCondition,
+                                                damage: newCondition !== 'damaged' ? '' : prevData.damage
+                                            }));
+                                        }}
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     >
                                         <option value="good">Good</option>
                                         <option value="damaged">Damaged</option>
@@ -1991,7 +2894,7 @@ export default function ReturnHistory({ returns }) {
                                 </div>
 
                                 {/* Damage */}
-                                {data.condition !== 'good' && (
+                                {data.condition === 'damaged' && (
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Damage
@@ -2000,7 +2903,7 @@ export default function ReturnHistory({ returns }) {
                                             type="text"
                                             value={data.damage}
                                             onChange={e => setData('damage', e.target.value)}
-                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                             placeholder="Enter damage details"
                                         />
                                         {errors.damage && (
@@ -2109,7 +3012,8 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={editData.person_name}
                                         onChange={e => setEditData('person_name', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
+                                        placeholder="Enter name of person returning"
                                         required
                                     />
                                     {editErrors.person_name && (
@@ -2126,7 +3030,8 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={editData.office_name}
                                         onChange={e => setEditData('office_name', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
+                                        placeholder="Enter office name"
                                         required
                                     />
                                     {editErrors.office_name && (
@@ -2144,7 +3049,7 @@ export default function ReturnHistory({ returns }) {
                                         min="1"
                                         value={editData.quantity_returned}
                                         onChange={e => setEditData('quantity_returned', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         required
                                     />
                                     {editErrors.quantity_returned && (
@@ -2161,7 +3066,7 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={editData.property_no}
                                         onChange={e => setEditData('property_no', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     />
                                     {editErrors.property_no && (
                                         <p className="mt-1 text-sm text-red-600">{editErrors.property_no}</p>
@@ -2177,7 +3082,7 @@ export default function ReturnHistory({ returns }) {
                                         type="date"
                                         value={editData.purchased_date}
                                         onChange={e => setEditData('purchased_date', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     />
                                     {editErrors.purchased_date && (
                                         <p className="mt-1 text-sm text-red-600">{editErrors.purchased_date}</p>
@@ -2195,7 +3100,7 @@ export default function ReturnHistory({ returns }) {
                                         step="0.01"
                                         value={editData.amount}
                                         onChange={e => setEditData('amount', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     />
                                     {editErrors.amount && (
                                         <p className="mt-1 text-sm text-red-600">{editErrors.amount}</p>
@@ -2211,7 +3116,7 @@ export default function ReturnHistory({ returns }) {
                                         type="text"
                                         value={editData.unit_of_measures}
                                         onChange={e => setEditData('unit_of_measures', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     />
                                     {editErrors.unit_of_measures && (
                                         <p className="mt-1 text-sm text-red-600">{editErrors.unit_of_measures}</p>
@@ -2227,7 +3132,7 @@ export default function ReturnHistory({ returns }) {
                                         type="date"
                                         value={editData.return_date}
                                         onChange={e => setEditData('return_date', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                         required
                                     />
                                     {editErrors.return_date && (
@@ -2242,8 +3147,15 @@ export default function ReturnHistory({ returns }) {
                                     </label>
                                     <select
                                         value={editData.condition}
-                                        onChange={e => setEditData('condition', e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                        onChange={e => {
+                                            const newCondition = e.target.value;
+                                            setEditData(prevData => ({
+                                                ...prevData,
+                                                condition: newCondition,
+                                                damage: newCondition !== 'damaged' ? '' : prevData.damage
+                                            }));
+                                        }}
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                     >
                                         <option value="good">Good</option>
                                         <option value="damaged">Damaged</option>
@@ -2255,7 +3167,7 @@ export default function ReturnHistory({ returns }) {
                                 </div>
 
                                 {/* Damage */}
-                                {(editData.condition === 'damaged' || editData.condition === 'repairable') && (
+                                {editData.condition === 'damaged' && (
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Damage
@@ -2264,7 +3176,7 @@ export default function ReturnHistory({ returns }) {
                                             type="text"
                                             value={editData.damage}
                                             onChange={e => setEditData('damage', e.target.value)}
-                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
                                             placeholder="Enter damage details"
                                         />
                                         {editErrors.damage && (
@@ -2310,7 +3222,7 @@ export default function ReturnHistory({ returns }) {
             {/* Solution Modal - completely replaced with interactive version */}
             {isSolutionModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 overflow-y-auto">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full p-6 max-h-[90vh] flex flex-col transition-all duration-300 ease-in-out">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full p-6 max-h-[90vh] flex flex-col transition-all duration-300 ease-in-out">
                         <div className="flex justify-between items-center mb-6 border-b pb-4 dark:border-gray-700">
                             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                                 {issueSolved ? (
@@ -2325,7 +3237,7 @@ export default function ReturnHistory({ returns }) {
                                         <svg className="w-6 h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
-                                        {solutionContent.title}
+                                        {solutionContent.title} - {solutionItem?.item_name}
                                     </>
                                 )}
                             </h3>
@@ -2334,47 +3246,219 @@ export default function ReturnHistory({ returns }) {
                                     setIsSolutionModalOpen(false);
                                     setIssueSolved(false);
                                 }}
-                                className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white transition-colors duration-200"
+                                className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                             >
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
+                                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                             </button>
-                        </div>
-                        
-                        {/* Item info banner */}
-                        <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-md mb-5 text-sm text-blue-800 dark:text-blue-200 flex items-start space-x-3">
-                            <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <div>
-                                <p className="mb-1"><strong>Item:</strong> {solutionItem?.item_name}</p>
-                                <p><strong>Issue:</strong> {solutionItem?.damage}</p>
-                            </div>
                         </div>
 
                         {issueSolved ? (
-                            <div className="mb-4 overflow-y-auto flex-grow pr-2 text-gray-700 dark:text-gray-300">
-                                <div className="flex flex-col items-center justify-center p-8 text-center">
-                                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
-                                        <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <div className="mb-4 text-center">
+                                <div className="flex justify-center mb-6">
+                                    <div className="rounded-full bg-green-100 p-3 dark:bg-green-900/30">
+                                        <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
                                     </div>
-                                    <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Great! The issue has been successfully resolved</h4>
-                                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                        The troubleshooting steps have successfully resolved the {solutionItem?.damage} issue with the {solutionItem?.item_name}.
-                                    </p>
+                                </div>
+                                <h4 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-4">Great! The issue has been resolved.</h4>
                                     <div className="border-t border-b border-gray-200 dark:border-gray-700 py-5 w-full my-4">
                                         <h5 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Problem solved by:</h5>
+                                    {recommendedAction ? (
+                                        <p className="text-gray-700 dark:text-gray-300">{recommendedAction}</p>
+                                    ) : (
+                                        <>
                                         <p className="text-gray-700 dark:text-gray-300">
                                             {solutionSteps[currentSolutionStep]?.title}
                                         </p>
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                             {solutionSteps[currentSolutionStep]?.description}
                                         </p>
+                                        </>
+                                    )}
                                     </div>
                                     <p className="text-gray-600 dark:text-gray-400 mb-2">
                                         You can now close this window and continue.
                                     </p>
+                            </div>
+                        ) : solutionItem?.condition === 'repairable' && solutionContent?.issues ? (
+                            <div className="flex flex-col md:flex-row gap-6 overflow-auto">
+                                {/* Left column: Operational Issues */}
+                                <div className="md:w-1/2 border-r dark:border-gray-700 pr-6">
+                                    <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                                        Operational Issues
+                                    </h4>
+                                    
+                                    {/* Search bar for issues */}
+                                    <div className="relative mb-4">
+                                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                            <Search className="w-5 h-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                                            placeholder="Type an issue..."
+                                            value={issueSearchTerm}
+                                            onChange={(e) => handleIssueSearch(e.target.value)}
+                                        />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        {filteredIssues.length > 0 ? (
+                                            filteredIssues.map((issue) => (
+                                                <button
+                                                    key={issue.id}
+                                                    onClick={() => {
+                                                        setSelectedIssue(issue);
+                                                        setSolutionSteps(issue.solutions);
+                                                        if (issue.guidedTroubleshooting) {
+                                                            setGuidedSteps(issue.guidedTroubleshooting);
+                                                            setCurrentGuidedStep(0);
+                                                            setRecommendedAction('');
+                                                        }
+                                                        setCurrentSolutionStep(0);
+                                                    }}
+                                                    className={`text-left w-full p-3 rounded-lg transition-colors duration-200 ${
+                                                        selectedIssue?.id === issue.id
+                                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                            : 'bg-gray-100 dark:bg-gray-700/50 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                                    }`}
+                                                >
+                                                    {issue.title}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                                No matching issues found
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right column: Suggested Solutions */}
+                                <div className="md:w-1/2">
+                                    <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        {selectedIssue?.title || 'Suggested Solutions'}
+                                    </h4>
+                                    {selectedIssue?.description && (
+                                        <p className="mb-4 text-gray-600 dark:text-gray-400 text-sm">{selectedIssue.description}</p>
+                                    )}
+                                    {/* Toggle to show all steps */}
+                                    {solutionSteps && solutionSteps.length > 1 && (
+                                        <div className="mb-4 flex items-center gap-2">
+                                            <input
+                                                id="showAllSteps"
+                                                type="checkbox"
+                                                checked={showAllPossibleIssues}
+                                                onChange={() => setShowAllPossibleIssues(!showAllPossibleIssues)}
+                                                className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                                            />
+                                            <label htmlFor="showAllSteps" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">Show all steps</label>
+                                        </div>
+                                    )}
+                                    {/* Progress bar */}
+                                    {!showAllPossibleIssues && solutionSteps && solutionSteps.length > 1 && (
+                                        <div className="mb-5">
+                                            <div className="flex justify-between mb-2 text-xs text-gray-600 dark:text-gray-400">
+                                                <span>Step {currentSolutionStep + 1} of {solutionSteps.length}</span>
+                                                <span>{Math.round(((currentSolutionStep + 1) / solutionSteps.length) * 100)}% Complete</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                                                <div
+                                                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                                                    style={{ width: `${((currentSolutionStep + 1) / solutionSteps.length) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Step-by-step cards or all steps */}
+                                    {showAllPossibleIssues ? (
+                                        <div className="space-y-4">
+                                            {solutionSteps.map((step, idx) => (
+                                                <div key={idx} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="flex items-center justify-center bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 w-7 h-7 rounded-full text-sm font-bold">{idx + 1}</span>
+                                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{step.title}</span>
+                                                    </div>
+                                                    <p className="text-gray-700 dark:text-gray-300 mb-2">{step.description}</p>
+                                                    {step.steps && (
+                                                        <ul className="list-decimal ml-6 mb-2 text-gray-700 dark:text-gray-300 text-sm">
+                                                            {step.steps.map((s, i) => <li key={i}>{s}</li>)}
+                                                        </ul>
+                                                    )}
+                                                    {step.instructions && (
+                                                        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded mb-2 text-sm">
+                                                            <span className="font-medium text-gray-800 dark:text-gray-200">Instructions:</span>
+                                                            <div className="whitespace-pre-line">{step.instructions}</div>
+                                                        </div>
+                                                    )}
+                                                    {step.expectedResult && (
+                                                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-blue-800 dark:text-blue-200 text-sm flex items-center gap-2">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                            <span><b>Expected Result:</b> {step.expectedResult}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 mb-5 shadow-sm">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className="flex items-center justify-center bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 w-7 h-7 rounded-full text-sm font-bold">{currentSolutionStep + 1}</span>
+                                                <span className="font-semibold text-gray-900 dark:text-gray-100">{solutionSteps[currentSolutionStep]?.title}</span>
+                                            </div>
+                                            <p className="text-gray-700 dark:text-gray-300 mb-2">{solutionSteps[currentSolutionStep]?.description}</p>
+                                            {solutionSteps[currentSolutionStep]?.steps && (
+                                                <ul className="list-decimal ml-6 mb-2 text-gray-700 dark:text-gray-300 text-sm">
+                                                    {solutionSteps[currentSolutionStep]?.steps.map((s, i) => <li key={i}>{s}</li>)}
+                                                </ul>
+                                            )}
+                                            {solutionSteps[currentSolutionStep]?.instructions && (
+                                                <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded mb-2 text-sm">
+                                                    <span className="font-medium text-gray-800 dark:text-gray-200">Instructions:</span>
+                                                    <div className="whitespace-pre-line">{solutionSteps[currentSolutionStep]?.instructions}</div>
+                                                </div>
+                                            )}
+                                            {solutionSteps[currentSolutionStep]?.expectedResult && (
+                                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-blue-800 dark:text-blue-200 text-sm flex items-center gap-2">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                    <span><b>Expected Result:</b> {solutionSteps[currentSolutionStep]?.expectedResult}</span>
+                                                </div>
+                                            )}
+                                            {/* Navigation and action buttons */}
+                                            <div className="flex justify-between mt-6">
+                                                <button
+                                                    onClick={() => {
+                                                        if (currentSolutionStep > 0) setCurrentSolutionStep(currentSolutionStep - 1);
+                                                    }}
+                                                    disabled={currentSolutionStep === 0}
+                                                    className={`px-4 py-2 rounded-md flex items-center ${currentSolutionStep === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-colors duration-200'}`}
+                                                >
+                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                                                    Previous
+                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setIssueSolved(true)}
+                                                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                                                    >
+                                                        This worked
+                                                    </button>
+                                                    {currentSolutionStep < solutionSteps.length - 1 && (
+                                                        <button
+                                                            onClick={() => setCurrentSolutionStep(currentSolutionStep + 1)}
+                                                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+                                                        >
+                                                            Next
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : showAllPossibleIssues ? (
@@ -2396,29 +3480,6 @@ export default function ReturnHistory({ returns }) {
                                             <li key={index} className="text-yellow-800 dark:text-yellow-200">{issue}</li>
                                         ))}
                                     </ul>
-                                </div>
-                                <div className="bg-gray-50 dark:bg-gray-700 p-5 rounded-md">
-                                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-                                        <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        Next Steps
-                                    </h4>
-                                    <p className="text-gray-700 dark:text-gray-300 mb-4">
-                                        Consider contacting technical support or a repair service for professional assistance with this issue. 
-                                        For complex issues, it's often best to seek help from authorized service centers.
-                                    </p>
-                                </div>
-                                <div className="flex justify-between mt-6">
-                                    <button
-                                        onClick={() => setShowAllPossibleIssues(false)}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center"
-                                    >
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path>
-                                        </svg>
-                                        Return to Troubleshooting Steps
-                                    </button>
                                 </div>
                             </div>
                         ) : (
@@ -2476,26 +3537,19 @@ export default function ReturnHistory({ returns }) {
                                 </div>
 
                                 {/* Question after step */}
-                                <div className="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg shadow-sm mb-5">
-                                    <p className="font-medium text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                                        <svg className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        Did this step fix the issue?
-                                    </p>
+                                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                                    <h5 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Did this step solve your issue?</h5>
                                     <div className="flex flex-wrap gap-3">
                                         <button
-                                            onClick={() => {
-                                                // If this worked, show success message
-                                                setIssueSolved(true);
-                                            }}
-                                            className="px-5 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200 flex items-center shadow-sm"
+                                            onClick={() => setIssueSolved(true)}
+                                            className="px-5 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 transition-colors duration-200 flex items-center shadow-sm"
                                         >
                                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
-                                            Yes, it worked!
+                                            Yes, this solved it!
                                         </button>
+                                        
                                         <button
                                             onClick={() => {
                                                 // If more steps available, go to next step

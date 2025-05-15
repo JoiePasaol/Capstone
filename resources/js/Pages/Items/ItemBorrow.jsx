@@ -20,6 +20,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import SuccessDialog from "@/Components/SuccessDialog";
 import Pagination from "@/Components/Pagination";
 import ConfirmationDialog from "@/Components/ConfirmationDialog";
+import TrueButton from "@/Components/TrueButton";
 import "../../../css/select.css";
 import axios from "axios";
 
@@ -45,6 +46,8 @@ export default function ItemBorrow() {
     const [options, setOptions] = useState([]);
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [selectedStatus, setSelectedStatus] = useState(null);
+    const [years, setYears] = useState([]);
+    const [selectedYear, setSelectedYear] = useState("");
     const [borrowedDate, setBorrowedDate] = useState(null);
     const [returnDate, setReturnDate] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -53,7 +56,7 @@ export default function ItemBorrow() {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [statusFilter, setStatusFilter] = useState("All");
     const [availableQuantity, setAvailableQuantity] = useState(0);
-    const [selectedQuantity, setSelectedQuantity] = useState(null);
+    const [selectedQuantity, setSelectedQuantity] = useState(1);
     const [isBulkDelete, setIsBulkDelete] = useState(false);
 
     const itemsPerPage = 10;
@@ -66,6 +69,16 @@ export default function ItemBorrow() {
         return_date: "",
         status: "Borrowed",
         quantity: 1,
+    });
+
+    const [formErrors, setFormErrors] = useState({
+        name: null,
+        items: null,
+        item_ids: null,
+        quantity: null,
+        borrowed_date: null,
+        return_date: null,
+        status: null,
     });
 
     const ItemList = ({ items }) => {
@@ -91,58 +104,75 @@ export default function ItemBorrow() {
             </div>
         );
     };
-    const filteredBorrowedItems = useMemo(() => {
-        if (!Array.isArray(borrowedItems) || borrowedItems.length === 0)
-            return [];
 
+    useEffect(() => {
+        const currentYear = new Date().getFullYear();
+        const yearsList = Array.from(
+            { length: currentYear - 2000 + 1 },
+            (_, i) => currentYear - i 
+        );
+        setYears(yearsList);
+    }, []);
+    
+    const filteredBorrowedItems = useMemo(() => {
+        if (!Array.isArray(borrowedItems)) return [];
+    
         const today = new Date();
         const searchLower = searchTerm.toLowerCase();
-
-        // Create a copy of the array before sorting to avoid mutating the original
-        const result = [...borrowedItems]
+    
+        // Process and filter items
+        const result = borrowedItems
             .map((item) => {
+                // Handle status (including overdue calculation)
                 const isOverdue =
                     item.status === "Borrowed" &&
                     new Date(item.return_date) < today;
+                const status = isOverdue ? "Overdue" : item.status;
+    
+                // Parse item names
+                const itemNames = Array.isArray(item.item_names)
+                    ? item.item_names
+                    : typeof item.item_names === "string"
+                    ? JSON.parse(item.item_names)
+                    : [];
+    
+                // Get the year from created_at for filtering
+                const createdAt = item.created_at ? new Date(item.created_at) : null;
+                const createdYear = createdAt ? createdAt.getFullYear() : null;
+    
                 return {
                     ...item,
-                    status: isOverdue ? "Overdue" : item.status,
+                    status,
+                    itemNames,
+                    createdYear, // Changed from borrowedYear to createdYear
                 };
             })
-            .filter((item) => item && item.name)
-            .filter(
-                (item) =>
+            .filter((item) => {
+                // Filter by search term
+                const matchesSearch =
                     item.name.toLowerCase().includes(searchLower) ||
-                    (Array.isArray(item.item_names)
-                        ? item.item_names.some((name) =>
-                              name.toLowerCase().includes(searchLower)
-                          )
-                        : false)
-            )
-            .filter(
-                (item) => statusFilter === "All" || item.status === statusFilter
-            )
+                    item.itemNames.some((name) =>
+                        name.toLowerCase().includes(searchLower)
+                    );
+    
+                // Filter by status
+                const matchesStatus =
+                    statusFilter === "All" || item.status === statusFilter;
+    
+                // Filter by year - now using createdYear
+                const matchesYear =
+                    !selectedYear ||
+                    (item.createdYear && item.createdYear.toString() === selectedYear);
+    
+                return matchesSearch && matchesStatus && matchesYear;
+            })
             .sort((a, b) => {
-                // Debug logging
-                console.log("Sorting:", {
-                    a: {
-                        id: a.id,
-                        created_at: a.created_at,
-                        date: new Date(a.created_at),
-                    },
-                    b: {
-                        id: b.id,
-                        created_at: b.created_at,
-                        date: new Date(b.created_at),
-                    },
-                    comparison: new Date(b.created_at) - new Date(a.created_at),
-                });
+                // Sort by created_at date (newest first)
                 return new Date(b.created_at) - new Date(a.created_at);
             });
-
-        console.log("Sorted result:", result);
+    
         return result;
-    }, [borrowedItems, searchTerm, statusFilter]);
+    }, [borrowedItems, searchTerm, statusFilter, selectedYear]);
 
     const fetchBorrowedItems = async () => {
         try {
@@ -174,6 +204,14 @@ export default function ItemBorrow() {
     const toggleDrawer = async (open, isEdit = false, row = null) => {
         setIsDrawerOpen(open);
         setIsEditMode(isEdit);
+
+        setFormErrors({
+            name: null,
+            items: null,
+            quantity: null,
+            borrowedDate: null,
+            returnDate: null,
+        });
 
         if (open && isEdit && row) {
             const itemNames = Array.isArray(row.item_names)
@@ -231,28 +269,40 @@ export default function ItemBorrow() {
                 let parsedDate = parseISO(row.borrowed_date);
 
                 // If not valid and it's in YYYY-MM-DD format
-                if (!isValid(parsedDate) && /^\d{4}-\d{2}-\d{2}/.test(row.borrowed_date)) {
+                if (
+                    !isValid(parsedDate) &&
+                    /^\d{4}-\d{2}-\d{2}/.test(row.borrowed_date)
+                ) {
                     parsedDate = new Date(row.borrowed_date);
                 }
 
                 // If still not valid and it might be MM/DD/YYYY format
-                if (!isValid(parsedDate) && row.borrowed_date.includes('/')) {
-                    const parts = row.borrowed_date.split('/');
+                if (!isValid(parsedDate) && row.borrowed_date.includes("/")) {
+                    const parts = row.borrowed_date.split("/");
                     if (parts.length === 3) {
                         // Note: months are 0-indexed in JavaScript Date
-                        parsedDate = new Date(parts[2], parseInt(parts[0])-1, parseInt(parts[1]));
+                        parsedDate = new Date(
+                            parts[2],
+                            parseInt(parts[0]) - 1,
+                            parseInt(parts[1])
+                        );
                     }
                 }
 
-                console.log("Parsed borrowed date:", parsedDate, "isValid:", isValid(parsedDate));
+                console.log(
+                    "Parsed borrowed date:",
+                    parsedDate,
+                    "isValid:",
+                    isValid(parsedDate)
+                );
 
                 // Set the borrowed date state if valid
                 if (isValid(parsedDate)) {
                     setBorrowedDate(parsedDate);
                     // Also update the form data with formatted date
-                    setData(data => ({
+                    setData((data) => ({
                         ...data,
-                        borrowed_date: format(parsedDate, "MM/dd/yyyy")
+                        borrowed_date: format(parsedDate, "MM/dd/yyyy"),
                     }));
                 } else {
                     setBorrowedDate(null);
@@ -354,23 +404,33 @@ export default function ItemBorrow() {
         e.preventDefault();
         setProcessing(true);
 
-        if (
-            !selectedOptions ||
-            (Array.isArray(selectedOptions) && selectedOptions.length === 0)
-        ) {
-            alert("Please select an item.");
+        setFormErrors({
+            name: null,
+            items: null,
+            quantity: null,
+            borrowed_date: null,
+            return_date: null,
+            status: null,
+        });
+
+        const newErrors = {};
+        if (!data.name) newErrors.name = "Name is required";
+        if (!selectedOptions || selectedOptions.length === 0)
+            newErrors.items = "Please select at least one item";
+        if (!borrowedDate)
+            newErrors.borrowed_date = "Borrowed date is required";
+        if (!returnDate) newErrors.return_date = "Return date is required";
+        if (!selectedQuantity || selectedQuantity < 1)
+            newErrors.quantity = "Quantity must be at least 1";
+
+        if (Object.keys(newErrors).length > 0) {
+            setFormErrors(newErrors);
             setProcessing(false);
             return;
         }
 
-        const formattedBorrowedDate = borrowedDate
-            ? format(borrowedDate, "MM/dd/yyyy")
-            : "";
-
-        const formattedReturnDate = returnDate
-            ? format(returnDate, "MM/dd/yyyy")
-            : "";
-
+        const formattedBorrowedDate = format(borrowedDate, "MM/dd/yyyy");
+        const formattedReturnDate = format(returnDate, "MM/dd/yyyy");
         const quantity = parseInt(selectedQuantity) || 1;
 
         const formData = {
@@ -388,17 +448,10 @@ export default function ItemBorrow() {
             _token: csrf,
         };
 
-        console.log("Submitting data:", formData); // for debug
-
         try {
-            if (isEditMode && !data.id) {
-                throw new Error("Missing ID for update operation");
-            }
-
             const endpoint = isEditMode
                 ? `/api/borrow/${data.id}`
                 : "/api/borrow";
-
             const method = isEditMode ? "put" : "post";
 
             const response = await axios[method](endpoint, formData, {
@@ -410,7 +463,7 @@ export default function ItemBorrow() {
 
             if (response.data.success) {
                 reset();
-                setSelectedOptions(null);
+                setSelectedOptions([]);
                 setIsDrawerOpen(false);
                 setSuccessMessage(
                     isEditMode
@@ -424,16 +477,15 @@ export default function ItemBorrow() {
             }
         } catch (error) {
             console.error("Full error:", error);
-            if (error.response) {
-                console.error("Server response:", error.response.data);
-                alert(
-                    `Server error: ${
-                        error.response.data.message ||
-                        JSON.stringify(error.response.data)
-                    }`
-                );
+            if (error.response?.data?.errors) {
+                // Handle validation errors from backend
+                setFormErrors(error.response.data.errors);
+            } else if (error.response?.data?.message) {
+                setSuccessMessage(error.response.data.message);
+                setIsSuccessDialogOpen(true);
             } else {
-                alert(`Error: ${error.message}`);
+                setSuccessMessage(error.message || "An error occurred");
+                setIsSuccessDialogOpen(true);
             }
         } finally {
             setProcessing(false);
@@ -471,6 +523,28 @@ export default function ItemBorrow() {
 
     const confirmDelete = (id = null) => {
         const isBulk = id === null;
+        const itemsToCheck = isBulk
+            ? borrowedItems.filter((item) =>
+                  selectedBorrowedItems.includes(item.id)
+              )
+            : [borrowedItems.find((item) => item.id === id)];
+
+        // Check if any items are not returned
+        const notReturnedItems = itemsToCheck.filter(
+            (item) => item.status !== "Returned"
+        );
+
+        if (notReturnedItems.length > 0) {
+            const itemNames = notReturnedItems
+                .map((item) => item.name)
+                .join(", ");
+            setSuccessMessage(
+                `Cannot delete items that haven't been returned: ${itemNames}. Please mark as returned first.`
+            );
+            setIsSuccessDialogOpen(true);
+            return;
+        }
+
         const count = isBulk ? selectedBorrowedItems.length : 1;
 
         if (count === 0) return;
@@ -483,7 +557,7 @@ export default function ItemBorrow() {
 
         setDeleteTarget(isBulk ? [...selectedBorrowedItems] : [id]);
         setIsConfirmDialogOpen(true);
-        setIsBulkDelete(isBulk); // You need this to distinguish in the next step
+        setIsBulkDelete(isBulk);
     };
 
     const handleConfirmDelete = async () => {
@@ -531,6 +605,32 @@ export default function ItemBorrow() {
         }
     };
 
+    const handleReturnItem = async (borrowId) => {
+        try {
+            const response = await axios.put(`/api/borrow/${borrowId}`, {
+                status: "Returned",
+                _token: csrf,
+            });
+
+            if (response.data.success) {
+                setSuccessMessage("Item marked as returned successfully!");
+                setIsSuccessDialogOpen(true);
+                await fetchBorrowedItems();
+            } else {
+                throw new Error(
+                    response.data.message || "Failed to update status"
+                );
+            }
+        } catch (error) {
+            console.error("Error marking item as returned:", error);
+            setSuccessMessage(
+                error.response?.data?.message ||
+                    "Failed to mark item as returned. Please try again."
+            );
+            setIsSuccessDialogOpen(true);
+        }
+    };
+
     const isSelectAllChecked =
         selectedBorrowedItems.length === filteredBorrowedItems.length &&
         filteredBorrowedItems.length > 0;
@@ -561,11 +661,12 @@ export default function ItemBorrow() {
         { label: "Name", key: "name" },
         { label: "Item", key: "item" },
         { label: "Quantity", key: "quantity" },
-        { label: "Date_Borrow", key: "date_borrow" },
-        { label: "Date_Return", key: "date_return" },
+        { label: "Date_Borrow_From", key: "date_borrow" },
+        { label: "Date_Return_", key: "date_return" },
         { label: "Status", key: "status" },
         { label: "Created_at", key: "created_at" },
         { label: "Updated_at", key: "updated_at" },
+        { label: "Mark_As_Returned", key: "return_action" },
     ];
 
     const rows = paginatedBorrowedItems.map((item, index) => {
@@ -601,6 +702,23 @@ export default function ItemBorrow() {
             status: item.status,
             created_at: item.created_at ? formatDate(item.created_at) : "N/A",
             updated_at: item.updated_at ? formatDate(item.updated_at) : "N/A",
+            return_action: (
+                <div className="flex justify-center">
+                    <TrueButton
+                        onClick={() => handleReturnItem(item.id)}
+                        disabled={item.status === "Returned"}
+                        className={`px-3 py-1 text-xs sm-rounded ${
+                            item.status === "Returned"
+                                ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
+                                : "bg-green-500 hover:bg-green-600 text-white"
+                        }`}
+                    >
+                        {item.status === "Returned"
+                            ? "Already Returned"
+                            : "Mark as Returned"}
+                    </TrueButton>
+                </div>
+            ),
         };
 
         Object.defineProperty(displayRow, "_raw", {
@@ -706,6 +824,27 @@ export default function ItemBorrow() {
                                 </option>
                             ))}
                         </select>
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            className="border border-black/20 dark:border-white py-1 rounded-sm text-gray-700 dark:text-gray-300 bg-transparent cursor-pointer"
+                        >
+                            <option
+                                className="dark:bg-gray-800 dark:text-gray-300"
+                                value=""
+                            >
+                                Filter Year
+                            </option>
+                            {years.map((year) => (
+                                <option
+                                    className="dark:bg-gray-800 dark:text-gray-300"
+                                    key={year}
+                                    value={year}
+                                >
+                                    {year}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="flex">
@@ -774,7 +913,10 @@ export default function ItemBorrow() {
                             value={data.name}
                             onChange={(e) => setData("name", e.target.value)}
                         />
-                        <InputError message={errors.name} className="mt-2" />
+                        <InputError
+                            message={formErrors.name}
+                            className="mt-2"
+                        />
                     </div>
 
                     <div className="mt-4">
@@ -811,7 +953,10 @@ export default function ItemBorrow() {
                                 }}
                             />
                         </div>
-                        <InputError message={errors.item_id} className="mt-2" />
+                        <InputError
+                            message={formErrors.items}
+                            className="mt-2"
+                        />
                     </div>
 
                     {/* Quantity SelectOption */}
@@ -834,10 +979,6 @@ export default function ItemBorrow() {
                                 }}
                             />
                         </div>
-                        <InputError
-                            message={errors.quantity}
-                            className="mt-2"
-                        />
                     </div>
                     {/* Date Borrowed */}
                     <div className="mt-4 w-full">
@@ -864,9 +1005,16 @@ export default function ItemBorrow() {
                                             setBorrowedDate(date);
                                             setData({
                                                 ...data,
-                                                borrowed_date: format(date, "MM/dd/yyyy")
+                                                borrowed_date: format(
+                                                    date,
+                                                    "MM/dd/yyyy"
+                                                ),
                                             });
+                                            setShowPickerBorrowed(false); // Close on selection
                                         }}
+                                        onClickOutside={() =>
+                                            setShowPickerBorrowed(false)
+                                        } // Close when clicking outside
                                         dateFormat="MM/dd/yyyy"
                                         inline
                                         calendarClassName="dark:bg-gray-800 pb-7"
@@ -875,10 +1023,11 @@ export default function ItemBorrow() {
                             )}
                         </div>
                         <InputError
-                            message={errors.borrowed_date}
+                            message={formErrors.borrowed_date}
                             className="mt-2"
                         />
                     </div>
+
                     {/* Return Date */}
                     <div className="mt-4 w-full">
                         <InputLabel htmlFor="Date" value="Date Return" />
@@ -899,9 +1048,16 @@ export default function ItemBorrow() {
                                             setReturnDate(date);
                                             setData({
                                                 ...data,
-                                                return_date: format(date, "MM/dd/yyyy")
+                                                return_date: format(
+                                                    date,
+                                                    "MM/dd/yyyy"
+                                                ),
                                             });
+                                            setShowPicker(false); // Close on selection
                                         }}
+                                        onClickOutside={() =>
+                                            setShowPicker(false)
+                                        } // Close when clicking outside
                                         dateFormat="MM/dd/yyyy"
                                         inline
                                         calendarClassName="dark:bg-gray-800 pb-7"
@@ -909,7 +1065,10 @@ export default function ItemBorrow() {
                                 </div>
                             )}
                         </div>
-                        <InputError message={errors.Date} className="mt-2" />
+                        <InputError
+                            message={formErrors.return_date}
+                            className="mt-2"
+                        />
                     </div>
 
                     {isEditMode && (

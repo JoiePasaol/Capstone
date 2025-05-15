@@ -21,8 +21,8 @@ class SupplierController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
-            'mobile_number' => 'nullable|numeric',
-            'email' => 'nullable|string|email|unique:suppliers,email',
+            'mobile_number' => 'nullable|numeric|digits_between:10,15',
+            'email' => 'nullable|email|max:255|unique:suppliers,email',
         ]);
 
         $supplier = Supplier::create([
@@ -47,8 +47,8 @@ class SupplierController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
-            'mobile_number' => 'nullable|string|max:15',
-            'email' => 'nullable|string|email|unique:suppliers,email,' . $id,
+            'mobile_number' => 'nullable|numeric|digits_between:10,15',
+            'email' => 'nullable|email|max:255|unique:suppliers,email,'.$id,
         ]);
 
         $supplier = Supplier::findOrFail($id);
