@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import Checkbox from "@/Components/Checkbox";
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
@@ -7,16 +8,41 @@ import GuestLayout from "@/Layouts/GuestLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
 export default function Login({ status, canResetPassword }) {
-    const { data, setData, post, processing, errors, reset } = useForm(
-        {
-            email: "",
-            password: "",
-            remember: false,
+    const { data, setData, post, processing, errors, reset } = useForm({
+        email: "",
+        password: "",
+        remember: false,
+    });
+
+    // Load saved credentials from localStorage when component mounts
+    useEffect(() => {
+        const rememberedEmail = localStorage.getItem('rememberedEmail');
+        const rememberedPassword = localStorage.getItem('rememberedPassword');
+        const rememberMe = localStorage.getItem('rememberMe') === 'true';
+
+        if (rememberMe && rememberedEmail && rememberedPassword) {
+            setData({
+                email: rememberedEmail,
+                password: rememberedPassword,
+                remember: rememberMe,
+            });
         }
-    );
+    }, []);
 
     const submit = (e) => {
         e.preventDefault();
+
+        // Save credentials to localStorage if "Remember me" is checked
+        if (data.remember) {
+            localStorage.setItem('rememberedEmail', data.email);
+            localStorage.setItem('rememberedPassword', data.password);
+            localStorage.setItem('rememberMe', 'true');
+        } else {
+            // Clear saved credentials if "Remember me" is unchecked
+            localStorage.removeItem('rememberedEmail');
+            localStorage.removeItem('rememberedPassword');
+            localStorage.removeItem('rememberMe');
+        }
 
         post(route("login"), {
             onFinish: () => reset("password"),
@@ -97,12 +123,6 @@ export default function Login({ status, canResetPassword }) {
                             Forgot password?
                         </Link>
                     )}
-                    {/* <Link
-                        href={route("register")}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                    >
-                        No account?
-                    </Link> */}
                     <PrimaryButton className="ms-3" disabled={processing}>
                         Log in
                     </PrimaryButton>
@@ -110,5 +130,4 @@ export default function Login({ status, canResetPassword }) {
             </form>
         </GuestLayout>
     );
-    
 }
