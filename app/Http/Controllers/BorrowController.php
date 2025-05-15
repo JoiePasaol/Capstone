@@ -139,8 +139,22 @@ class BorrowController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'item_ids' => 'required|array',
+            'item_ids.*' => 'exists:items,id',
+            'item_names' => 'required|array',
+            'item_names.*' => 'string|max:255',
+            'borrowed_date' => 'required|date',
+            'return_date' => 'required|date',
             'status' => 'sometimes|string|max:50|in:Borrowed,Overdue,Returned',
-            // ... keep your other validation rules
+            'quantity' => 'required|integer|min:1'
+        ], [
+            'name.required' => 'The name field is required.',
+            'item_ids.required' => 'Please select at least one item.',
+            'borrowed_date.required' => 'The borrowed date is required.',
+            'return_date.required' => 'The return date is required.',
+            'quantity.required' => 'Quantity is required.',
+            'quantity.min' => 'Quantity must be at least 1.',
         ]);
     
         \DB::beginTransaction();
@@ -148,50 +162,105 @@ class BorrowController extends Controller
         try {
             $borrow = Borrow::findOrFail($id);
             $originalStatus = $borrow->status;
+            $originalQuantity = $borrow->quantity;
+            $originalItemIds = $borrow->item_ids;
+            
             $newStatus = $validated['status'] ?? $borrow->status;
+            $newQuantity = $validated['quantity'];
+            $newItemIds = $validated['item_ids'];
+    
+            // Convert dates to proper format
+            $borrowedDate = Carbon::parse($validated['borrowed_date'])->format('Y-m-d');
+            $returnDate = Carbon::parse($validated['return_date'])->format('Y-m-d');
+    
+            // Check if return date is before borrowed date
+            if ($returnDate < $borrowedDate) {
+                throw new \Exception("Return date must be after or equal to borrowed date.");
+            }
+    
+            // Handle quantity and item changes
+            if ($originalStatus === 'Returned') {
+                // If item was returned, we need to adjust quantities based on changes
+                if ($originalItemIds != $newItemIds || $originalQuantity != $newQuantity) {
+                    throw new \Exception("Cannot change items or quantity for returned items.");
+                }
+            } else {
+                // For non-returned items, handle quantity adjustments
+                
+                // First, restore quantities for original items
+                foreach ($originalItemIds as $itemId) {
+                    $item = Item::find($itemId);
+                    if ($item) {
+                        $item->remaining_quantity += $originalQuantity;
+                        $item->save();
+                    }
+                }
+                
+                // Then deduct quantities for new items
+                foreach ($newItemIds as $itemId) {
+                    $item = Item::find($itemId);
+                    if (!$item) {
+                        throw new \Exception("Item with ID {$itemId} not found.");
+                    }
+    
+                    if ($item->remaining_quantity < $newQuantity) {
+                        throw new \Exception("Not enough stock for item: {$item->items} (Available: {$item->remaining_quantity}, Requested: {$newQuantity})");
+                    }
+    
+                    $item->remaining_quantity -= $newQuantity;
+                    $item->save();
+                }
+            }
     
             // Handle status change to Returned
             if ($originalStatus !== 'Returned' && $newStatus === 'Returned') {
-                foreach ($borrow->item_ids as $itemId) {
+                foreach ($newItemIds as $itemId) {
                     $item = Item::find($itemId);
                     if ($item) {
-                        $item->remaining_quantity += $borrow->quantity;
+                        $item->remaining_quantity += $newQuantity;
                         $item->save();
                     }
                 }
             }
             // Handle status change from Returned to Borrowed
             elseif ($originalStatus === 'Returned' && $newStatus !== 'Returned') {
-                foreach ($borrow->item_ids as $itemId) {
+                foreach ($newItemIds as $itemId) {
                     $item = Item::find($itemId);
                     if ($item) {
-                        if ($item->remaining_quantity < $borrow->quantity) {
+                        if ($item->remaining_quantity < $newQuantity) {
                             throw new \Exception("Not enough stock to mark as borrowed again.");
                         }
-                        $item->remaining_quantity -= $borrow->quantity;
+                        $item->remaining_quantity -= $newQuantity;
                         $item->save();
                     }
                 }
             }
     
             // Update the borrow record
-            $borrow->status = $newStatus;
-            $borrow->save();
+            $borrow->update([
+                'name' => $validated['name'],
+                'item_ids' => $validated['item_ids'],
+                'item_names' => $validated['item_names'],
+                'borrowed_date' => $borrowedDate,
+                'return_date' => $returnDate,
+                'status' => $newStatus,
+                'quantity' => $newQuantity,
+            ]);
     
             \DB::commit();
     
             return response()->json([
                 'success' => true,
-                'message' => 'Status updated successfully.',
+                'message' => 'Borrow record updated successfully.',
                 'data' => $borrow
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error('Error updating status: ' . $e->getMessage());
+            \Log::error('Error updating borrow record: ' . $e->getMessage());
     
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update status. Please try again.',
+                'message' => 'Failed to update record. Please try again.',
                 'error' => $e->getMessage()
             ], 500);
         }

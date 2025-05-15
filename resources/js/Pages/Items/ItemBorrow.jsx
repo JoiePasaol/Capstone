@@ -403,7 +403,8 @@ export default function ItemBorrow() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setProcessing(true);
-
+    
+        // Clear previous errors
         setFormErrors({
             name: null,
             items: null,
@@ -412,7 +413,8 @@ export default function ItemBorrow() {
             return_date: null,
             status: null,
         });
-
+    
+        // Validate inputs
         const newErrors = {};
         if (!data.name) newErrors.name = "Name is required";
         if (!selectedOptions || selectedOptions.length === 0)
@@ -422,17 +424,19 @@ export default function ItemBorrow() {
         if (!returnDate) newErrors.return_date = "Return date is required";
         if (!selectedQuantity || selectedQuantity < 1)
             newErrors.quantity = "Quantity must be at least 1";
-
+    
         if (Object.keys(newErrors).length > 0) {
             setFormErrors(newErrors);
             setProcessing(false);
             return;
         }
-
+    
+        // Format dates
         const formattedBorrowedDate = format(borrowedDate, "MM/dd/yyyy");
         const formattedReturnDate = format(returnDate, "MM/dd/yyyy");
         const quantity = parseInt(selectedQuantity) || 1;
-
+    
+        // Prepare form data
         const formData = {
             name: data.name,
             item_ids: Array.isArray(selectedOptions)
@@ -443,24 +447,19 @@ export default function ItemBorrow() {
                 : [selectedOptions.label],
             borrowed_date: formattedBorrowedDate,
             return_date: formattedReturnDate,
-            status: data.status || "Borrowed",
+            status: isEditMode ? selectedStatus : "Borrowed", // Use selectedStatus in edit mode
             quantity: quantity,
             _token: csrf,
         };
-
+    
         try {
             const endpoint = isEditMode
                 ? `/api/borrow/${data.id}`
                 : "/api/borrow";
             const method = isEditMode ? "put" : "post";
-
-            const response = await axios[method](endpoint, formData, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrf,
-                },
-            });
-
+    
+            const response = await axios[method](endpoint, formData);
+    
             if (response.data.success) {
                 reset();
                 setSelectedOptions([]);
@@ -476,15 +475,14 @@ export default function ItemBorrow() {
                 throw new Error(response.data.message || "Failed to save");
             }
         } catch (error) {
-            console.error("Full error:", error);
+            console.error("Error:", error);
             if (error.response?.data?.errors) {
-                // Handle validation errors from backend
                 setFormErrors(error.response.data.errors);
-            } else if (error.response?.data?.message) {
-                setSuccessMessage(error.response.data.message);
-                setIsSuccessDialogOpen(true);
             } else {
-                setSuccessMessage(error.message || "An error occurred");
+                setSuccessMessage(
+                    error.response?.data?.message ||
+                        "An error occurred. Please try again."
+                );
                 setIsSuccessDialogOpen(true);
             }
         } finally {
