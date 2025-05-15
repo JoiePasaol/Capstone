@@ -46,15 +46,18 @@ class SignatoryController extends Controller
         return response()->json(['message' => 'Signatory deleted successfully']);
     }
 
-    public function bulkDestroy(Request $request)
-    {
-        $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'exists:signatories,id',
-        ]);
+public function bulkDestroy(Request $request)
+{
+    $request->validate([
+        'ids' => 'required|array',
+        'ids.*' => 'exists:signatories,id',
+    ]);
 
-        Signatory::whereIn('id', $request->ids)->delete();
+    $count = Signatory::whereIn('id', $request->ids)->delete();
 
-        return response()->json(['message' => 'Signatories deleted successfully']);
-    }
+    return response()->json([
+        'message' => 'Signatories deleted successfully',
+        'count' => $count
+    ]);
+}
 }

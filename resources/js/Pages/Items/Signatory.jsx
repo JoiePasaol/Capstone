@@ -231,36 +231,36 @@ export default function Signatory() {
         setIsDialogOpen(true);
     };
 
-    const handleBulkDeleteConfirm = async () => {
-        if (!selectedSignatory || selectedSignatory.length === 0) return;
+const handleBulkDeleteConfirm = async () => {
+    if (!selectedSignatory || selectedSignatory.length === 0) return;
 
-        try {
-            const response = await axios.post(route("signatories.bulkDestroy"), {
-                ids: selectedSignatory.map((signatory) => signatory.id),
-            });
-            if (response.status === 200) {
-                setRows((prevRows) => {
-                    const updatedRows = prevRows.filter(
-                        (row) =>
-                            !selectedSignatory.some((sig) => sig.id === row.id)
-                    );
-                    return updatedRows.map((row, index) => ({
-                        ...row,
-                        index: index + 1,
-                    }));
-                });
-                setSuccessMessage(
-                    `(${selectedSignatory.length}) signatories successfully deleted!`
+    try {
+        const response = await axios.post(route("signatories.bulkDestroy"), {
+            ids: selectedSignatory.map((signatory) => signatory.id),
+        });
+
+        if (response.status === 200) {
+            setRows((prevRows) => {
+                const updatedRows = prevRows.filter(
+                    (row) => !selectedSignatory.some((sig) => sig.id === row.id)
                 );
-                setIsSuccessDialogOpen(true);
-            }
-        } catch (error) {
-            console.error("Failed to delete signatories:", error);
-        } finally {
-            setIsDialogOpen(false);
-            setSelectedSignatory(null);
+                return updatedRows.map((row, index) => ({
+                    ...row,
+                    index: index + 1,
+                }));
+            });
+            setSuccessMessage(
+                `${response.data.count} signatories successfully deleted!`
+            );
+            setIsSuccessDialogOpen(true);
         }
-    };
+    } catch (error) {
+        console.error("Failed to delete signatories:", error);
+    } finally {
+        setIsDialogOpen(false);
+        setSelectedSignatory(null);
+    }
+};
 
     const handleCancelDelete = () => {
         setSelectedSignatory(null);

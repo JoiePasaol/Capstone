@@ -138,7 +138,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/signatories', [SignatoryController::class, 'store'])->name('signatories.store');
         Route::put('/signatories/{id}', [SignatoryController::class, 'update'])->name('signatories.update');
         Route::delete('/signatories/{id}', [SignatoryController::class, 'destroy'])->name('signatories.destroy');
-        Route::post('/signatories/bulk-destroy', [SignatoryController::class, 'bulkDestroy'])->name('signatories.bulk-destroy');
+        Route::post('/signatories/bulk-destroy', [SignatoryController::class, 'bulkDestroy'])->name('signatories.bulkDestroy');
 
         // Item Routes
         Route::get('/items', [ItemController::class, 'index'])->name('items.index');
