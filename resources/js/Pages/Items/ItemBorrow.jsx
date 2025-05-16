@@ -118,29 +118,39 @@ export default function ItemBorrow() {
         setYears(yearsList);
     }, []);
 
-  const filteredBorrowedItems = useMemo(() => {
+const filteredBorrowedItems = useMemo(() => {
     if (!Array.isArray(borrowedItems)) return [];
 
     const today = new Date();
     const searchLower = searchTerm.toLowerCase();
 
-    // Process and filter items
+ 
+    const startOfDayDate = startDate ? new Date(startDate) : null;
+    if (startOfDayDate) {
+        startOfDayDate.setHours(0, 0, 0, 0);
+    }
+
+    const endOfDayDate = endDate ? new Date(endDate) : null;
+    if (endOfDayDate) {
+        endOfDayDate.setHours(23, 59, 59, 999);
+    }
+
     const result = borrowedItems
         .map((item) => {
-            // Handle status (including overdue calculation)
+
             const isOverdue =
                 item.status === "Borrowed" &&
                 new Date(item.return_date) < today;
             const status = isOverdue ? "Overdue" : item.status;
 
-            // Parse item names
+
             const itemNames = Array.isArray(item.item_names)
                 ? item.item_names
                 : typeof item.item_names === "string"
                 ? JSON.parse(item.item_names)
                 : [];
 
-            // Get the dates for filtering
+
             const createdAt = item.created_at
                 ? new Date(item.created_at)
                 : null;
@@ -151,34 +161,34 @@ export default function ItemBorrow() {
                 status,
                 itemNames,
                 createdYear,
-                createdAt, // This will be used for date range filtering
+                createdAt,
             };
         })
         .filter((item) => {
-            // Filter by search term
+
             const matchesSearch =
                 item.name.toLowerCase().includes(searchLower) ||
                 item.itemNames.some((name) =>
                     name.toLowerCase().includes(searchLower)
                 );
 
-            // Filter by status
+
             const matchesStatus =
                 statusFilter === "All" || item.status === statusFilter;
 
-            // Filter by year
+
             const matchesYear =
                 !selectedYear ||
                 (item.createdYear &&
                     item.createdYear.toString() === selectedYear);
 
-            // Filter by date range - now using createdAt instead of borrowedDate
+
             const matchesDateRange =
-                !startDate ||
-                !endDate ||
+                !startOfDayDate ||
+                !endOfDayDate ||
                 (item.createdAt &&
-                    item.createdAt >= startDate &&
-                    item.createdAt <= new Date(endDate.setHours(23, 59, 59, 999)));
+                    item.createdAt >= startOfDayDate &&
+                    item.createdAt <= endOfDayDate);
 
             return (
                 matchesSearch &&
@@ -188,7 +198,7 @@ export default function ItemBorrow() {
             );
         })
         .sort((a, b) => {
-            // Sort by created_at date (newest first)
+
             return new Date(b.created_at) - new Date(a.created_at);
         });
 
