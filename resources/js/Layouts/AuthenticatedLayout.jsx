@@ -251,7 +251,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
 
                     {/* Returned Items Dropdown */}
-                    {/* <button
+                    <button
                         onClick={() => toggleDropdown("returned")}
                         className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
                             isActive(["returned-items", "return-history"]) || activeDropdown === "returned"
@@ -274,7 +274,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         />
                     </button> */}
 
-                    {/* {activeDropdown === "returned" && isSidebarOpen && (
+                     {activeDropdown === "returned" && isSidebarOpen && (
                         <div className="ml-5 mt-2 border-l border-gray-300 dark:border-gray-600 pl-4 space-y-2">
                            <Link
                                 href={route("returned-items")}
@@ -309,7 +309,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 Unservices Item
                             </Link>
                         </div>
-                    )} */}
+                    )}
 
                 </nav>
 
