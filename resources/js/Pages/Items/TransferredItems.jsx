@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz'; // Use formatInTimeZone instead of utcToZonedTime
+import { enUS } from 'date-fns/locale';
 import { Settings, Printer } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Table from '@/Components/Table';
@@ -66,6 +68,29 @@ export default function TransferredItems({ items = [] }) {
             alert('You can only select items with the same Transfer To, Name/Designation, Designated Office, and Office Name/Designation');
         }
     };
+
+    // Updated to use formatInTimeZone instead of utcToZonedTime
+const toManilaTime = (dateString) => {
+    console.log('Original date string:', dateString); // Debug
+
+    if (!dateString) return 'N/A';
+
+    try {
+        const date = new Date(dateString);
+        console.log('Parsed as local date:', date.toString()); // Debug
+
+        const utcDate = new Date(dateString + 'Z');
+        console.log('Parsed as UTC date:', utcDate.toString()); // Debug
+
+        const manilaTime = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+        console.log('Manila time:', manilaTime.toString()); // Debug
+
+        return format(manilaTime, 'MMM dd, yyyy hh:mm a', { locale: enUS });
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return 'N/A';
+    }
+};
 
     const departments = useMemo(() => {
         const uniqueCategories = [...new Set(items.map(item => item.category))];
@@ -238,6 +263,43 @@ export default function TransferredItems({ items = [] }) {
             return;
         }
         window.print();
+    };
+
+    const getReceivedDate = (item) => {
+        if (item.is_fully_approved) {
+            const approvalStatus = typeof item.approval_status === 'string'
+                ? JSON.parse(item.approval_status)
+                : item.approval_status || {};
+
+            const officeApproval = approvalStatus?.office_name_designation;
+            if (officeApproval && officeApproval.approved && officeApproval.approved_at) {
+                return toManilaTime(officeApproval.approved_at);
+            }
+        }
+        return 'N/A';
+    };
+
+    const getDeclinedDate = (item) => {
+        const approvalStatus = typeof item.approval_status === 'string'
+            ? JSON.parse(item.approval_status)
+            : item.approval_status || {};
+
+        const signatories = [
+            'recommended',
+            'approved',
+            'witnessed',
+            'name_designation',
+            'office_name_designation'
+        ];
+
+        for (const type of signatories) {
+            const status = approvalStatus[type];
+            if (status && status.approved === false && status.declined_at) {
+                return toManilaTime(status.declined_at);
+            }
+        }
+
+        return 'N/A';
     };
 
     const TransferDrawer = () => {
@@ -608,6 +670,8 @@ export default function TransferredItems({ items = [] }) {
         { label: "Amount", key: "amount" },
         { label: "Total", key: "total" },
         { label: "Transferred At", key: "transferred_at" },
+        { label: "Received At", key: "received_at" },
+        { label: "Declined At", key: "declined_at" },
         { label: "Approval Status", key: "approval_status" },
         { label: "Actions", key: "actions" }
     ];
@@ -640,7 +704,21 @@ export default function TransferredItems({ items = [] }) {
         classification_no: <span className="dark:text-white">{item.classification_no}</span>,
         amount: <span className="dark:text-white">₱ {item.amount.toLocaleString()}</span>,
         total: <span className="dark:text-white">₱ {(item.quantity * item.amount).toLocaleString()}</span>,
-        transferred_at: <span className="dark:text-white">{format(new Date(item.transferred_at), 'yyyy-MM-dd HH:mm')}</span>,
+        transferred_at: (
+            <span className="dark:text-white">
+                {toManilaTime(item.transferred_at)}
+            </span>
+        ),
+        received_at: (
+            <span className={`dark:text-white ${item.is_fully_approved ? 'text-green-600 dark:text-green-400' : ''}`}>
+                {getReceivedDate(item)}
+            </span>
+        ),
+        declined_at: (
+            <span className={`dark:text-white ${getDeclinedDate(item) !== 'N/A' ? 'text-red-600 dark:text-red-400' : ''}`}>
+                {getDeclinedDate(item)}
+            </span>
+        ),
         approval_status: <ApprovalStatus item={item} />,
         actions: (
             <div className="relative">
