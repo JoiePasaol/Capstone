@@ -120,10 +120,10 @@ export default function ItemBorrow() {
 
     const filteredBorrowedItems = useMemo(() => {
         if (!Array.isArray(borrowedItems)) return [];
-    
+
         const today = new Date();
         const searchLower = searchTerm.toLowerCase();
-    
+
         // Process and filter items
         const result = borrowedItems
             .map((item) => {
@@ -132,20 +132,20 @@ export default function ItemBorrow() {
                     item.status === "Borrowed" &&
                     new Date(item.return_date) < today;
                 const status = isOverdue ? "Overdue" : item.status;
-    
+
                 // Parse item names
                 const itemNames = Array.isArray(item.item_names)
                     ? item.item_names
                     : typeof item.item_names === "string"
                     ? JSON.parse(item.item_names)
                     : [];
-    
+
                 // Get the dates for filtering
                 const createdAt = item.created_at
                     ? new Date(item.created_at)
                     : null;
                 const createdYear = createdAt ? createdAt.getFullYear() : null;
-    
+
                 return {
                     ...item,
                     status,
@@ -161,17 +161,17 @@ export default function ItemBorrow() {
                     item.itemNames.some((name) =>
                         name.toLowerCase().includes(searchLower)
                     );
-    
+
                 // Filter by status
                 const matchesStatus =
                     statusFilter === "All" || item.status === statusFilter;
-    
+
                 // Filter by year
                 const matchesYear =
                     !selectedYear ||
                     (item.createdYear &&
                         item.createdYear.toString() === selectedYear);
-    
+
                 // Filter by date range - now using createdAt instead of borrowedDate
                 const matchesDateRange =
                     !startDate ||
@@ -179,7 +179,7 @@ export default function ItemBorrow() {
                     (item.createdAt &&
                         item.createdAt >= startDate &&
                         item.createdAt <= endDate);
-    
+
                 return (
                     matchesSearch &&
                     matchesStatus &&
@@ -191,7 +191,7 @@ export default function ItemBorrow() {
                 // Sort by created_at date (newest first)
                 return new Date(b.created_at) - new Date(a.created_at);
             });
-    
+
         return result;
     }, [
         borrowedItems,
@@ -201,7 +201,7 @@ export default function ItemBorrow() {
         startDate,
         endDate,
     ]);
-    
+
     const fetchBorrowedItems = async () => {
         try {
             const response = await axios.get("/api/borrows");
@@ -696,72 +696,85 @@ export default function ItemBorrow() {
         { label: "Mark_As_Returned", key: "return_action" },
     ];
 
-    const rows = paginatedBorrowedItems.map((item, index) => {
-        const itemNames = Array.isArray(item.item_names)
-            ? item.item_names
-            : typeof item.item_names === "string"
-            ? JSON.parse(item.item_names)
-            : [];
+  const rows = paginatedBorrowedItems.map((item, index) => {
+    const itemNames = Array.isArray(item.item_names)
+        ? item.item_names
+        : typeof item.item_names === "string"
+        ? JSON.parse(item.item_names)
+        : [];
 
-        const quantity =
-            item.quantity != null && item.quantity !== undefined
-                ? item.quantity
-                : "N/A";
+    const quantity =
+        item.quantity != null && item.quantity !== undefined
+            ? item.quantity
+            : "N/A";
 
-        const displayRow = {
+    // Create a styled status element
+    const statusElement = (
+        <span className={`font-medium ${
+            item.status === "Returned"
+                ? "text-green-600 dark:text-green-400"
+                : item.status === "Overdue"
+                    ? "text-red-600 dark:text-red-400"
+                    : ""
+        }`}>
+            {item.status}
+        </span>
+    );
+
+    const displayRow = {
+        id: item.id,
+        select: (
+            <Checkbox
+                checked={selectedBorrowedItems.includes(item.id)}
+                onChange={() => handleCheckboxChange(item)}
+            />
+        ),
+        index: index + 1 + (currentPage - 1) * itemsPerPage,
+        name: item.name,
+        item: <ItemList items={itemNames} />,
+        quantity: quantity,
+        date_borrow: formatDateOnly(item.borrowed_date),
+        date_return: formatDateOnly(item.return_date),
+        status: statusElement, // Use the styled status element here
+        created_at: item.created_at ? formatDate(item.created_at) : "N/A",
+        updated_at: item.updated_at ? formatDate(item.updated_at) : "N/A",
+        return_action: (
+            <div className="flex justify-center">
+                <TrueButton
+                    onClick={() => handleReturnItem(item.id)}
+                    disabled={item.status === "Returned"}
+                    className={`px-3 py-1 text-xs sm-rounded ${
+                        item.status === "Returned"
+                            ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
+                            : "bg-green-500 hover:bg-green-600 text-white"
+                    }`}
+                >
+                    {item.status === "Returned"
+                        ? "Already Returned"
+                        : "Mark as Returned"}
+                </TrueButton>
+            </div>
+        ),
+    };
+
+    Object.defineProperty(displayRow, "_raw", {
+        value: {
             id: item.id,
-            select: (
-                <Checkbox
-                    checked={selectedBorrowedItems.includes(item.id)}
-                    onChange={() => handleCheckboxChange(item)}
-                />
-            ),
-            index: index + 1 + (currentPage - 1) * itemsPerPage,
             name: item.name,
-            item: <ItemList items={itemNames} />,
-            quantity: quantity,
-            date_borrow: formatDateOnly(item.borrowed_date),
-            date_return: formatDateOnly(item.return_date),
+            item_names: itemNames,
+            quantity: item.quantity,
+            item_ids: Array.isArray(item.item_ids)
+                ? item.item_ids
+                : JSON.parse(item.item_ids),
+            borrowed_date: item.borrowed_date,
+            return_date: item.return_date,
             status: item.status,
-            created_at: item.created_at ? formatDate(item.created_at) : "N/A",
-            updated_at: item.updated_at ? formatDate(item.updated_at) : "N/A",
-            return_action: (
-                <div className="flex justify-center">
-                    <TrueButton
-                        onClick={() => handleReturnItem(item.id)}
-                        disabled={item.status === "Returned"}
-                        className={`px-3 py-1 text-xs sm-rounded ${
-                            item.status === "Returned"
-                                ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
-                                : "bg-green-500 hover:bg-green-600 text-white"
-                        }`}
-                    >
-                        {item.status === "Returned"
-                            ? "Already Returned"
-                            : "Mark as Returned"}
-                    </TrueButton>
-                </div>
-            ),
-        };
-
-        Object.defineProperty(displayRow, "_raw", {
-            value: {
-                id: item.id,
-                name: item.name,
-                item_names: itemNames,
-                quantity: item.quantity,
-                item_ids: Array.isArray(item.item_ids)
-                    ? item.item_ids
-                    : JSON.parse(item.item_ids),
-                borrowed_date: item.borrowed_date,
-                return_date: item.return_date,
-                status: item.status,
-            },
-            enumerable: false,
-        });
-
-        return displayRow;
+        },
+        enumerable: false,
     });
+
+    return displayRow;
+});
 
     const statusOptions = [
         { value: "Borrowed", label: "Borrowed" },
