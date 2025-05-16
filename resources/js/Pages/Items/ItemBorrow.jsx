@@ -118,89 +118,89 @@ export default function ItemBorrow() {
         setYears(yearsList);
     }, []);
 
-    const filteredBorrowedItems = useMemo(() => {
-        if (!Array.isArray(borrowedItems)) return [];
+  const filteredBorrowedItems = useMemo(() => {
+    if (!Array.isArray(borrowedItems)) return [];
 
-        const today = new Date();
-        const searchLower = searchTerm.toLowerCase();
+    const today = new Date();
+    const searchLower = searchTerm.toLowerCase();
 
-        // Process and filter items
-        const result = borrowedItems
-            .map((item) => {
-                // Handle status (including overdue calculation)
-                const isOverdue =
-                    item.status === "Borrowed" &&
-                    new Date(item.return_date) < today;
-                const status = isOverdue ? "Overdue" : item.status;
+    // Process and filter items
+    const result = borrowedItems
+        .map((item) => {
+            // Handle status (including overdue calculation)
+            const isOverdue =
+                item.status === "Borrowed" &&
+                new Date(item.return_date) < today;
+            const status = isOverdue ? "Overdue" : item.status;
 
-                // Parse item names
-                const itemNames = Array.isArray(item.item_names)
-                    ? item.item_names
-                    : typeof item.item_names === "string"
-                    ? JSON.parse(item.item_names)
-                    : [];
+            // Parse item names
+            const itemNames = Array.isArray(item.item_names)
+                ? item.item_names
+                : typeof item.item_names === "string"
+                ? JSON.parse(item.item_names)
+                : [];
 
-                // Get the dates for filtering
-                const createdAt = item.created_at
-                    ? new Date(item.created_at)
-                    : null;
-                const createdYear = createdAt ? createdAt.getFullYear() : null;
+            // Get the dates for filtering
+            const createdAt = item.created_at
+                ? new Date(item.created_at)
+                : null;
+            const createdYear = createdAt ? createdAt.getFullYear() : null;
 
-                return {
-                    ...item,
-                    status,
-                    itemNames,
-                    createdYear,
-                    createdAt, // This will be used for date range filtering
-                };
-            })
-            .filter((item) => {
-                // Filter by search term
-                const matchesSearch =
-                    item.name.toLowerCase().includes(searchLower) ||
-                    item.itemNames.some((name) =>
-                        name.toLowerCase().includes(searchLower)
-                    );
-
-                // Filter by status
-                const matchesStatus =
-                    statusFilter === "All" || item.status === statusFilter;
-
-                // Filter by year
-                const matchesYear =
-                    !selectedYear ||
-                    (item.createdYear &&
-                        item.createdYear.toString() === selectedYear);
-
-                // Filter by date range - now using createdAt instead of borrowedDate
-                const matchesDateRange =
-                    !startDate ||
-                    !endDate ||
-                    (item.createdAt &&
-                        item.createdAt >= startDate &&
-                        item.createdAt <= endDate);
-
-                return (
-                    matchesSearch &&
-                    matchesStatus &&
-                    matchesYear &&
-                    matchesDateRange
+            return {
+                ...item,
+                status,
+                itemNames,
+                createdYear,
+                createdAt, // This will be used for date range filtering
+            };
+        })
+        .filter((item) => {
+            // Filter by search term
+            const matchesSearch =
+                item.name.toLowerCase().includes(searchLower) ||
+                item.itemNames.some((name) =>
+                    name.toLowerCase().includes(searchLower)
                 );
-            })
-            .sort((a, b) => {
-                // Sort by created_at date (newest first)
-                return new Date(b.created_at) - new Date(a.created_at);
-            });
 
-        return result;
-    }, [
-        borrowedItems,
-        searchTerm,
-        statusFilter,
-        selectedYear,
-        startDate,
-        endDate,
-    ]);
+            // Filter by status
+            const matchesStatus =
+                statusFilter === "All" || item.status === statusFilter;
+
+            // Filter by year
+            const matchesYear =
+                !selectedYear ||
+                (item.createdYear &&
+                    item.createdYear.toString() === selectedYear);
+
+            // Filter by date range - now using createdAt instead of borrowedDate
+            const matchesDateRange =
+                !startDate ||
+                !endDate ||
+                (item.createdAt &&
+                    item.createdAt >= startDate &&
+                    item.createdAt <= new Date(endDate.setHours(23, 59, 59, 999)));
+
+            return (
+                matchesSearch &&
+                matchesStatus &&
+                matchesYear &&
+                matchesDateRange
+            );
+        })
+        .sort((a, b) => {
+            // Sort by created_at date (newest first)
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
+
+    return result;
+}, [
+    borrowedItems,
+    searchTerm,
+    statusFilter,
+    selectedYear,
+    startDate,
+    endDate,
+]);
 
     const fetchBorrowedItems = async () => {
         try {
