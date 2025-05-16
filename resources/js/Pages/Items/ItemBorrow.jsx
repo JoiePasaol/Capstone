@@ -689,7 +689,7 @@ export default function ItemBorrow() {
         { label: "Item", key: "item" },
         { label: "Quantity", key: "quantity" },
         { label: "Date_Borrow_From", key: "date_borrow" },
-        { label: "Date_Return_", key: "date_return" },
+        { label: "Date_Return_To", key: "date_return" },
         { label: "Status", key: "status" },
         { label: "Created_at", key: "created_at" },
         { label: "Updated_at", key: "updated_at" },
